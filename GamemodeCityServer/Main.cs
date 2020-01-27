@@ -8,9 +8,9 @@ using System.Threading.Tasks;
 
 namespace GamemodeCityServer
 {
-    public class Class1 : BaseScript
+    public class Main : BaseScript
     {
-        public Class1() {
+        public Main() {
             Debug.WriteLine( "Hello world!" );
         }
     }
