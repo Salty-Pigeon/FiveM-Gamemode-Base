@@ -10,7 +10,7 @@ using Newtonsoft.Json;
 namespace GamemodeCityClient {
     public class Globals : BaseScript {
 
-        public static Dictionary<string,Dictionary<string, dynamic>> Weapons = new Dictionary<string,Dictionary<string, dynamic>>();
+        public static Dictionary<uint,Dictionary<string, dynamic>> Weapons = new Dictionary<uint,Dictionary<string, dynamic>>();
         public static Dictionary<string, BaseGamemode> Gamemodes = new Dictionary<string, BaseGamemode>();
 
         public static bool isNoclip = false;
@@ -19,7 +19,7 @@ namespace GamemodeCityClient {
         public static void Init() {
 
             var loadFile = LoadResourceFile(GetCurrentResourceName(), "./weapons.json");
-            Weapons = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, dynamic>>>(loadFile);
+            Weapons = JsonConvert.DeserializeObject<Dictionary<uint, Dictionary<string, dynamic>>>(loadFile);
 
         }
 

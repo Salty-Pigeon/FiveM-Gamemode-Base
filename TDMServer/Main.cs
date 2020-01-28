@@ -1,4 +1,6 @@
 ﻿using GamemodeCityServer;
+using CitizenFX.Core;
+using static CitizenFX.Core.Native.API;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,6 +22,8 @@ namespace TDMServer
             base.Start();
 
             Console.WriteLine("TDM Starting");
+
+            
         }
     }
 }
