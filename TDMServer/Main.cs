@@ -20,9 +20,6 @@ namespace TDMServer
 
         public override void Start() {
             base.Start();
-
-            Console.WriteLine("TDM Starting");
-
             
         }
     }

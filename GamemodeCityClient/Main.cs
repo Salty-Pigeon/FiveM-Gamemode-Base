@@ -13,8 +13,6 @@ namespace GamemodeCityClient
         BaseGamemode CurrentGame;
 
         public Main() {
-            Debug.WriteLine("Hello world!");
-
 
             EventHandlers["onClientResourceStart"] += new Action<string>( OnClientResourceStart );
             EventHandlers["salty:StartGame"] += new Action<int>(StartGame);
@@ -37,14 +35,18 @@ namespace GamemodeCityClient
             }), false);
         }
 
+
+
         public void StartGame( int ID ) {
             CurrentGame = Globals.Gamemodes["TDM"];
             CurrentGame.Start();
         }
-
+        
         private async Task Tick() {
             if (CurrentGame != null)
                 CurrentGame.Update();
+            if( Globals.isNoclip )
+                Globals.NoClipUpdate();
         }
     }
 }

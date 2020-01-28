@@ -27,8 +27,7 @@ namespace GamemodeCityClient {
         }
 
         public virtual void Update() {
-            if (Globals.isNoclip)
-                Globals.NoClipUpdate();
+            
         }
 
 
