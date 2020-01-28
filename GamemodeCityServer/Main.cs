@@ -15,6 +15,12 @@ namespace GamemodeCityServer
 
         public Main() {
             Debug.WriteLine( "Hello world!" );
+
+            EventHandlers["salty:netStartGame"] += new Action<Player, int>(StartGame);
+        }
+
+        public void StartGame( [FromSource] Player ply, int ID ) {
+            TriggerClientEvent("salty:StartGame", ID);
         }
     }
 }

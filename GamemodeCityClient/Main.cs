@@ -13,8 +13,11 @@ namespace GamemodeCityClient
         BaseGamemode CurrentGame;
 
         public Main() {
+            Debug.WriteLine("Hello world!");
+
+
             EventHandlers["onClientResourceStart"] += new Action<string>( OnClientResourceStart );
-            Debug.WriteLine( "Hello world!" );
+            EventHandlers["salty:StartGame"] += new Action<int>(StartGame);
 
             base.Tick += Tick;
            
@@ -26,13 +29,17 @@ namespace GamemodeCityClient
             Globals.Init();
 
             RegisterCommand( "tdm", new Action<int, List<object>, string>( ( source, args, raw ) => {
-                CurrentGame = Globals.Gamemodes["TDM"];
-                CurrentGame.Start();
+                TriggerServerEvent("salty:netStartGame", 0);
             } ), false );
 
             RegisterCommand("noclip", new Action<int, List<object>, string>(( source, args, raw ) => {
                 Globals.SetNoClip(!Globals.isNoclip);
             }), false);
+        }
+
+        public void StartGame( int ID ) {
+            CurrentGame = Globals.Gamemodes["TDM"];
+            CurrentGame.Start();
         }
 
         private async Task Tick() {
