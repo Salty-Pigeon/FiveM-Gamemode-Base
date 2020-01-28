@@ -9,9 +9,9 @@ namespace TDMClient
 {
     public class Main : BaseGamemode
     {
-
+        
         public Main( ) : base ( "TDM" ) {
-            
+           
         }
 
         public override void Start() {

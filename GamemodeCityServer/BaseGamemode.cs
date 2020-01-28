@@ -11,6 +11,8 @@ namespace GamemodeCityServer {
 
         string Gamemode;
 
+        public Settings Settings = new Settings();
+
         public BaseGamemode( string gamemode ) {
             Gamemode = gamemode;
             if( !Globals.Gamemodes.ContainsKey(gamemode) )

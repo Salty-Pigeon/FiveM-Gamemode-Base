@@ -9,9 +9,11 @@ namespace TDMServer
 {
     public class Main : BaseGamemode
     {
-
+        
+        
+        
         public Main() : base("TDM") {
-
+            Settings.Weapons =  new List<uint>(){ 2725352035, 453432689, 736523883, 3220176749 };
         }
 
         public override void Start() {
