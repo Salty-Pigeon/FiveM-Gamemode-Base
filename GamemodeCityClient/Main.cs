@@ -33,6 +33,13 @@ namespace GamemodeCityClient
             RegisterCommand("noclip", new Action<int, List<object>, string>(( source, args, raw ) => {
                 Globals.SetNoClip(!Globals.isNoclip);
             }), false);
+
+            RegisterCommand( "maps", new Action<int, List<object>, string>( ( source, args, raw ) => {
+                MapMenu menu = new MapMenu( "Maps", "Modify maps", new Dictionary<string, Map>() );
+            } ), false );
+
+
+
         }
 
 
