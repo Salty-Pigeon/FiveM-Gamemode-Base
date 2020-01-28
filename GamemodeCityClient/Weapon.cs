@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace GamemodeCityClient {
-    class Weapon : Entity {
+    public class Weapon : Entity {
 
         public string WeaponModel;
         public uint WeaponHash;

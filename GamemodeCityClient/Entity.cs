@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace GamemodeCityClient {
-    class Entity : BaseScript {
+    public class Entity : BaseScript {
 
         int ID;
         public int Hash;

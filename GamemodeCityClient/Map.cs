@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace GamemodeCityClient {
-    class Map : BaseScript {
+    public class Map : BaseScript {
 
         public Vector3 Position;
         public Vector3 Size;

@@ -10,6 +10,9 @@ namespace GamemodeCityServer
 {
     public class Main : BaseScript
     {
+
+        int CurrentGamemode = 0;
+
         public Main() {
             Debug.WriteLine( "Hello world!" );
         }

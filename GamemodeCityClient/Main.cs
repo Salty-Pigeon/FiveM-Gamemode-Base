@@ -9,21 +9,35 @@ using System.Threading.Tasks;
 namespace GamemodeCityClient
 {
     public class Main : BaseScript {
+
+        BaseGamemode CurrentGame;
+
         public Main() {
             EventHandlers["onClientResourceStart"] += new Action<string>( OnClientResourceStart );
             Debug.WriteLine( "Hello world!" );
+
+            base.Tick += Tick;
+           
         }
 
         private void OnClientResourceStart( string resourceName ) {
             if( GetCurrentResourceName() != resourceName ) return;
 
-            RegisterCommand( "car", new Action<int, List<object>, string>( ( source, args, raw ) => {
-                // TODO: make a vehicle! fun!
-                TriggerEvent( "chat:addMessage", new {
-                    color = new[] { 255, 0, 0 },
-                    args = new[] { "[CarSpawner]", $"I wish I could spawn this {(args.Count > 0 ? $"{args[0]} or" : "")} adder but my owner was too lazy. :(" }
-                } );
+            Globals.Init();
+
+            RegisterCommand( "tdm", new Action<int, List<object>, string>( ( source, args, raw ) => {
+                CurrentGame = Globals.Gamemodes["TDM"];
+                CurrentGame.Start();
             } ), false );
+
+            RegisterCommand("noclip", new Action<int, List<object>, string>(( source, args, raw ) => {
+                Globals.SetNoClip(!Globals.isNoclip);
+            }), false);
+        }
+
+        private async Task Tick() {
+            if (CurrentGame != null)
+                CurrentGame.Update();
         }
     }
 }
