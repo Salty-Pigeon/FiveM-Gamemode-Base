@@ -6,8 +6,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace GamemodeCityClient {
+namespace GamemodeCityServer {
     public class Spawn : BaseScript {
+
+        
 
         public Vector3 Position;
         public SpawnType SpawnType;

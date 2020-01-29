@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Dynamic;
 
 namespace GamemodeCityServer
 {
@@ -12,11 +13,18 @@ namespace GamemodeCityServer
     {
 
         BaseGamemode CurrentGame;
+        MapManager MapManager;
+        Database Database;
 
         public Main() {
-            Debug.WriteLine( "Hello world!" );
+
+            MapManager = new MapManager();
+            Database = new Database( MapManager );
 
             EventHandlers["salty:netStartGame"] += new Action<Player, int>(StartGame);
+
+            EventHandlers["saltyMap:netUpdate"] += new Action<Player, ExpandoObject>( MapManager.Update );
+
 
         }
 
@@ -24,5 +32,8 @@ namespace GamemodeCityServer
         public void StartGame( [FromSource] Player ply, int ID ) {
             TriggerClientEvent("salty:StartGame", ID);
         }
+
+
+
     }
 }

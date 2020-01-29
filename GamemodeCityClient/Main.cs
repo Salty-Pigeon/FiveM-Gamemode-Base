@@ -38,7 +38,9 @@ namespace GamemodeCityClient
                 MapMenu menu = new MapMenu( "Maps", "Modify maps", new Dictionary<string, Map>() );
             } ), false );
 
-
+            RegisterCommand( "mapname", new Action<int, List<object>, string>( ( source, args, raw ) => {
+                TriggerServerEvent( "saltyMap:netUpdate", new Dictionary<string, dynamic> { { "playerPos", LocalPlayer.Character.Position },  { "name", string.Join( " ", args ) } } );
+            } ), false );
 
         }
 

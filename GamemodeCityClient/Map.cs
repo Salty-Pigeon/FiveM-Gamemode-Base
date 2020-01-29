@@ -12,6 +12,7 @@ namespace GamemodeCityClient {
         public Vector3 Position;
         public Vector3 Size;
         public string Name;
+        public List<string> Gamemodes = new List<string>();
 
         List<Spawn> Spawns = new List<Spawn>();
 

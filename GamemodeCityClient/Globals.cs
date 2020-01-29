@@ -19,6 +19,15 @@ namespace GamemodeCityClient {
             Debug.WriteLine( Weapons.Keys.First().ToString() );
         }
 
+
+        public static void SendMap( Map map ) {
+            TriggerServerEvent( "saltyMap:netUpdate", new Dictionary<string, dynamic> {
+                { "name", string.Join( " ", map.Name ) },
+                { "position", map.Position },
+                { "size", map.Size }
+            } );
+        }
+
         public static void WriteChat( string prefix, string str, int r, int g, int b ) {
             TriggerEvent("chat:addMessage", new {
                 color = new[] { r, g, b },

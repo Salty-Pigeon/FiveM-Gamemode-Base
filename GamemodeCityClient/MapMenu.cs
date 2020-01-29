@@ -10,6 +10,9 @@ using System.Drawing;
 
 namespace GamemodeCityClient {
     public class MapMenu : BaseScript {
+
+        Map currentMap;
+
         private double DegreeToRadian( double angle ) {
             return Math.PI * angle / 180.0;
         }
@@ -20,23 +23,29 @@ namespace GamemodeCityClient {
             Menu mapMenu = new Menu( name, subtitle ) { Visible = true };
             MenuController.AddMenu( mapMenu );
 
-            
+
 
             //Vector3 selectedVector = map.Value.SpawnPoints.ElementAt( 0 ).Value[0];
             //int selectedTeam = map.Value.SpawnPoints.ElementAt( 0 ).Key;
 
-            Menu mapEditor = AddSubMenu( mapMenu, "Edit Map" );
-            MenuItem mapItem = AddMenuItem( mapMenu, mapEditor, "Map", "Modify Map", "", true );
 
+            Menu mapEditor = AddSubMenu( mapMenu, "Edit Map" );
+
+
+            // Add each map
+
+            //MenuItem mapItem = AddMenuItem( mapMenu, mapEditor, "Map", "Modify Map", "", true );
+            //MenuItem mapItem1 = AddMenuItem( mapMenu, mapEditor, "Map1", "Modify Map", "", true );
+
+
+            // base options code
             Menu playerSpawnMenu = AddSubMenu( mapEditor, "Edit " + "Map" + " player spawns" );
             Menu deleteMapMenu = AddSubMenu( mapEditor, "Delete " + "Map" + "?" );
             deleteMapMenu.AddMenuItem( new MenuItem( "Yes", "" ) );
             deleteMapMenu.AddMenuItem( new MenuItem( "No", "" ) );
             deleteMapMenu.OnItemSelect += ( _menu, _item, _index ) => {
                 if( _item.Text == "Yes" ) {
-                    TriggerServerEvent( "salty::netModifyMap", "delete", "Map" );
-                    MenuController.CloseAllMenus();
-                    TriggerServerEvent( "salty::netSpawnPointGUI" );
+
                 }
                 if( _item.Text == "No" ) {
                     deleteMapMenu.CloseMenu();
@@ -54,8 +63,8 @@ namespace GamemodeCityClient {
 
             Vector2 dimensions = new Vector2( 100, 100 );
 
-            MenuSliderItem sliderOffset = new MenuSliderItem( "Offset", -25, 25, 0, false );
-            MenuSliderItem sliderX = new MenuSliderItem( "Centre X", -999999, 999999, (int)dimensions.X, false );
+            MenuSliderItem sliderOffset = new MenuSliderItem( "Offset: 1", -25, 25, 1, false );
+            MenuSliderItem sliderX = new MenuSliderItem( "Centre X: ", -999999, 999999, (int)dimensions.X, false );
             MenuSliderItem sliderY = new MenuSliderItem( "Centre Y", -999999, 999999, (int)dimensions.Y, false );
             MenuSliderItem sliderWidth = new MenuSliderItem( "Width", -9999, 9999, (int)dimensions.X, false );
             MenuSliderItem sliderLength = new MenuSliderItem( "Length", -9999, 9999, (int)dimensions.Y, false );
@@ -76,17 +85,24 @@ namespace GamemodeCityClient {
 
 
             mapEditor.OnSliderPositionChange += ( _menu, _sliderItem, _oldPosition, _newPosition, _itemIndex ) => {
-                if( _sliderItem.Text == "Centre X" ) {
-                    //map.Value.Position.X += (_newPosition - _oldPosition) * sliderOffset.Position;
+                if( _sliderItem == sliderOffset ) {
+                    _sliderItem.Text = "Offset: " + _newPosition;
                 }
-                if( _sliderItem.Text == "Centre Y" ) {
-                    //map.Value.Position.Y += (_newPosition - _oldPosition) * sliderOffset.Position;
+                if( _sliderItem == sliderX ) {
+                    currentMap.Position.X += (_newPosition - _oldPosition) * sliderOffset.Position;
+                    _sliderItem.Text = "Centre X: " + currentMap.Position.X;
                 }
-                if( _sliderItem.Text == "Width" ) {
-                    //map.Value.Size.X += (_newPosition - _oldPosition) * sliderOffset.Position;
+                if( _sliderItem == sliderY ) {
+                    currentMap.Position.Y += (_newPosition - _oldPosition) * sliderOffset.Position;
+                    _sliderItem.Text = "Centre Y: " + currentMap.Position.Y;
                 }
-                if( _sliderItem.Text == "Length" ) {
-                    //map.Value.Size.Y += (_newPosition - _oldPosition) * sliderOffset.Position;
+                if( _sliderItem == sliderWidth ) {
+                    currentMap.Size.X += (_newPosition - _oldPosition) * sliderOffset.Position;
+                    _sliderItem.Text = "Width: " + currentMap.Size.X;
+                }
+                if( _sliderItem == sliderLength ) {
+                    currentMap.Size.Y += (_newPosition - _oldPosition) * sliderOffset.Position;
+                    _sliderItem.Text = "Height: " + currentMap.Size.Y;
                 }
 
 
@@ -94,7 +110,8 @@ namespace GamemodeCityClient {
 
             mapEditor.OnItemSelect += ( _menu, _item, _index ) => {
                 if( _item.Text == "Save" ) {
-                    //TriggerServerEvent( "salty::netModifyMap", "edit", map.Key, 0, map.Value.Position, map.Value.Size );
+                    Globals.SendMap( currentMap );
+                    mapEditor.CloseMenu();
                 }
             };
 
@@ -105,6 +122,26 @@ namespace GamemodeCityClient {
             };
 
 
+            // Create Map
+
+            MenuItem createMap = AddMenuItem( mapMenu, mapEditor, "Create Map", "Modify Map", "", true );
+
+            mapMenu.OnItemSelect += ( _menu, _item, _index ) => {
+                if( _item == createMap ) {
+                    currentMap = new Map( "unnamed" + Game.GameTime, LocalPlayer.Character.Position, new Vector3( 0, 0, 0 ) );
+                    Debug.WriteLine( "Yay map created" );
+                }
+                sliderOffset.Position = 1;
+                sliderX.Text = "Centre X: " + currentMap.Position.X;
+                sliderX.Position = (int)dimensions.X;
+                sliderY.Text = "Centre Y: " + currentMap.Position.Y;
+                sliderY.Position = (int)dimensions.Y;
+                sliderWidth.Text = "Width: " + currentMap.Size.X;
+                sliderWidth.Position = (int)dimensions.X;
+                sliderLength.Text = "Height: " + currentMap.Size.Y;
+                sliderLength.Position = (int)dimensions.Y;
+            };
+
             mapMenu.OnMenuClose += ( _menu ) => {
 
             };
@@ -113,7 +150,11 @@ namespace GamemodeCityClient {
 
             };
 
+        }
+
+        public void MapOptionsMenu( Menu menu ) {
             
+
         }
 
         public MenuItem AddMenuItem( Menu parent, Menu child, string name, string description, string label, bool bindMenu ) {
