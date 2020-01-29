@@ -30,7 +30,9 @@ namespace GamemodeCityClient {
             
         }
 
+        public virtual void Cleanup() {
 
+        }
         
 
     }
