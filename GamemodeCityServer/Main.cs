@@ -22,12 +22,20 @@ namespace GamemodeCityServer
             Database = new Database( MapManager );
 
             EventHandlers["salty:netStartGame"] += new Action<Player, int>(StartGame);
+            EventHandlers["salty:netOpenMapGUI"] += new Action<Player>( OpenMapGUI );
 
             EventHandlers["saltyMap:netUpdate"] += new Action<Player, ExpandoObject>( MapManager.Update );
 
 
         }
 
+
+        void OpenMapGUI( [FromSource] Player ply ) {
+            foreach( Map map in MapManager.Maps ) {
+                ply.TriggerEvent( "salty:CacheMap", map.ID, map.Name, map.Gamemodes, map.Position, map.Size );
+            }
+            ply.TriggerEvent( "salty:OpenMapGUI" );
+        }
 
         public void StartGame( [FromSource] Player ply, int ID ) {
             TriggerClientEvent("salty:StartGame", ID);

@@ -14,12 +14,25 @@ namespace GamemodeCityClient {
         public string Name;
         public List<string> Gamemodes = new List<string>();
 
+        public bool JustCreated = false;
+
+        public int ID = -1;
+
         List<Spawn> Spawns = new List<Spawn>();
+
+        public Map( int id, string name, List<string> gamemodes, Vector3 pos, Vector3 size ) {
+            Name = name;
+            Position = pos;
+            Size = size;
+            ID = id;
+            Gamemodes = gamemodes;
+        }
 
         public Map( string name, Vector3 pos, Vector3 size ) {
             Name = name;
             Position = pos;
             Size = size;
+            JustCreated = true;
         }
 
         public void DrawBoundarys() {

@@ -11,14 +11,28 @@ namespace GamemodeCityClient
     public class Main : BaseScript {
 
         BaseGamemode CurrentGame;
+        MapMenu MapMenu;
 
         public Main() {
 
             EventHandlers["onClientResourceStart"] += new Action<string>( OnClientResourceStart );
             EventHandlers["salty:StartGame"] += new Action<int>(StartGame);
+            EventHandlers["salty:CacheMap"] += new Action<int, string, dynamic, Vector3, Vector3>( CacheMap );
+            EventHandlers["salty:OpenMapGUI"] += new Action( OpenMapGUI );
 
             base.Tick += Tick;
            
+        }
+
+
+        void OpenMapGUI() {
+            MapMenu = new MapMenu( "Maps", "Modify maps", Globals.Maps );
+        }
+
+        void CacheMap( int id, string name, dynamic gamemodes, Vector3 pos, Vector3 size ) {
+            List<string> gamemode = gamemodes as List<string>;
+            Map map = new Map( id, name, gamemode, pos, size );
+            Globals.Maps[id] = map;
         }
 
         private void OnClientResourceStart( string resourceName ) {
@@ -35,11 +49,14 @@ namespace GamemodeCityClient
             }), false);
 
             RegisterCommand( "maps", new Action<int, List<object>, string>( ( source, args, raw ) => {
-                MapMenu menu = new MapMenu( "Maps", "Modify maps", new Dictionary<string, Map>() );
+                TriggerServerEvent( "salty:netOpenMapGUI" );
             } ), false );
 
             RegisterCommand( "mapname", new Action<int, List<object>, string>( ( source, args, raw ) => {
-                TriggerServerEvent( "saltyMap:netUpdate", new Dictionary<string, dynamic> { { "playerPos", LocalPlayer.Character.Position },  { "name", string.Join( " ", args ) } } );
+                if( Globals.LastSelectedMap != null )
+                    TriggerServerEvent( "saltyMap:netUpdate", new Dictionary<string, dynamic> { { "create", false }, { "id", Globals.LastSelectedMap.ID }, { "name", string.Join( " ", args ) } } );
+                else
+                    Globals.WriteChat( "Error", "Select a map with /maps", 255, 20, 20 );
             } ), false );
 
         }
@@ -56,6 +73,8 @@ namespace GamemodeCityClient
                 CurrentGame.Update();
             if( Globals.isNoclip )
                 Globals.NoClipUpdate();
+            if( MapMenu != null )
+                MapMenu.Draw();
         }
     }
 }

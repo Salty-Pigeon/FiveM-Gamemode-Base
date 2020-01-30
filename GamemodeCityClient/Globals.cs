@@ -13,6 +13,10 @@ namespace GamemodeCityClient {
 
         public static bool isNoclip = false;
 
+        public static Dictionary<int, Map> Maps = new Dictionary<int, Map>();
+
+        public static Map LastSelectedMap;
+
 
         public static void Init() {
 
@@ -22,9 +26,11 @@ namespace GamemodeCityClient {
 
         public static void SendMap( Map map ) {
             TriggerServerEvent( "saltyMap:netUpdate", new Dictionary<string, dynamic> {
+                { "id", map.ID },
                 { "name", string.Join( " ", map.Name ) },
                 { "position", map.Position },
-                { "size", map.Size }
+                { "size", map.Size },
+                { "create", map.JustCreated }
             } );
         }
 

@@ -11,7 +11,6 @@ namespace GamemodeCityServer {
     class Globals {
         public static Dictionary<string, BaseGamemode> Gamemodes = new Dictionary<string, BaseGamemode>();
 
-        
     }
 
 

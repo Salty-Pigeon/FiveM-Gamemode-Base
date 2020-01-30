@@ -25,8 +25,10 @@ namespace GamemodeCityServer {
         public void Update( [FromSource] Player ply, ExpandoObject expandoObject ) {
 
             Dictionary<string, dynamic> updateDetails = expandoObject.ToDictionary( x => x.Key, x => x.Value );
-            if( updateDetails.ContainsKey( "playerPos" ) ) {
-                Map map = FindMap( updateDetails["playerPos"] );
+            if( !updateDetails["create"]  ) {
+
+                Map map = Maps.Find( x => x.ID == updateDetails["id"] );
+
                 if( map != null ) {
                     foreach( var detail in updateDetails ) {
                         switch( detail.Key ) {
@@ -51,7 +53,9 @@ namespace GamemodeCityServer {
                     }
                     Database.SaveMap( map );
                 }
+
             } else {
+                Debug.WriteLine( "Creating" );
                 Map map = new Map( 0, updateDetails["name"], "", updateDetails["position"], updateDetails["size"] );
                 Maps.Add( map );
                 Database.CreateMap( map );
