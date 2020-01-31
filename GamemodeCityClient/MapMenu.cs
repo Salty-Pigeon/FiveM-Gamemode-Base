@@ -164,7 +164,8 @@ namespace GamemodeCityClient {
         }
 
         public void Draw() {
-            currentMap.DrawBoundarys();
+            if( currentMap != null )
+                currentMap.DrawBoundarys();
         }
 
         public MenuItem AddMenuItem( Menu parent, Menu child, string name, string description, string label, bool bindMenu ) {
