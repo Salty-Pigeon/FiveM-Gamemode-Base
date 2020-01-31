@@ -63,9 +63,6 @@ namespace GamemodeCityClient
                 TriggerServerEvent( "salty:netOpenMapGUI" );
             } ), false );
 
-            RegisterCommand( "text", new Action<int, List<object>, string>( ( source, args, raw ) => {
-                SendNUIMessage( "enable", "" );
-            } ), false );
 
             RegisterCommand( "mapname", new Action<int, List<object>, string>( ( source, args, raw ) => {
                 if( Globals.LastSelectedMap != null )
@@ -94,14 +91,6 @@ namespace GamemodeCityClient
         }
 
 
-        public void RegisterEventHandler( string _event, Delegate _action ) {
-            try {
-                EventHandlers.Add( _event, _action );
-            } catch {
-
-            }
-        }
-
         private void SetNUIReady( dynamic data, CallbackDelegate _callback ) {
             Debug.WriteLine( "NUI READY TO BE USED!!!" );
         }
@@ -115,24 +104,25 @@ namespace GamemodeCityClient
         }
 
         private void MapName( dynamic data, CallbackDelegate _callback ) {
-            Debug.WriteLine( "Map name" );
-            Debug.WriteLine( data );
+            Globals.LastSelectedMap.Name = data;
         }
 
         public void SetNuiFocus( bool _focus, bool _cursor ) {
             API.SetNuiFocus( _focus, _cursor );
         }
 
-
-        private void SendNUIMessage( string name, string message ) {
-            API.SendNuiMessage( "{\"type\":\"salty\",\"name\":\"" + name + "\",\"data\":\"" + message + "\"}" );
-        }
-
-
         public void RegisterNUICallback( string _type, Action<ExpandoObject, CallbackDelegate> _callback ) {
             API.RegisterNuiCallbackType( _type );
-            RegisterEventHandler( $"__cfx_nui:{_type}", _callback );
+            try {
+                EventHandlers.Add( $"__cfx_nui:{_type}", _callback );
+            }
+            catch {
+
+            }
         }
+
+
+
 
 
     }

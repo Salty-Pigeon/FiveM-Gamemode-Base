@@ -1,10 +1,12 @@
 ﻿using CitizenFX.Core;
 using static CitizenFX.Core.Native.API;
+using CitizenFX.Core.Native;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Dynamic;
 
 namespace GamemodeCityClient {
     public class Globals : BaseScript {
@@ -55,6 +57,10 @@ namespace GamemodeCityClient {
             SetEntityCollision(PlayerPedId(), !isNoclip, !isNoclip);
             SetEntityInvincible(PlayerPedId(), isNoclip);
             SetEveryoneIgnorePlayer(PlayerPedId(), isNoclip);
+        }
+
+        public static void SendNUIMessage( string name, string message ) {
+            API.SendNuiMessage( "{\"type\":\"salty\",\"name\":\"" + name + "\",\"data\":\"" + message + "\"}" );
         }
 
 

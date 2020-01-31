@@ -11,7 +11,7 @@ using System.Drawing;
 namespace GamemodeCityClient {
     public class MapMenu : BaseScript {
 
-        Map currentMap;
+        //public static Map currentMap;
         Dictionary<MenuItem, Map> mapIndex = new Dictionary<MenuItem, Map>();
 
 
@@ -36,6 +36,7 @@ namespace GamemodeCityClient {
             };
             parent.AddMenuItem( new MenuItem( "Show/Hide" ) );
             parent.AddMenuItem( new MenuItem( "Teleport to" ) );
+            parent.AddMenuItem( new MenuItem( "Set Map Name" ) );
 
 
             parent.OnItemSelect += ( _menu, _item, _index ) => {
@@ -44,6 +45,9 @@ namespace GamemodeCityClient {
                 }
                 if( _item.Text == "Teleport to" ) {
 
+                }
+                if( _item.Text == "Set Map Name" ) {
+                    Globals.SendNUIMessage( "enable", "" );
                 }
             };
 
@@ -95,7 +99,7 @@ namespace GamemodeCityClient {
             };
 
             parent.OnMenuOpen += ( _ ) => {
-                currentMap = map;
+                Globals.LastSelectedMap = map;
                 if( map.JustCreated ) {
                     map.Position = LocalPlayer.Character.Position;
                     map.Size = new Vector3( 0, 0, 0 );
@@ -142,30 +146,27 @@ namespace GamemodeCityClient {
             mapMenu.OnItemSelect += ( _menu, _item, _index ) => {
                 if( mapIndex.ContainsKey( _item ) ) {
                     Globals.LastSelectedMap = mapIndex[_item];
-                    currentMap = mapIndex[_item];
                 }
             };
 
             mapMenu.OnIndexChange += ( _menu, _oldItem, _newItem, _oldIndex, _newIndex ) => {
                 if( mapIndex.ContainsKey( _newItem ) ) {
-                    currentMap = mapIndex[_newItem];
                     Globals.LastSelectedMap = mapIndex[_newItem];
                 }
                 else {
-                    currentMap = null;
+                    Globals.LastSelectedMap = null;
                 }
             };
 
             mapMenu.OnMenuClose += ( _ ) => {
-                currentMap = null;
                 Globals.LastSelectedMap = null;
             };
 
         }
 
         public void Draw() {
-            if( currentMap != null )
-                currentMap.DrawBoundarys();
+            if( Globals.LastSelectedMap != null )
+                Globals.LastSelectedMap.DrawBoundarys();
         }
 
         public MenuItem AddMenuItem( Menu parent, Menu child, string name, string description, string label, bool bindMenu ) {
