@@ -7,22 +7,25 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TDMClient
+namespace TTTClient
 {
     public class Main : BaseGamemode
     {
-        
-        public Main( ) : base ( "TDM" ) {
-           
+        public Main() : base( "TTT" ) {
+            HUD = new TTTHUD();
         }
 
         public override void Start() {
             base.Start();
 
-            //Globals.WriteChat("TDM", "Round begin.", 255, 255, 255 );
+            Debug.WriteLine( "Yew" );
 
-            GiveWeaponToPed(PlayerPedId(), 2939590305, 100, false, true);
-            
+            Globals.WriteChat( "TTT", "Game started", 255, 0, 0 );
+
+        }
+
+        public override void Update() {
+            base.Update();
         }
     }
 }

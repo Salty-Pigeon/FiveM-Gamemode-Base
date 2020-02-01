@@ -13,6 +13,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TDMServer", "TDMServer\TDMS
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GamemodeCityShared", "GamemodeCityShared\GamemodeCityShared.csproj", "{D3800439-E6A1-4B66-BA19-8199D14C0AF6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TTTClient", "TTTClient\TTTClient.csproj", "{54F26039-A477-4D2A-9571-256357E13A1B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TTTServer", "TTTServer\TTTServer.csproj", "{D63EADC3-06FA-46E8-89EC-29A516DED142}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +43,14 @@ Global
 		{D3800439-E6A1-4B66-BA19-8199D14C0AF6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D3800439-E6A1-4B66-BA19-8199D14C0AF6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D3800439-E6A1-4B66-BA19-8199D14C0AF6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{54F26039-A477-4D2A-9571-256357E13A1B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{54F26039-A477-4D2A-9571-256357E13A1B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{54F26039-A477-4D2A-9571-256357E13A1B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{54F26039-A477-4D2A-9571-256357E13A1B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D63EADC3-06FA-46E8-89EC-29A516DED142}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D63EADC3-06FA-46E8-89EC-29A516DED142}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D63EADC3-06FA-46E8-89EC-29A516DED142}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D63EADC3-06FA-46E8-89EC-29A516DED142}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

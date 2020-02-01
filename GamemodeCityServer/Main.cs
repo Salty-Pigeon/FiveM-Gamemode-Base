@@ -21,12 +21,42 @@ namespace GamemodeCityServer
             MapManager = new MapManager();
             Database = new Database( MapManager );
 
-            EventHandlers["salty:netStartGame"] += new Action<Player, int>(StartGame);
+            EventHandlers["salty:netStartGame"] += new Action<Player, string>(StartGame);
             EventHandlers["salty:netOpenMapGUI"] += new Action<Player>( OpenMapGUI );
 
             EventHandlers["saltyMap:netUpdate"] += new Action<Player, ExpandoObject>( MapManager.Update );
 
+            EventHandlers["baseevents:onPlayerKilled"] += new Action<Player, int, ExpandoObject>( PlayerKilled );
+            EventHandlers["baseevents:onPlayerDied"] += new Action<Player, int, List<dynamic>>( PlayerDied );
 
+
+
+        }
+
+        private void PlayerKilled( [FromSource] Player ply, int killerID, ExpandoObject deathData ) {
+
+            int killerType = 0;
+            List<dynamic> deathCoords = new List<dynamic>();
+            foreach( var data in deathData ) {
+                if( data.Key == "killertype" ) {
+                    killerType = (int)data.Value;
+                }
+                if( data.Key == "killerpos" ) {
+                    deathCoords = data.Value as List<dynamic>;
+                }
+            }
+
+            if( killerID > -1 ) {
+                Debug.WriteLine("Killer is " + GetPlayerName( GetPlayerFromIndex( killerID ) ) );
+                CurrentGame.OnPlayerKilled( ply, GetPlayerFromIndex( killerID ) );
+            }
+
+        }
+
+        private void PlayerDied( [FromSource] Player ply, int killerType, List<dynamic> deathcords ) {
+            Vector3 coords = new Vector3( (float)deathcords[0], (float)deathcords[1], (float)deathcords[2] );
+            CurrentGame.OnPlayerDied( ply, killerType, coords );
+            
         }
 
 
@@ -37,8 +67,13 @@ namespace GamemodeCityServer
             ply.TriggerEvent( "salty:OpenMapGUI" );
         }
 
-        public void StartGame( [FromSource] Player ply, int ID ) {
-            TriggerClientEvent("salty:StartGame", ID);
+
+
+        public void StartGame( [FromSource] Player ply, string ID ) {
+            CurrentGame = (BaseGamemode)Activator.CreateInstance( Globals.Gamemodes[ID.ToLower()].GetType() );
+            CurrentGame.Map = MapManager.FindMap( ID );
+            ply.TriggerEvent( "salty:StartGame", ID );
+            CurrentGame.Start();
         }
 
 

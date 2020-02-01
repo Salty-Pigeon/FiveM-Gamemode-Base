@@ -5,29 +5,33 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using GamemodeCityShared;
 
 namespace GamemodeCityClient {
     public class BaseGamemode : BaseScript {
 
         string Gamemode;
 
+        public Map Map;
+        public HUD HUD;
+
         public Settings Settings = new Settings();
 
         public BaseGamemode( string gamemode ) {
-            Gamemode = gamemode;
-            if( !Globals.Gamemodes.ContainsKey(gamemode) )
-                Globals.Gamemodes.Add(gamemode, this);
-
-            Console.WriteLine("Registered gamemode " + Gamemode);
+            Gamemode = gamemode.ToLower();
+            if( !Globals.Gamemodes.ContainsKey( Gamemode ) )
+                Globals.Gamemodes.Add( Gamemode, this);
 
         }
 
         public virtual void Start() {
-
+           
         }
 
         public virtual void Update() {
-            
+            if( HUD != null ) {
+                HUD.Draw();
+            }
         }
 
         public virtual void Cleanup() {

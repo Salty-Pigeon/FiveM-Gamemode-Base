@@ -28,18 +28,27 @@ namespace GamemodeCityClient {
 
         public static void SendMap( ClientMap map ) {
             Debug.WriteLine( "Saving map" );
+
+  
             string gamemode = "";
             if( map.Gamemodes != null ) {
                 gamemode = string.Join( ",", map.Gamemodes );
-            } 
+            } else {
+                Debug.WriteLine( "Null" );
+            }
+
+            var spawns = map.SpawnsAsSendable();
+            foreach( var i in spawns ) {
+                Debug.WriteLine( i["position"].ToString() );
+            }
 
             TriggerServerEvent( "saltyMap:netUpdate", new Dictionary<string, dynamic> {
                 { "id", map.ID },
                 { "name", map.Name },
-                { "gamemode", "tdm" },
+                { "gamemode", gamemode },
                 { "position", map.Position },
                 { "size", map.Size },
-                { "spawns", map.SpawnsAsSendable() },
+                { "spawns", spawns },
                 { "create", map.JustCreated }
             } );
         }

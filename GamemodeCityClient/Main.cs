@@ -20,9 +20,11 @@ namespace GamemodeCityClient
 
 
             EventHandlers["onClientResourceStart"] += new Action<string>( OnClientResourceStart );
-            EventHandlers["salty:StartGame"] += new Action<int>(StartGame);
+            EventHandlers["salty:StartGame"] += new Action<string>(StartGame);
             EventHandlers["salty:CacheMap"] += new Action<int, string, dynamic, Vector3, Vector3, dynamic>( CacheMap );
             EventHandlers["salty:OpenMapGUI"] += new Action( OpenMapGUI );
+            EventHandlers["salty:Spawn"] += new Action<Vector3>( Spawn );
+
 
             RegisterNUICallback( "salty_nui_loaded", SetNUIReady );
             RegisterNUICallback( "salty_enable", EnableGUI );
@@ -32,6 +34,8 @@ namespace GamemodeCityClient
             base.Tick += Tick;
            
         }
+
+        
 
 
         void OpenMapGUI() {
@@ -56,7 +60,11 @@ namespace GamemodeCityClient
             Globals.Init();
 
             RegisterCommand( "tdm", new Action<int, List<object>, string>( ( source, args, raw ) => {
-                TriggerServerEvent("salty:netStartGame", 0);
+                TriggerServerEvent("salty:netStartGame", "tdm");
+            } ), false );
+
+            RegisterCommand( "ttt", new Action<int, List<object>, string>( ( source, args, raw ) => {
+                TriggerServerEvent( "salty:netStartGame", "ttt" );
             } ), false );
 
             RegisterCommand("noclip", new Action<int, List<object>, string>(( source, args, raw ) => {
@@ -80,8 +88,9 @@ namespace GamemodeCityClient
 
 
 
-        public void StartGame( int ID ) {
-            CurrentGame = Globals.Gamemodes["TDM"];
+        public void StartGame( string ID ) {
+            Debug.WriteLine( "yala" );
+            CurrentGame = (BaseGamemode)Activator.CreateInstance( Globals.Gamemodes[ID.ToLower()].GetType() );
             CurrentGame.Start();
         }
         
@@ -132,7 +141,9 @@ namespace GamemodeCityClient
         }
 
 
-
+        public void Spawn( Vector3 spawn ) {
+            LocalPlayer.Character.Position = spawn;
+        }
 
 
     }

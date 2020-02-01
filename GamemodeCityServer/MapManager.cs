@@ -22,13 +22,14 @@ namespace GamemodeCityServer {
         }
 
         
+        public ServerMap FindMap( string gamemode ) {
+            return Maps.Where( x => x.Gamemodes.Contains( gamemode ) ).Select( x => x ).First();
+        }
+
         public void Update( [FromSource] Player ply, ExpandoObject expandoObject ) {
 
 
             Dictionary<string, dynamic> updateDetails = expandoObject.ToDictionary( x => x.Key, x => x.Value );
-            foreach( var item in updateDetails ) {
-                Debug.WriteLine( item.Key + " : " + item.Value.ToString() );
-            }
 
             if( !(updateDetails["create"] )  ) {
 
@@ -54,7 +55,7 @@ namespace GamemodeCityServer {
                                 map.Size = detail.Value;
                                 break;
 
-                            case "spawns":                         
+                            case "spawns":                
                                 map.SpawnsFromSendable( detail.Value );
                                 break;
                         }
@@ -64,7 +65,6 @@ namespace GamemodeCityServer {
                 }
 
             } else {
-                Debug.WriteLine( "True yay" );
                 ServerMap map = new ServerMap( 0, updateDetails["name"], new List<string>(), updateDetails["position"], updateDetails["size"] );
                 Maps.Add( map );
                 Database.SaveMap( map );

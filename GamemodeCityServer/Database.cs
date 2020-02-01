@@ -96,7 +96,6 @@ namespace GamemodeCityServer {
         public static void SaveMap( ServerMap map ) {
             if( Connection.State == System.Data.ConnectionState.Open ) {
                 MySqlCommand comm = new MySqlCommand( "", Connection );
-                Debug.WriteLine( "Saving map ID " + map.ID );
 
                 comm.CommandText = "REPLACE INTO maps(name,gamemode,posX,posY,posZ,sizeX,sizeY,sizeZ) VALUES(?name, ?gamemode, ?posX, ?posY, ?posZ, ?sizeX, ?sizeY, ?sizeZ)";
 
@@ -126,7 +125,7 @@ namespace GamemodeCityServer {
         public static void EditSpawn( ServerMap map, Spawn spawn ) {
             if( Connection.State == System.Data.ConnectionState.Open ) {
                 MySqlCommand comm = new MySqlCommand( "", Connection );
-                Debug.WriteLine( "Adding spawn to map ID: " + map.ID );
+
                 comm.CommandText = "REPLACE INTO spawns(map,spawntype,spawnitem,team,posX,posY,posZ) VALUES(?map, ?spawntype, ?spawnitem, ?team, ?posX, ?posY, ?posZ)";
                 if( spawn.ID >= 0 ) {
                     comm.CommandText = "REPLACE INTO spawns(id,map,spawntype,spawnitem,team,posX,posY,posZ) VALUES(?id, ?map, ?spawntype, ?spawnitem, ?team, ?posX, ?posY, ?posZ)";
@@ -136,9 +135,9 @@ namespace GamemodeCityServer {
                 comm.Parameters.AddWithValue( "spawntype", spawn.SpawnType );
                 comm.Parameters.AddWithValue( "spawnitem", spawn.Entity );
                 comm.Parameters.AddWithValue( "team", spawn.Team );
-                comm.Parameters.AddWithValue( "posX", map.Position.X );
-                comm.Parameters.AddWithValue( "posY", map.Position.Y );
-                comm.Parameters.AddWithValue( "posZ", map.Position.Z );
+                comm.Parameters.AddWithValue( "posX", spawn.Position.X );
+                comm.Parameters.AddWithValue( "posY", spawn.Position.Y );
+                comm.Parameters.AddWithValue( "posZ", spawn.Position.Z );
                 comm.ExecuteNonQuery();
 
                 spawn.ID = (int)comm.LastInsertedId; 

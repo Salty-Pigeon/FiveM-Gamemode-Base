@@ -7,29 +7,34 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TDMServer
+namespace TTTServer
 {
     public class Main : BaseGamemode
     {
 
-       
-        
-        public Main() : base("TDM") {
-            Settings.Weapons =  new List<uint>(){ 2725352035, 453432689, 736523883, 3220176749 };
+        public Main() : base( "TTT" ) {
+            Settings.Weapons = new List<uint>() { 2725352035, 453432689, 736523883, 3220176749 };
         }
 
         public override void Start() {
 
-            Globals.WriteChat( "TDM", "Game started", 255, 0, 0 );
             base.Start();
-            
+
+            PlayerList playerList = new PlayerList();
+
+
+            foreach( var player in playerList ) {
+                Spawn( player, 0 );
+            }
+
+
         }
 
         public override void OnPlayerKilled( Player attacker, string victimSrc ) {
 
-            AddScore( attacker, 1 );
 
             base.OnPlayerKilled( attacker, victimSrc );
         }
+
     }
 }

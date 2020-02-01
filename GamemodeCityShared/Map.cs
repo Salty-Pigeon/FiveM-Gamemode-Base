@@ -33,13 +33,24 @@ namespace GamemodeCityShared {
             return (pos.X > Position.X - (Size.X / 2) && pos.X < Position.X + (Size.X / 2) && pos.Y > Position.Y - (Size.Y / 2) && pos.Y < Position.Y + (Size.Y / 2));
         }
 
-        public List<IDictionary<string,dynamic>> SpawnsAsSendable() {
-            var spawns = new List<IDictionary<string, dynamic>>();
+        public Spawn GetSpawn( SpawnType type, int team ) {
+            List<Spawn> shuffledSpawns = Spawns.OrderBy( a => Guid.NewGuid() ).ToList();
+            foreach( var spawn in shuffledSpawns ) {
+                if( spawn.Team == team && spawn.SpawnType == type ) {
+                    return spawn;
+                }
+            }
+            return new Spawn( -1, new Vector3( 0, 0, 0 ), SpawnType.PLAYER, "random", 0 );
+        }
+
+        public List<Dictionary<string,dynamic>> SpawnsAsSendable() {
+            var spawns = new List<Dictionary<string, dynamic>>();
             foreach( var spawn in Spawns ) {
                 spawns.Add( spawn.SpawnAsSendable() );
             }
             return spawns;
         }
+
 
         public List<Spawn> SpawnsFromSendable( dynamic spawns ) {
             List<Spawn> spawnList = new List<Spawn>();

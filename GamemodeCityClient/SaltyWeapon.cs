@@ -7,12 +7,12 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace GamemodeCityClient {
-    public class Weapon : Entity {
+    public class SaltyWeapon : SaltyEntity {
 
         public string WeaponModel;
         public uint WeaponHash;
 
-        public Weapon( Type entType, int hash, Vector3 position ) : base( entType, hash, position ) {
+        public SaltyWeapon( Type entType, int hash, Vector3 position ) : base( entType, hash, position ) {
 
         }
 

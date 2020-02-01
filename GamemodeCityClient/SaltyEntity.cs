@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace GamemodeCityClient {
-    public class Entity : BaseScript {
+    public class SaltyEntity : BaseScript {
 
         int ID;
         public int Hash;
@@ -24,7 +24,7 @@ namespace GamemodeCityClient {
 
         Type EntityType;
 
-        public Entity( Type entType, int hash, Vector3 position ) {
+        public SaltyEntity( Type entType, int hash, Vector3 position ) {
             EntityType = entType;
             Hash = hash;
             Position = position;

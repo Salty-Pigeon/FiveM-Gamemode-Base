@@ -195,7 +195,7 @@ namespace GamemodeCityClient {
 
             Menu createMapSubMenu = AddSubMenu( mapMenu, "Create map" );
             MenuItem createMapItem = AddMenuItem( mapMenu, createMapSubMenu, "Create Map", "Modify Map", "", true );
-            EditMapMenu( createMapSubMenu, new ClientMap( -1, "unnamed" + Game.GameTime, new List<string>(), LocalPlayer.Character.Position, new Vector3( 0, 0, 0 ), true ) );
+            EditMapMenu( createMapSubMenu, new ClientMap( -1, "unnamed" + Game.GameTime, new List<string>() { "tdm" }, LocalPlayer.Character.Position, new Vector3( 0, 0, 0 ), true ) );
 
             foreach( var map in Maps ) {
                 Menu mapSubMenu = AddSubMenu( mapMenu, "Edit " + map.Value.Name );

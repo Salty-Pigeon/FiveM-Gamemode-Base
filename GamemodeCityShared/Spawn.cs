@@ -24,7 +24,7 @@ namespace GamemodeCityShared {
             Team = team;
         }
 
-        public IDictionary<string,dynamic> SpawnAsSendable() {
+        public Dictionary<string,dynamic> SpawnAsSendable() {
             return new Dictionary<string, dynamic> { { "id", ID }, { "position", Position }, { "spawntype", (int)SpawnType }, { "entity", Entity }, { "team", Team } };
         }
 
