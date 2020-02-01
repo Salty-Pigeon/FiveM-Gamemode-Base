@@ -16,8 +16,8 @@ namespace TDMClient
             HUD = new HUD();
         }
 
-        public override void Start() {
-            base.Start();
+        public override void Start( float gameTime ) {
+            base.Start( gameTime );
 
             //Globals.WriteChat("TDM", "Round begin.", 255, 255, 255 );
 

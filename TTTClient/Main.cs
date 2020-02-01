@@ -15,8 +15,8 @@ namespace TTTClient
             HUD = new TTTHUD();
         }
 
-        public override void Start() {
-            base.Start();
+        public override void Start( float gameTime ) {
+            base.Start( gameTime );
 
             Globals.WriteChat( "TTT", "Game started", 255, 0, 0 );
 

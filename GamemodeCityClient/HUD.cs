@@ -12,13 +12,13 @@ namespace GamemodeCityClient {
 
         public SaltyText HealthText = new SaltyText( 0.034f, 0.906f, 0, 0, 0.5f, "Health: ", 255, 255, 255, 255, false, false, 0, true );
         public SaltyText AmmoText = new SaltyText( 0.034f, 0.938f, 0, 0, 0.5f, "Ammo: ", 255, 255, 255, 255, false, false, 0, true );
-        public SaltyText GameTimeText = new SaltyText( 0.121f, 0.855f, 0, 0, 0.5f, "", 255, 255, 255, 255, false, true, 0, true );
+        public SaltyText GameTimeText = new SaltyText( 0.125f, 0.877f, 0, 0, 0.5f, "", 255, 255, 255, 255, false, true, 0, true );
         public SaltyText BoundText = new SaltyText( 0.5f, 0.1f, 0, 0, 1, "", 255, 255, 255, 255, true, true, 0, true );
         public SaltyText GoalText = new SaltyText( 0.5f, 0.1f, 0, 0, 1f, "", 255, 255, 255, 255, false, true, 0, true );
         public SaltyText HUDText = new SaltyText( 0.5f, 0.5f, 0, 0, 0.5f, "", 255, 255, 255, 255, false, true, 0, true );
         public SaltyText ScoreText = new SaltyText( 0.5f, 0.01f, 0, 0, 0.7f, "Score: 0", 255, 255, 255, 255, false, true, 0, true );
         public SaltyText AddScoreText = new SaltyText( 0.5f + (8), 0.025f, 0, 0, 0.3f, "", 255, 255, 255, 255, false, true, 0, true );
-        public SaltyText TeamText = new SaltyText( 0.5f + (8), 0.025f, 0, 0, 0.3f, "Team here", 255, 255, 255, 255, false, true, 0, true );
+        public SaltyText TeamText = new SaltyText( 0.063f, 0.878f, 0, 0, 0.3f, "Traitor", 255, 255, 255, 255, false, true, 0, true );
 
 
         public float lastLooked = 0;
@@ -32,7 +32,7 @@ namespace GamemodeCityClient {
         public virtual void Start() {
             HealthText.Scale = 0.4f;
             AmmoText.Scale = 0.4f;
-
+            GameTimeText.Scale = 0.35f;
 
             latestAmmo = Game.PlayerPed.Weapons.Current.Ammo - Game.PlayerPed.Weapons.Current.AmmoInClip;
 
@@ -216,8 +216,7 @@ namespace GamemodeCityClient {
 
         public void DrawGameTimer() {
 
-            //TimeSpan time = TimeSpan.FromMilliseconds( ActiveGame.GameTime - GetGameTimer() );
-            TimeSpan time = TimeSpan.FromMilliseconds( 1000 - GetGameTimer() );
+            TimeSpan time = TimeSpan.FromMilliseconds( Globals.CurrentGame.GameTimerEnd - GetGameTimer() );
 
             GameTimeText.Caption = string.Format( "{0:00}:{1:00}", Math.Ceiling( time.TotalMinutes - 1 ), time.Seconds );
 

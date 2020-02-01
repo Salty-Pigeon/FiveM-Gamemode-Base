@@ -11,12 +11,12 @@ namespace TTTClient {
     class TTTHUD : HUD {
         public override void Draw() {
 
-            DrawRectangle( 0.025f, 0.878f, 0.12f, 0.093f, 122, 127, 140, 255 );
-
+            DrawRectangle( 0.025f, 0.878f, 0.12f, 0.093f, 122, 127, 140, 255 );;
 
             DrawHealth();
             //DrawScore();
             TeamText.Draw();
+            DrawGameTimer();
 
             if( Globals.Team == 0 ) {
                 DrawRectangle( 0.025f, 0.8782425f, 0.073f, 0.025f, 200, 0, 0, 255 );

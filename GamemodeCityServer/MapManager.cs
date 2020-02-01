@@ -23,7 +23,7 @@ namespace GamemodeCityServer {
 
         
         public ServerMap FindMap( string gamemode ) {
-            return Maps.Where( x => x.Gamemodes.Contains( gamemode ) ).Select( x => x ).First();
+            return Maps.OrderBy( a => Guid.NewGuid() ).Where( x => x.Gamemodes.Contains( gamemode ) ).First();
         }
 
         public void Update( [FromSource] Player ply, ExpandoObject expandoObject ) {

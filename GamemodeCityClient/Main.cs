@@ -13,15 +13,14 @@ namespace GamemodeCityClient
 {
     public class Main : BaseScript {
 
-        BaseGamemode CurrentGame;
         MapMenu MapMenu;
 
         public Main() {
 
 
             EventHandlers["onClientResourceStart"] += new Action<string>( OnClientResourceStart );
-            EventHandlers["salty:StartGame"] += new Action<string>(StartGame);
-            EventHandlers["salty:CacheMap"] += new Action<int, string, dynamic, Vector3, Vector3, dynamic>( CacheMap );
+            EventHandlers["salty:StartGame"] += new Action<string, float>(StartGame);
+            EventHandlers["salty:CacheMap"] += new Action<int, string, string, Vector3, Vector3, dynamic>( CacheMap );
             EventHandlers["salty:OpenMapGUI"] += new Action( OpenMapGUI );
             EventHandlers["salty:Spawn"] += new Action<Vector3>( Spawn );
 
@@ -42,10 +41,9 @@ namespace GamemodeCityClient
             MapMenu = new MapMenu( "Maps", "Modify maps", Globals.Maps );
         }
 
-        void CacheMap( int id, string name, dynamic gamemodes, Vector3 pos, Vector3 size, dynamic spawns ) {
-            List<string> gamemode = gamemodes as List<string>;
+        void CacheMap( int id, string name, string gamemodes, Vector3 pos, Vector3 size, dynamic spawns ) {
 
-            ClientMap map = new ClientMap( id, name, gamemode, pos, size, false );
+            ClientMap map = new ClientMap( id, name, gamemodes.Split(',').ToList(), pos, size, false );
 
             map.SpawnsFromSendable( spawns );
 
@@ -88,14 +86,14 @@ namespace GamemodeCityClient
 
 
 
-        public void StartGame( string ID ) {
-            CurrentGame = (BaseGamemode)Activator.CreateInstance( Globals.Gamemodes[ID.ToLower()].GetType() );
-            CurrentGame.Start();
+        public void StartGame( string ID, float gameLength ) {
+            Globals.CurrentGame = (BaseGamemode)Activator.CreateInstance( Globals.Gamemodes[ID.ToLower()].GetType() );
+            Globals.CurrentGame.Start( gameLength );
         }
         
         private async Task Tick() {
-            if (CurrentGame != null)
-                CurrentGame.Update();
+            if ( Globals.CurrentGame != null)
+                Globals.CurrentGame.Update();
             if( Globals.isNoclip )
                 Globals.NoClipUpdate();
             if( MapMenu != null )
@@ -104,7 +102,7 @@ namespace GamemodeCityClient
 
 
         private void SetNUIReady( dynamic data, CallbackDelegate _callback ) {
-            Debug.WriteLine( "NUI READY TO BE USED!!!" );
+            
         }
 
         private void EnableGUI( dynamic data, CallbackDelegate _callback ) {

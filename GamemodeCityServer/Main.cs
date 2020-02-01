@@ -62,7 +62,7 @@ namespace GamemodeCityServer
 
         void OpenMapGUI( [FromSource] Player ply ) {
             foreach( ServerMap map in MapManager.Maps ) {
-                ply.TriggerEvent( "salty:CacheMap", map.ID, map.Name, map.Gamemodes, map.Position, map.Size, map.SpawnsAsSendable() );
+                ply.TriggerEvent( "salty:CacheMap", map.ID, map.Name, string.Join(",", map.Gamemodes), map.Position, map.Size, map.SpawnsAsSendable() );
             }
             ply.TriggerEvent( "salty:OpenMapGUI" );
         }
@@ -72,8 +72,8 @@ namespace GamemodeCityServer
         public void StartGame( [FromSource] Player ply, string ID ) {
             CurrentGame = (BaseGamemode)Activator.CreateInstance( Globals.Gamemodes[ID.ToLower()].GetType() );
             CurrentGame.Map = MapManager.FindMap( ID );
-            ply.TriggerEvent( "salty:StartGame", ID );
             CurrentGame.Start();
+            Globals.WriteChat( ID.ToUpper(), "Playing map " + CurrentGame.Map.Name, 200, 30, 30 );
         }
 
 

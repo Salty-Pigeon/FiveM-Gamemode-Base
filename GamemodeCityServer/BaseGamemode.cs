@@ -26,9 +26,8 @@ namespace GamemodeCityServer {
 
         }
 
-        public virtual void Start() {
-            TriggerEvent( "salty:StartGame", Gamemode );
-
+        public virtual void Start( ) {
+            TriggerClientEvent( "salty:StartGame", Gamemode, Settings.GameLength );
         }
 
         public virtual void Update() {

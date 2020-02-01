@@ -15,6 +15,8 @@ namespace GamemodeCityClient {
         public Map Map;
         public HUD HUD;
 
+        public float GameTimerEnd;
+
         public Settings Settings = new Settings();
 
         public BaseGamemode( string gamemode ) {
@@ -24,7 +26,8 @@ namespace GamemodeCityClient {
 
         }
 
-        public virtual void Start() {
+        public virtual void Start( float gameTime ) {
+            GameTimerEnd = GetGameTimer() + gameTime;
             HUD.Start();
         }
 

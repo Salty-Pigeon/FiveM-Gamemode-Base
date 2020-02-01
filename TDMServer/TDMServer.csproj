@@ -52,6 +52,10 @@
       <Project>{27ecf000-e6d8-4910-9117-b6cd01048e8b}</Project>
       <Name>GamemodeCityServer</Name>
     </ProjectReference>
+    <ProjectReference Include="..\GamemodeCityShared\GamemodeCityShared.csproj">
+      <Project>{d3800439-e6a1-4b66-ba19-8199d14c0af6}</Project>
+      <Name>GamemodeCityShared</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

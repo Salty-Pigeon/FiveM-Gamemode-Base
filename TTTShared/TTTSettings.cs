@@ -4,8 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace GamemodeCityClient {
-    public class Settings {
-        
+namespace TTTShared
+{
+    public class Class1
+    {
     }
 }
