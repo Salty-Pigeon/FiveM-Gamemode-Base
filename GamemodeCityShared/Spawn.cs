@@ -13,13 +13,11 @@ namespace GamemodeCityShared {
         public SpawnType SpawnType;
         public string Entity;
         public int Team;
+        public int ID;
 
-        public Spawn( Vector3 position, SpawnType type ) {
-            Position = position;
-            SpawnType = type;
-        }
 
-        public Spawn( Vector3 position, SpawnType type, string entName, int team ) {
+        public Spawn( int id, Vector3 position, SpawnType type, string entName, int team ) {
+            ID = id;
             Position = position;
             SpawnType = type;
             Entity = entName;
@@ -27,11 +25,11 @@ namespace GamemodeCityShared {
         }
 
         public IDictionary<string,dynamic> SpawnAsSendable() {
-            return new Dictionary<string, dynamic> { { "position", Position }, { "spawntype", (int)SpawnType }, { "entity", Entity }, { "team", Team } };
+            return new Dictionary<string, dynamic> { { "id", ID }, { "position", Position }, { "spawntype", (int)SpawnType }, { "entity", Entity }, { "team", Team } };
         }
 
         public static Spawn SpawnRecieved( IDictionary<string, dynamic> spawn ) {
-            return new Spawn( spawn["position"], spawn["spawntype"], spawn["entity"], spawn["team"] );
+            return new Spawn( spawn["id"], spawn["position"], spawn["spawntype"], spawn["entity"], spawn["team"] );
         }
 
     }

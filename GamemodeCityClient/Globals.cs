@@ -39,9 +39,11 @@ namespace GamemodeCityClient {
                 { "gamemode", "tdm" },
                 { "position", map.Position },
                 { "size", map.Size },
+                { "spawns", map.SpawnsAsSendable() },
                 { "create", map.JustCreated }
             } );
         }
+
 
         public static void WriteChat( string prefix, string str, int r, int g, int b ) {
             TriggerEvent("chat:addMessage", new {

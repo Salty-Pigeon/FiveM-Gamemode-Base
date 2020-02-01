@@ -7,6 +7,7 @@ using MenuAPI;
 using CitizenFX.Core;
 using static CitizenFX.Core.Native.API;
 using System.Drawing;
+using GamemodeCityShared;
 
 namespace GamemodeCityClient {
     public class MapMenu : BaseScript {
@@ -126,25 +127,63 @@ namespace GamemodeCityClient {
 
 
             Menu playerSpawnMenu = AddSubMenu( parent, "Edit " + map.Name + " player spawns" );
+            playerSpawnMenu.AddMenuItem( new MenuItem( "Save" ) );
             MenuItem playerSpawnItem = AddMenuItem( parent, playerSpawnMenu, "Player Spawns", "Modify player spawn points", "", true );
 
-            Menu addSpawnMenu = AddSubMenu( playerSpawnMenu, "Add new spawn" );
-            MenuItem addSpawnItem = AddMenuItem( playerSpawnMenu, addSpawnMenu, "Add spawn", "Add spawn point", "", true );
+
+
+            Menu addSpawnMenu = EditSpawnMenu( playerSpawnMenu, map, new Spawn( -3, LocalPlayer.Character.Position, 0, "player", 0 ) );
+
 
             foreach( var spawn in map.Spawns ) {
-                playerSpawnMenu.AddMenuItem( new MenuItem(spawn.SpawnType.ToString()) );
+                Menu editSpawnMenu = EditSpawnMenu( playerSpawnMenu, map, spawn );
             }
 
-
-            MenuListItem spawnTypes = new MenuListItem( "Set spawn type", new List<string> { "Player", "Object", "Weapon" }, 0 );
-
-            addSpawnMenu.AddMenuItem( spawnTypes );
-            addSpawnMenu.AddMenuItem( new MenuItem( "Save" ) );
-
+            playerSpawnMenu.OnItemSelect += ( _menu, _item, _index ) => {
+                if( _item.Text == "Save" ) {
+                    Globals.SendMap( map );
+                    playerSpawnMenu.CloseMenu();
+                    TriggerServerEvent( "salty:netOpenMapGUI" );
+                }
+            };
 
             parent.AddMenuItem( new MenuItem( "Save", "Saves new position and size" ) );
 
 
+        }
+
+        public Menu EditSpawnMenu( Menu parent, Map map, Spawn spawn ) {
+
+            MenuListItem spawnTypes = new MenuListItem( "Set spawn type", Enum.GetNames( typeof( SpawnType ) ).ToList<string>(), 0 );
+
+
+            if( spawn.ID == -3 ) {
+                spawn = new Spawn( -3, LocalPlayer.Character.Position, 0, "player", 0 );
+            }
+
+            Menu spawnEditMenu = AddSubMenu( parent, "Edit spawn" );
+
+            string name = spawn.ID == -3 ? "Create spawn" : spawn.SpawnType.ToString();
+
+            MenuItem spawnEditItem = AddMenuItem( parent, spawnEditMenu, name, "", "", true );
+            spawnEditMenu.AddMenuItem( spawnTypes );
+            spawnEditMenu.AddMenuItem( new MenuItem( "Save" ) );
+
+            spawnEditMenu.OnItemSelect += ( _menu, _item, _index ) => {
+                if( _item.Text == "Save" ) {
+                    if( spawn.ID == -3 ) {
+                        map.Spawns.Add( new Spawn( -1, LocalPlayer.Character.Position, (SpawnType)spawnTypes.ListIndex, "player", 0 ) );
+                        EditSpawnMenu( parent, map, new Spawn( -1, LocalPlayer.Character.Position, (SpawnType)spawnTypes.ListIndex, "player", 0 ) );
+                        spawnEditMenu.GoBack();
+                    } else {
+                        spawn.SpawnType = (SpawnType)spawnTypes.ListIndex;
+                        parent.GetCurrentMenuItem().Text = spawn.SpawnType.ToString();
+                        spawnEditMenu.GoBack();
+                    }
+                }
+            };
+
+            return spawnEditMenu;
         }
 
         public MapMenu( string name, string subtitle, Dictionary<int, ClientMap> Maps ) {
@@ -187,8 +226,10 @@ namespace GamemodeCityClient {
         }
 
         public void Draw() {
-            if( Globals.LastSelectedMap != null )
+            if( Globals.LastSelectedMap != null ) {
                 Globals.LastSelectedMap.DrawBoundarys();
+                Globals.LastSelectedMap.DrawSpawns();
+            }
         }
 
         public MenuItem AddMenuItem( Menu parent, Menu child, string name, string description, string label, bool bindMenu ) {

@@ -83,7 +83,7 @@ namespace GamemodeCityServer {
                     float posY = MyDataReader.GetFloat( 6 );
                     float posZ = MyDataReader.GetFloat( 7 );
 
-                    spawns.Add( new Spawn( new Vector3( posX, posY, posZ ), (SpawnType)spawntype, spawnitem, team ) );
+                    spawns.Add( new Spawn( id, new Vector3( posX, posY, posZ ), (SpawnType)spawntype, spawnitem, team ) );
                     
                 }
 
@@ -97,8 +97,14 @@ namespace GamemodeCityServer {
             if( Connection.State == System.Data.ConnectionState.Open ) {
                 MySqlCommand comm = new MySqlCommand( "", Connection );
                 Debug.WriteLine( "Saving map ID " + map.ID );
-                comm.CommandText = "REPLACE INTO maps(id,name,gamemode,posX,posY,posZ,sizeX,sizeY,sizeZ) VALUES(?id, ?name, ?gamemode, ?posX, ?posY, ?posZ, ?sizeX, ?sizeY, ?sizeZ)";
-                comm.Parameters.AddWithValue( "id", map.ID );
+
+                comm.CommandText = "REPLACE INTO maps(name,gamemode,posX,posY,posZ,sizeX,sizeY,sizeZ) VALUES(?name, ?gamemode, ?posX, ?posY, ?posZ, ?sizeX, ?sizeY, ?sizeZ)";
+
+                if( map.ID >= 0 ) {
+                    comm.CommandText = "REPLACE INTO maps(id,name,gamemode,posX,posY,posZ,sizeX,sizeY,sizeZ) VALUES(?id, ?name, ?gamemode, ?posX, ?posY, ?posZ, ?sizeX, ?sizeY, ?sizeZ)";
+                    comm.Parameters.AddWithValue( "id", map.ID );
+                }
+
                 comm.Parameters.AddWithValue( "name", map.Name );
                 comm.Parameters.AddWithValue( "gamemode", string.Join(",", map.Gamemodes) );
                 comm.Parameters.AddWithValue( "posX", map.Position.X );
@@ -108,14 +114,24 @@ namespace GamemodeCityServer {
                 comm.Parameters.AddWithValue( "sizeY", map.Size.Y );
                 comm.Parameters.AddWithValue( "sizeZ", map.Size.Y );
                 comm.ExecuteNonQuery();
+
+                map.ID = (int)comm.LastInsertedId;
+
+            }
+            foreach( var spawn in map.Spawns ) {
+                EditSpawn( map, spawn );
             }
         }
 
-        public static void AddSpawn( ServerMap map, Spawn spawn ) {
+        public static void EditSpawn( ServerMap map, Spawn spawn ) {
             if( Connection.State == System.Data.ConnectionState.Open ) {
                 MySqlCommand comm = new MySqlCommand( "", Connection );
                 Debug.WriteLine( "Adding spawn to map ID: " + map.ID );
-                comm.CommandText = "REPLACE INTO spawns(id,map,spawntype,spawnitem,team,posX,posY,posZ) VALUES(?id, ?map, ?spawntype, ?spawnitem, ?team, ?posX, ?posY, ?posZ)";
+                comm.CommandText = "REPLACE INTO spawns(map,spawntype,spawnitem,team,posX,posY,posZ) VALUES(?map, ?spawntype, ?spawnitem, ?team, ?posX, ?posY, ?posZ)";
+                if( spawn.ID >= 0 ) {
+                    comm.CommandText = "REPLACE INTO spawns(id,map,spawntype,spawnitem,team,posX,posY,posZ) VALUES(?id, ?map, ?spawntype, ?spawnitem, ?team, ?posX, ?posY, ?posZ)";
+                    comm.Parameters.AddWithValue( "id", spawn.ID );
+                }
                 comm.Parameters.AddWithValue( "map", map.ID );
                 comm.Parameters.AddWithValue( "spawntype", spawn.SpawnType );
                 comm.Parameters.AddWithValue( "spawnitem", spawn.Entity );
@@ -124,26 +140,11 @@ namespace GamemodeCityServer {
                 comm.Parameters.AddWithValue( "posY", map.Position.Y );
                 comm.Parameters.AddWithValue( "posZ", map.Position.Z );
                 comm.ExecuteNonQuery();
+
+                spawn.ID = (int)comm.LastInsertedId; 
             }
         }
 
-        public static void CreateMap( ServerMap map ) {
-            if( Connection.State == System.Data.ConnectionState.Open ) {
-                MySqlCommand comm = new MySqlCommand( "", Connection );
-                comm.CommandText = "INSERT INTO maps(name,gamemode,posX,posY,posZ,sizeX,sizeY,sizeZ) VALUES(?name, ?gamemode, ?posX, ?posY, ?posZ, ?sizeX, ?sizeY, ?sizeZ);";
-                comm.Parameters.AddWithValue( "name", map.Name );
-                comm.Parameters.AddWithValue( "gamemode", string.Join( ",", map.Gamemodes ) );
-                comm.Parameters.AddWithValue( "posX", map.Position.X );
-                comm.Parameters.AddWithValue( "posY", map.Position.Y );
-                comm.Parameters.AddWithValue( "posZ", map.Position.Z );
-                comm.Parameters.AddWithValue( "sizeX", map.Size.X );
-                comm.Parameters.AddWithValue( "sizeY", map.Size.Y );
-                comm.Parameters.AddWithValue( "sizeZ", map.Size.Y );
-                comm.ExecuteNonQuery();
-
-                map.ID = (int)comm.LastInsertedId;
-            }
-        }
 
         public void SaveAll( Dictionary<string, ServerMap> Maps ) {
             if( Connection.State == System.Data.ConnectionState.Open ) {

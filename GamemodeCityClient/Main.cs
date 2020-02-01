@@ -40,42 +40,11 @@ namespace GamemodeCityClient
 
         void CacheMap( int id, string name, dynamic gamemodes, Vector3 pos, Vector3 size, dynamic spawns ) {
             List<string> gamemode = gamemodes as List<string>;
-            List<Spawn> spawnList = new List<Spawn>();
-
-            foreach( ExpandoObject spawn in spawns as List<dynamic> ) {
-
-                Vector3 position = new Vector3(0,0,0);
-                int spawnType = 0;
-                string spawnItem = "";
-                int team = 0;
-
-                Dictionary<string, dynamic> spawnData = new Dictionary<string, dynamic>();
-                foreach( var data in spawn as IDictionary<string, dynamic> ) {
-
-                    if( data.Key == "position" ) {
-                        position = (Vector3)data.Value;
-                    }
-
-                    if( data.Key == "spawntype" ) {
-                        spawnType = (int)data.Value;
-                    }
-
-                    if( data.Key == "spawnitem" ) {
-                        spawnItem = (string)data.Value;
-                    }
-
-                    if( data.Key == "team" ) {
-                        team = (int)data.Value;
-                    }
-                }
-
-                Spawn spawnPoint = new Spawn( position, (SpawnType)spawnType, spawnItem, team );
-                spawnList.Add( spawnPoint );
-
-            }
 
             ClientMap map = new ClientMap( id, name, gamemode, pos, size, false );
-            map.Spawns = spawnList;
+
+            map.SpawnsFromSendable( spawns );
+
             Globals.Maps[id] = map;
         }
 

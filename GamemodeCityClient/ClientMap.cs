@@ -11,7 +11,8 @@ using GamemodeCityShared;
 namespace GamemodeCityClient {
     public class ClientMap : Map {
 
-        public bool JustCreated = false;
+
+        public bool Draw = false;
 
         public ClientMap( int id, string name, List<string> gamemode, Vector3 position, Vector3 size, bool justCreated ) : base ( id, name, gamemode, position, size ) {
             JustCreated = justCreated;
@@ -36,11 +37,24 @@ namespace GamemodeCityClient {
         }
 
         public void DrawSpawns() {
-            var i = 0;
-            foreach( Spawn spawn in Spawns) {
-                DrawMarker(2, spawn.Position.X, spawn.Position.Y, spawn.Position.Z, 0.0f, 0.0f, 0.0f, 0.0f, 180.0f, 0.0f, 2.0f, 2.0f, 2.0f, i / 10 * 6, i, i / 3, 200, false, true, 2, false, null, null, false);
-                i += 50;
+
+            foreach( Spawn spawn in Spawns ) {
+                int r = 255;
+                int g = 0;
+                int b = 0;
+                /*
+                if( spawn.SpawnType == SpawnType.PLAYER ) {
+                    r = 255;
+                } else if ( spawn.SpawnType == SpawnType.WEAPON ) {
+                    g = 255;
+                } else {
+                    b = 255;
+                }
+                */
+                DrawMarker( 2, spawn.Position.X, spawn.Position.Y, spawn.Position.Z+1, 0.0f, 0.0f, 0.0f, 0.0f, 180.0f, 0.0f, 2.0f, 2.0f, 2.0f, r, g, b, 50, false, true, 2, false, null, null, false );
+
             }
+           
         }
 
         public void ClearObjects() {

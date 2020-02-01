@@ -54,8 +54,8 @@ namespace GamemodeCityServer {
                                 map.Size = detail.Value;
                                 break;
 
-                            case "spawns":
-
+                            case "spawns":                         
+                                map.SpawnsFromSendable( detail.Value );
                                 break;
                         }
                     }
@@ -67,7 +67,7 @@ namespace GamemodeCityServer {
                 Debug.WriteLine( "True yay" );
                 ServerMap map = new ServerMap( 0, updateDetails["name"], new List<string>(), updateDetails["position"], updateDetails["size"] );
                 Maps.Add( map );
-                Database.CreateMap( map );
+                Database.SaveMap( map );
             }
 
             
