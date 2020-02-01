@@ -13,7 +13,7 @@ namespace TDMClient
     {
         
         public Main( ) : base ( "TDM" ) {
-           
+            HUD = new HUD();
         }
 
         public override void Start() {
@@ -21,7 +21,7 @@ namespace TDMClient
 
             //Globals.WriteChat("TDM", "Round begin.", 255, 255, 255 );
 
-            GiveWeaponToPed(PlayerPedId(), 2939590305, 100, false, true);
+            GiveWeaponToPed(PlayerPedId(), 3220176749, 100, false, true);
             
         }
     }

@@ -10,8 +10,8 @@ using System.Threading.Tasks;
 namespace GamemodeCityClient {
     public class HUD {
 
-        public SaltyText HealthText = new SaltyText( 0.085f, 0.895f, 0, 0, 0.5f, "Health: ", 255, 255, 255, 255, false, true, 0, true );
-        public SaltyText AmmoText = new SaltyText( 0.085f, 0.935f, 0, 0, 0.5f, "Ammo: ", 255, 255, 255, 255, false, true, 0, true );
+        public SaltyText HealthText = new SaltyText( 0.034f, 0.906f, 0, 0, 0.5f, "Health: ", 255, 255, 255, 255, false, false, 0, true );
+        public SaltyText AmmoText = new SaltyText( 0.034f, 0.938f, 0, 0, 0.5f, "Ammo: ", 255, 255, 255, 255, false, false, 0, true );
         public SaltyText GameTimeText = new SaltyText( 0.121f, 0.855f, 0, 0, 0.5f, "", 255, 255, 255, 255, false, true, 0, true );
         public SaltyText BoundText = new SaltyText( 0.5f, 0.1f, 0, 0, 1, "", 255, 255, 255, 255, true, true, 0, true );
         public SaltyText GoalText = new SaltyText( 0.5f, 0.1f, 0, 0, 1f, "", 255, 255, 255, 255, false, true, 0, true );
@@ -26,26 +26,45 @@ namespace GamemodeCityClient {
         private float showScoreLength = 500;
         public float GoalTextTime = 0;
 
+        float latestAmmo = 0f;
+
+
+        public virtual void Start() {
+            HealthText.Scale = 0.4f;
+            AmmoText.Scale = 0.4f;
+
+
+            latestAmmo = Game.PlayerPed.Weapons.Current.Ammo - Game.PlayerPed.Weapons.Current.AmmoInClip;
+
+
+        }
         public virtual void DrawHealth() {
 
             HideHudAndRadarThisFrame();
 
             HealthText.Caption = Game.Player.Character.Health.ToString();
-            AmmoText.Caption = Game.PlayerPed.Weapons.Current.AmmoInClip + " / " + Game.PlayerPed.Weapons.Current.Ammo;
 
-            DrawRectangle( 0.025f, 0.9f, 0.12f, 0.03f, 0, 0, 0, 200 );
+
+            AmmoText.Caption = Game.PlayerPed.Weapons.Current.AmmoInClip.ToString() + " + " + latestAmmo;
+
+            if( Game.PlayerPed.IsReloading ) {
+                latestAmmo = Game.PlayerPed.Weapons.Current.Ammo - Game.PlayerPed.Weapons.Current.AmmoInClip;
+            }
+
+            DrawRectangle( 0.025f, 0.9038f, 0.12f, 0.035f, 0, 0, 0, 200 );
             float healthPercent = (float)Game.Player.Character.Health / Game.Player.Character.MaxHealth;
             if( healthPercent < 0 )
                 healthPercent = 0;
             if( healthPercent > 1 )
                 healthPercent = 1;
-            DrawRectangle( 0.025f, 0.9f, healthPercent * 0.12f, 0.03f, 200, 0, 0, 200 );
+            DrawRectangle( 0.025f, 0.9038f, healthPercent * 0.12f, 0.035f, 200, 46, 48, 255 );
+            DrawRectangle( 0.025f, 0.9038f, 0.007f, 0.035f, 150, 1, 3, 255 );
 
             float ammoPercent = (float)Game.PlayerPed.Weapons.Current.AmmoInClip / Game.PlayerPed.Weapons.Current.MaxAmmoInClip;
 
             DrawRectangle( 0.025f, 0.94f, 0.12f, 0.03f, 0, 0, 0, 200 );
-
-            DrawRectangle( 0.025f, 0.94f, ammoPercent * 0.12f, 0.03f, 230, 230, 0, 200 );
+            DrawRectangle( 0.025f, 0.94f, ammoPercent * 0.12f, 0.03f, 206, 155, 1, 200 );
+            DrawRectangle( 0.025f, 0.94f, 0.007f, 0.03f, 160, 106, 0, 255 );
 
             HealthText.Draw();
             AmmoText.Draw();

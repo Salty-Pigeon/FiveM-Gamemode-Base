@@ -89,7 +89,6 @@ namespace GamemodeCityClient
 
 
         public void StartGame( string ID ) {
-            Debug.WriteLine( "yala" );
             CurrentGame = (BaseGamemode)Activator.CreateInstance( Globals.Gamemodes[ID.ToLower()].GetType() );
             CurrentGame.Start();
         }
@@ -118,7 +117,6 @@ namespace GamemodeCityClient
 
         private void EditMap( dynamic data, CallbackDelegate _callback ) {
             if( data.name == "mapName" ) {
-                Debug.WriteLine( data.data );
                 Globals.LastSelectedMap.Name = data.data;
             }
             else if( data.name == "mapGamemode" ) {

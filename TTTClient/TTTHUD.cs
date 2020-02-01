@@ -10,10 +10,21 @@ using System.Threading.Tasks;
 namespace TTTClient {
     class TTTHUD : HUD {
         public override void Draw() {
-            DrawRectangle( 0.025f, 0.86f, 0.07f, 0.03f, 200, 0, 0, 200 );       
+
+            DrawRectangle( 0.025f, 0.878f, 0.12f, 0.093f, 122, 127, 140, 255 );
+
+
             DrawHealth();
-            DrawScore();
+            //DrawScore();
             TeamText.Draw();
+
+            if( Globals.Team == 0 ) {
+                DrawRectangle( 0.025f, 0.8782425f, 0.073f, 0.025f, 200, 0, 0, 255 );
+                DrawRectangle( 0.025f, 0.8782425f, 0.007f, 0.025f, 150, 0, 0, 255 );
+            }
+
+            DrawRectangle( 0.098f, 0.87824f, 0.007f, 0.025f, 68, 74, 96, 255 );
+
             base.Draw();
         }
     }

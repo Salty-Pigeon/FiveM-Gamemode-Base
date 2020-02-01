@@ -18,8 +18,6 @@ namespace TTTClient
         public override void Start() {
             base.Start();
 
-            Debug.WriteLine( "Yew" );
-
             Globals.WriteChat( "TTT", "Game started", 255, 0, 0 );
 
         }

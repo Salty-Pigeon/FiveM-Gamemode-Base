@@ -19,28 +19,21 @@ namespace GamemodeCityClient {
 
         public static ClientMap LastSelectedMap;
 
+        public static int Team = 0;
 
         public static void Init() {
 
-            Debug.WriteLine( Weapons.Keys.First().ToString() );
         }
 
 
         public static void SendMap( ClientMap map ) {
-            Debug.WriteLine( "Saving map" );
 
-  
             string gamemode = "";
             if( map.Gamemodes != null ) {
                 gamemode = string.Join( ",", map.Gamemodes );
-            } else {
-                Debug.WriteLine( "Null" );
-            }
+            } 
 
             var spawns = map.SpawnsAsSendable();
-            foreach( var i in spawns ) {
-                Debug.WriteLine( i["position"].ToString() );
-            }
 
             TriggerServerEvent( "saltyMap:netUpdate", new Dictionary<string, dynamic> {
                 { "id", map.ID },

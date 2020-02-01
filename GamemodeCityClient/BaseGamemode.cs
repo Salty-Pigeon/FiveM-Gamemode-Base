@@ -25,7 +25,7 @@ namespace GamemodeCityClient {
         }
 
         public virtual void Start() {
-           
+            HUD.Start();
         }
 
         public virtual void Update() {
