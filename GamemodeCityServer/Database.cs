@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using CitizenFX.Core;
 using MySql.Data;
 using MySql.Data.MySqlClient;
+using GamemodeCityShared;
+
 
 namespace GamemodeCityServer {
     class Database {
@@ -25,8 +27,8 @@ namespace GamemodeCityServer {
             mapManager.Maps = Load();
         }
 
-        public List<Map> Load( ) {
-            List<Map> Maps = new List<Map>();
+        public List<ServerMap> Load( ) {
+            List<ServerMap> Maps = new List<ServerMap>();
             if( Connection.State == System.Data.ConnectionState.Open ) {
 
                 MySqlCommand comm = new MySqlCommand( "", Connection );
@@ -46,7 +48,7 @@ namespace GamemodeCityServer {
                     float sizeZ = MyDataReader.GetFloat( 8 );
 
 
-                    Map map = new Map( id, name, gamemode, posX, posY, posZ, sizeX, sizeY, sizeZ );
+                    ServerMap map = new ServerMap( id, name, gamemode.Split(',').ToList(), new Vector3(posX, posY, posZ), new Vector3(sizeX, sizeY, sizeZ) );
 
                     Maps.Add( map );
                 }
@@ -54,13 +56,44 @@ namespace GamemodeCityServer {
                 MyDataReader.Close();
             }
 
+            foreach( var map in Maps ) {
+                map.Spawns = LoadSpawns( map );
+            }
+
             return Maps;
         }
 
+        public List<Spawn> LoadSpawns( ServerMap map ) {
+            List<Spawn> spawns = new List<Spawn>();
+            if( Connection.State == System.Data.ConnectionState.Open ) {
 
+                MySqlCommand comm = new MySqlCommand( "", Connection );
+                comm.CommandText = "SELECT * FROM spawns WHERE map=" + map.ID;
+                MySqlDataReader MyDataReader = comm.ExecuteReader();
+
+                while( MyDataReader.Read() ) {
+
+                    
+                    int id = MyDataReader.GetInt32( 0 );
+                    int mapID = MyDataReader.GetInt32( 1 );
+                    int spawntype = MyDataReader.GetInt32( 2 );
+                    string spawnitem = MyDataReader.GetString( 3 );
+                    int team = MyDataReader.GetInt32( 4 );
+                    float posX = MyDataReader.GetFloat( 5 );
+                    float posY = MyDataReader.GetFloat( 6 );
+                    float posZ = MyDataReader.GetFloat( 7 );
+
+                    spawns.Add( new Spawn( new Vector3( posX, posY, posZ ), (SpawnType)spawntype, spawnitem, team ) );
+                    
+                }
+
+                MyDataReader.Close();
+            }
+            return spawns;
+        }
         
 
-        public static void SaveMap( Map map ) {
+        public static void SaveMap( ServerMap map ) {
             if( Connection.State == System.Data.ConnectionState.Open ) {
                 MySqlCommand comm = new MySqlCommand( "", Connection );
                 Debug.WriteLine( "Saving map ID " + map.ID );
@@ -78,7 +111,23 @@ namespace GamemodeCityServer {
             }
         }
 
-        public static void CreateMap( Map map ) {
+        public static void AddSpawn( ServerMap map, Spawn spawn ) {
+            if( Connection.State == System.Data.ConnectionState.Open ) {
+                MySqlCommand comm = new MySqlCommand( "", Connection );
+                Debug.WriteLine( "Adding spawn to map ID: " + map.ID );
+                comm.CommandText = "REPLACE INTO spawns(id,map,spawntype,spawnitem,team,posX,posY,posZ) VALUES(?id, ?map, ?spawntype, ?spawnitem, ?team, ?posX, ?posY, ?posZ)";
+                comm.Parameters.AddWithValue( "map", map.ID );
+                comm.Parameters.AddWithValue( "spawntype", spawn.SpawnType );
+                comm.Parameters.AddWithValue( "spawnitem", spawn.Entity );
+                comm.Parameters.AddWithValue( "team", spawn.Team );
+                comm.Parameters.AddWithValue( "posX", map.Position.X );
+                comm.Parameters.AddWithValue( "posY", map.Position.Y );
+                comm.Parameters.AddWithValue( "posZ", map.Position.Z );
+                comm.ExecuteNonQuery();
+            }
+        }
+
+        public static void CreateMap( ServerMap map ) {
             if( Connection.State == System.Data.ConnectionState.Open ) {
                 MySqlCommand comm = new MySqlCommand( "", Connection );
                 comm.CommandText = "INSERT INTO maps(name,gamemode,posX,posY,posZ,sizeX,sizeY,sizeZ) VALUES(?name, ?gamemode, ?posX, ?posY, ?posZ, ?sizeX, ?sizeY, ?sizeZ);";
@@ -96,7 +145,7 @@ namespace GamemodeCityServer {
             }
         }
 
-        public void SaveAll( Dictionary<string, Map> Maps ) {
+        public void SaveAll( Dictionary<string, ServerMap> Maps ) {
             if( Connection.State == System.Data.ConnectionState.Open ) {
                 foreach( var map in Maps ) {
                     SaveMap( map.Value );

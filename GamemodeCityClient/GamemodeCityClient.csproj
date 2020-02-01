@@ -57,15 +57,20 @@
     <Compile Include="Entity.cs" />
     <Compile Include="Globals.cs" />
     <Compile Include="Main.cs" />
-    <Compile Include="Map.cs" />
+    <Compile Include="ClientMap.cs" />
     <Compile Include="MapMenu.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Settings.cs" />
-    <Compile Include="Spawn.cs" />
     <Compile Include="Weapon.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\GamemodeCityShared\GamemodeCityShared.csproj">
+      <Project>{d3800439-e6a1-4b66-ba19-8199d14c0af6}</Project>
+      <Name>GamemodeCityShared</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

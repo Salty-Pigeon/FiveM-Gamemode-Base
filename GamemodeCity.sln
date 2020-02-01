@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TDMClient", "TDMClient\TDMC
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TDMServer", "TDMServer\TDMServer.csproj", "{BFB3D857-F17E-4BA3-BBC2-DF0FC57DD6A6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GamemodeCityShared", "GamemodeCityShared\GamemodeCityShared.csproj", "{D3800439-E6A1-4B66-BA19-8199D14C0AF6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{BFB3D857-F17E-4BA3-BBC2-DF0FC57DD6A6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BFB3D857-F17E-4BA3-BBC2-DF0FC57DD6A6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BFB3D857-F17E-4BA3-BBC2-DF0FC57DD6A6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D3800439-E6A1-4B66-BA19-8199D14C0AF6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D3800439-E6A1-4B66-BA19-8199D14C0AF6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D3800439-E6A1-4B66-BA19-8199D14C0AF6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D3800439-E6A1-4B66-BA19-8199D14C0AF6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

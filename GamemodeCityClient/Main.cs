@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using CitizenFX.Core.Native;
 using System.Dynamic;
-
+using GamemodeCityShared;
 
 namespace GamemodeCityClient
 {
@@ -21,13 +21,13 @@ namespace GamemodeCityClient
 
             EventHandlers["onClientResourceStart"] += new Action<string>( OnClientResourceStart );
             EventHandlers["salty:StartGame"] += new Action<int>(StartGame);
-            EventHandlers["salty:CacheMap"] += new Action<int, string, dynamic, Vector3, Vector3>( CacheMap );
+            EventHandlers["salty:CacheMap"] += new Action<int, string, dynamic, Vector3, Vector3, dynamic>( CacheMap );
             EventHandlers["salty:OpenMapGUI"] += new Action( OpenMapGUI );
 
             RegisterNUICallback( "salty_nui_loaded", SetNUIReady );
             RegisterNUICallback( "salty_enable", EnableGUI );
             RegisterNUICallback( "salty_disable", DisableGUI );
-            RegisterNUICallback( "salty_map_name", MapName );
+            RegisterNUICallback( "salty_edit_map", EditMap );
 
             base.Tick += Tick;
            
@@ -38,9 +38,44 @@ namespace GamemodeCityClient
             MapMenu = new MapMenu( "Maps", "Modify maps", Globals.Maps );
         }
 
-        void CacheMap( int id, string name, dynamic gamemodes, Vector3 pos, Vector3 size ) {
+        void CacheMap( int id, string name, dynamic gamemodes, Vector3 pos, Vector3 size, dynamic spawns ) {
             List<string> gamemode = gamemodes as List<string>;
-            Map map = new Map( id, name, gamemode, pos, size );
+            List<Spawn> spawnList = new List<Spawn>();
+
+            foreach( ExpandoObject spawn in spawns as List<dynamic> ) {
+
+                Vector3 position = new Vector3(0,0,0);
+                int spawnType = 0;
+                string spawnItem = "";
+                int team = 0;
+
+                Dictionary<string, dynamic> spawnData = new Dictionary<string, dynamic>();
+                foreach( var data in spawn as IDictionary<string, dynamic> ) {
+
+                    if( data.Key == "position" ) {
+                        position = (Vector3)data.Value;
+                    }
+
+                    if( data.Key == "spawntype" ) {
+                        spawnType = (int)data.Value;
+                    }
+
+                    if( data.Key == "spawnitem" ) {
+                        spawnItem = (string)data.Value;
+                    }
+
+                    if( data.Key == "team" ) {
+                        team = (int)data.Value;
+                    }
+                }
+
+                Spawn spawnPoint = new Spawn( position, (SpawnType)spawnType, spawnItem, team );
+                spawnList.Add( spawnPoint );
+
+            }
+
+            ClientMap map = new ClientMap( id, name, gamemode, pos, size, false );
+            map.Spawns = spawnList;
             Globals.Maps[id] = map;
         }
 
@@ -103,8 +138,14 @@ namespace GamemodeCityClient
             SetNuiFocus( false, false );
         }
 
-        private void MapName( dynamic data, CallbackDelegate _callback ) {
-            Globals.LastSelectedMap.Name = data;
+        private void EditMap( dynamic data, CallbackDelegate _callback ) {
+            if( data.name == "mapName" ) {
+                Debug.WriteLine( data.data );
+                Globals.LastSelectedMap.Name = data.data;
+            }
+            else if( data.name == "mapGamemode" ) {
+                Globals.LastSelectedMap.Gamemodes = (data.data as string).Split(',').ToList<string>();
+            }
         }
 
         public void SetNuiFocus( bool _focus, bool _cursor ) {

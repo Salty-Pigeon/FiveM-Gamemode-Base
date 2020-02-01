@@ -10,11 +10,11 @@ using System.Dynamic;
 namespace GamemodeCityServer {
     class MapManager {
 
-        public List<Map> Maps = new List<Map>();
+        public List<ServerMap> Maps = new List<ServerMap>();
 
 
-        public Map FindMap( Vector3 pos ) {
-            foreach( Map map in Maps ) {
+        public ServerMap FindMap( Vector3 pos ) {
+            foreach( ServerMap map in Maps ) {
                 if( map.IsInZone(pos) )
                     return map;
             }
@@ -24,10 +24,15 @@ namespace GamemodeCityServer {
         
         public void Update( [FromSource] Player ply, ExpandoObject expandoObject ) {
 
-            Dictionary<string, dynamic> updateDetails = expandoObject.ToDictionary( x => x.Key, x => x.Value );
-            if( !updateDetails["create"]  ) {
 
-                Map map = Maps.Find( x => x.ID == updateDetails["id"] );
+            Dictionary<string, dynamic> updateDetails = expandoObject.ToDictionary( x => x.Key, x => x.Value );
+            foreach( var item in updateDetails ) {
+                Debug.WriteLine( item.Key + " : " + item.Value.ToString() );
+            }
+
+            if( !(updateDetails["create"] )  ) {
+
+                ServerMap map = Maps.Find( x => x.ID == updateDetails["id"] );
 
                 if( map != null ) {
                     foreach( var detail in updateDetails ) {
@@ -38,7 +43,7 @@ namespace GamemodeCityServer {
                                 break;
 
                             case "gamemode":
-                                map.Gamemodes = detail.Value;
+                                map.Gamemodes = (detail.Value as string).Split(',').ToList<string>();
                                 break;
 
                             case "position":
@@ -49,14 +54,18 @@ namespace GamemodeCityServer {
                                 map.Size = detail.Value;
                                 break;
 
+                            case "spawns":
+
+                                break;
                         }
                     }
+
                     Database.SaveMap( map );
                 }
 
             } else {
-                Debug.WriteLine( "Creating" );
-                Map map = new Map( 0, updateDetails["name"], "", updateDetails["position"], updateDetails["size"] );
+                Debug.WriteLine( "True yay" );
+                ServerMap map = new ServerMap( 0, updateDetails["name"], new List<string>(), updateDetails["position"], updateDetails["size"] );
                 Maps.Add( map );
                 Database.CreateMap( map );
             }

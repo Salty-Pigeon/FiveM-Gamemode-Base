@@ -31,8 +31,8 @@ namespace GamemodeCityServer
 
 
         void OpenMapGUI( [FromSource] Player ply ) {
-            foreach( Map map in MapManager.Maps ) {
-                ply.TriggerEvent( "salty:CacheMap", map.ID, map.Name, map.Gamemodes, map.Position, map.Size );
+            foreach( ServerMap map in MapManager.Maps ) {
+                ply.TriggerEvent( "salty:CacheMap", map.ID, map.Name, map.Gamemodes, map.Position, map.Size, map.SpawnsAsSendable() );
             }
             ply.TriggerEvent( "salty:OpenMapGUI" );
         }

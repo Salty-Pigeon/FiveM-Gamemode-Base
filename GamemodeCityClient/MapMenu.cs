@@ -12,7 +12,7 @@ namespace GamemodeCityClient {
     public class MapMenu : BaseScript {
 
         //public static Map currentMap;
-        Dictionary<MenuItem, Map> mapIndex = new Dictionary<MenuItem, Map>();
+        Dictionary<MenuItem, ClientMap> mapIndex = new Dictionary<MenuItem, ClientMap>();
 
 
         private double DegreeToRadian( double angle ) {
@@ -20,9 +20,9 @@ namespace GamemodeCityClient {
         }
 
 
-        public void EditMapMenu( Menu parent, Map map ) {
+        public void EditMapMenu( Menu parent, ClientMap map ) {
 
-            Menu playerSpawnMenu = AddSubMenu( parent, "Edit " + map.Name + " player spawns" );
+
             Menu deleteMapMenu = AddSubMenu( parent, "Delete " + map.Name + "?" );
             deleteMapMenu.AddMenuItem( new MenuItem( "Yes", "" ) );
             deleteMapMenu.AddMenuItem( new MenuItem( "No", "" ) );
@@ -34,9 +34,12 @@ namespace GamemodeCityClient {
                     deleteMapMenu.CloseMenu();
                 }
             };
+
+
             parent.AddMenuItem( new MenuItem( "Show/Hide" ) );
             parent.AddMenuItem( new MenuItem( "Teleport to" ) );
             parent.AddMenuItem( new MenuItem( "Set Map Name" ) );
+            parent.AddMenuItem( new MenuItem( "Set Gamemodes" ) );
 
 
             parent.OnItemSelect += ( _menu, _item, _index ) => {
@@ -47,11 +50,18 @@ namespace GamemodeCityClient {
 
                 }
                 if( _item.Text == "Set Map Name" ) {
-                    Globals.SendNUIMessage( "enable", "" );
+                    Globals.SendNUIMessage( "enable", "mapName" );
+                }
+                if( _item.Text == "Set Gamemodes" ) {
+                    Globals.SendNUIMessage( "enable", "mapGamemode" );
+                }
+                if( _item.Text == "Save" ) {
+                    Globals.SendMap( map );
+                    parent.CloseMenu();
+                    TriggerServerEvent( "salty:netOpenMapGUI" );
                 }
             };
 
-            Menu modifyPosMenu = AddSubMenu( playerSpawnMenu, "Edit position" );
 
 
             Vector2 dimensions = new Vector2( 100, 100 );
@@ -68,11 +78,9 @@ namespace GamemodeCityClient {
             parent.AddMenuItem( sliderWidth );
             parent.AddMenuItem( sliderLength );
 
-            MenuItem playerSpawnItem = AddMenuItem( parent, playerSpawnMenu, "Player Spawns", "Modify player spawn points", "", true );
             MenuItem deleteMapItem = AddMenuItem( parent, deleteMapMenu, "Delete Map", "Delete entire map", "", true );
 
-            modifyPosMenu.AddMenuItem( new MenuItem( "Delete", "Deletes the selected position" ) );
-            parent.AddMenuItem( new MenuItem( "Save", "Saves new position and size" ) );
+
 
             parent.OnSliderPositionChange += ( _menu, _sliderItem, _oldPosition, _newPosition, _itemIndex ) => {
                 if( _sliderItem == sliderOffset ) {
@@ -115,17 +123,31 @@ namespace GamemodeCityClient {
 
             };
 
-            parent.OnItemSelect += ( _menu, _item, _index ) => {
-                if( _item.Text == "Save" ) {
-                    Globals.SendMap( map );
-                    parent.CloseMenu();
-                    TriggerServerEvent( "salty:netOpenMapGUI" );
-                }
-            };
+
+
+            Menu playerSpawnMenu = AddSubMenu( parent, "Edit " + map.Name + " player spawns" );
+            MenuItem playerSpawnItem = AddMenuItem( parent, playerSpawnMenu, "Player Spawns", "Modify player spawn points", "", true );
+
+            Menu addSpawnMenu = AddSubMenu( playerSpawnMenu, "Add new spawn" );
+            MenuItem addSpawnItem = AddMenuItem( playerSpawnMenu, addSpawnMenu, "Add spawn", "Add spawn point", "", true );
+
+            foreach( var spawn in map.Spawns ) {
+                playerSpawnMenu.AddMenuItem( new MenuItem(spawn.SpawnType.ToString()) );
+            }
+
+
+            MenuListItem spawnTypes = new MenuListItem( "Set spawn type", new List<string> { "Player", "Object", "Weapon" }, 0 );
+
+            addSpawnMenu.AddMenuItem( spawnTypes );
+            addSpawnMenu.AddMenuItem( new MenuItem( "Save" ) );
+
+
+            parent.AddMenuItem( new MenuItem( "Save", "Saves new position and size" ) );
+
 
         }
 
-        public MapMenu( string name, string subtitle, Dictionary<int, Map> Maps ) {
+        public MapMenu( string name, string subtitle, Dictionary<int, ClientMap> Maps ) {
 
 
             MenuController.MenuAlignment = MenuController.MenuAlignmentOption.Right;
@@ -134,7 +156,7 @@ namespace GamemodeCityClient {
 
             Menu createMapSubMenu = AddSubMenu( mapMenu, "Create map" );
             MenuItem createMapItem = AddMenuItem( mapMenu, createMapSubMenu, "Create Map", "Modify Map", "", true );
-            EditMapMenu( createMapSubMenu, new Map( "unnamed" + Game.GameTime, LocalPlayer.Character.Position, new Vector3( 0, 0, 0 ) ) );
+            EditMapMenu( createMapSubMenu, new ClientMap( -1, "unnamed" + Game.GameTime, new List<string>(), LocalPlayer.Character.Position, new Vector3( 0, 0, 0 ), true ) );
 
             foreach( var map in Maps ) {
                 Menu mapSubMenu = AddSubMenu( mapMenu, "Edit " + map.Value.Name );

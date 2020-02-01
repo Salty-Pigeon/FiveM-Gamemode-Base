@@ -15,9 +15,9 @@ namespace GamemodeCityClient {
 
         public static bool isNoclip = false;
 
-        public static Dictionary<int, Map> Maps = new Dictionary<int, Map>();
+        public static Dictionary<int, ClientMap> Maps = new Dictionary<int, ClientMap>();
 
-        public static Map LastSelectedMap;
+        public static ClientMap LastSelectedMap;
 
 
         public static void Init() {
@@ -26,10 +26,17 @@ namespace GamemodeCityClient {
         }
 
 
-        public static void SendMap( Map map ) {
+        public static void SendMap( ClientMap map ) {
+            Debug.WriteLine( "Saving map" );
+            string gamemode = "";
+            if( map.Gamemodes != null ) {
+                gamemode = string.Join( ",", map.Gamemodes );
+            } 
+
             TriggerServerEvent( "saltyMap:netUpdate", new Dictionary<string, dynamic> {
                 { "id", map.ID },
-                { "name", string.Join( " ", map.Name ) },
+                { "name", map.Name },
+                { "gamemode", "tdm" },
                 { "position", map.Position },
                 { "size", map.Size },
                 { "create", map.JustCreated }

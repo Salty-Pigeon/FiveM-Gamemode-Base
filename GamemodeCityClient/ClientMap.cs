@@ -5,34 +5,16 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using GamemodeCityShared;
+
 
 namespace GamemodeCityClient {
-    public class Map : BaseScript {
-
-        public Vector3 Position;
-        public Vector3 Size;
-        public string Name;
-        public List<string> Gamemodes = new List<string>();
+    public class ClientMap : Map {
 
         public bool JustCreated = false;
 
-        public int ID = -1;
-
-        List<Spawn> Spawns = new List<Spawn>();
-
-        public Map( int id, string name, List<string> gamemodes, Vector3 pos, Vector3 size ) {
-            Name = name;
-            Position = pos;
-            Size = size;
-            ID = id;
-            Gamemodes = gamemodes;
-        }
-
-        public Map( string name, Vector3 pos, Vector3 size ) {
-            Name = name;
-            Position = pos;
-            Size = size;
-            JustCreated = true;
+        public ClientMap( int id, string name, List<string> gamemode, Vector3 position, Vector3 size, bool justCreated ) : base ( id, name, gamemode, position, size ) {
+            JustCreated = justCreated;
         }
 
         public void DrawBoundarys() {
@@ -59,10 +41,6 @@ namespace GamemodeCityClient {
                 DrawMarker(2, spawn.Position.X, spawn.Position.Y, spawn.Position.Z, 0.0f, 0.0f, 0.0f, 0.0f, 180.0f, 0.0f, 2.0f, 2.0f, 2.0f, i / 10 * 6, i, i / 3, 200, false, true, 2, false, null, null, false);
                 i += 50;
             }
-        }
-
-        public bool IsInBounds( Vector3 pos ) {
-            return (pos.X > Position.X - (Size.X / 2) && pos.X < Position.X + (Size.X / 2) && pos.Y > Position.Y - (Size.Y / 2) && pos.Y < Position.Y + (Size.Y / 2));
         }
 
         public void ClearObjects() {
