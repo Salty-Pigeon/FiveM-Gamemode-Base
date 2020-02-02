@@ -51,13 +51,13 @@ namespace GamemodeCityClient {
 
                 }
                 if( _item.Text == "Set Map Name" ) {
-                    Globals.SendNUIMessage( "enable", "mapName" );
+                    ClientGlobals.SendNUIMessage( "enable", "mapName" );
                 }
                 if( _item.Text == "Set Gamemodes" ) {
-                    Globals.SendNUIMessage( "enable", "mapGamemode" );
+                    ClientGlobals.SendNUIMessage( "enable", "mapGamemode" );
                 }
                 if( _item.Text == "Save" ) {
-                    Globals.SendMap( map );
+                    ClientGlobals.SendMap( map );
                     parent.CloseMenu();
                     TriggerServerEvent( "salty:netOpenMapGUI" );
                 }
@@ -108,7 +108,7 @@ namespace GamemodeCityClient {
             };
 
             parent.OnMenuOpen += ( _ ) => {
-                Globals.LastSelectedMap = map;
+                ClientGlobals.LastSelectedMap = map;
                 if( map.JustCreated ) {
                     map.Position = LocalPlayer.Character.Position;
                     map.Size = new Vector3( 0, 0, 0 );
@@ -141,7 +141,7 @@ namespace GamemodeCityClient {
 
             playerSpawnMenu.OnItemSelect += ( _menu, _item, _index ) => {
                 if( _item.Text == "Save" ) {
-                    Globals.SendMap( map );
+                    ClientGlobals.SendMap( map );
                     playerSpawnMenu.CloseMenu();
                     TriggerServerEvent( "salty:netOpenMapGUI" );
                 }
@@ -206,29 +206,29 @@ namespace GamemodeCityClient {
 
             mapMenu.OnItemSelect += ( _menu, _item, _index ) => {
                 if( mapIndex.ContainsKey( _item ) ) {
-                    Globals.LastSelectedMap = mapIndex[_item];
+                    ClientGlobals.LastSelectedMap = mapIndex[_item];
                 }
             };
 
             mapMenu.OnIndexChange += ( _menu, _oldItem, _newItem, _oldIndex, _newIndex ) => {
                 if( mapIndex.ContainsKey( _newItem ) ) {
-                    Globals.LastSelectedMap = mapIndex[_newItem];
+                    ClientGlobals.LastSelectedMap = mapIndex[_newItem];
                 }
                 else {
-                    Globals.LastSelectedMap = null;
+                    ClientGlobals.LastSelectedMap = null;
                 }
             };
 
             mapMenu.OnMenuClose += ( _ ) => {
-                Globals.LastSelectedMap = null;
+                ClientGlobals.LastSelectedMap = null;
             };
 
         }
 
         public void Draw() {
-            if( Globals.LastSelectedMap != null ) {
-                Globals.LastSelectedMap.DrawBoundarys();
-                Globals.LastSelectedMap.DrawSpawns();
+            if( ClientGlobals.LastSelectedMap != null ) {
+                ClientGlobals.LastSelectedMap.DrawBoundarys();
+                ClientGlobals.LastSelectedMap.DrawSpawns();
             }
         }
 

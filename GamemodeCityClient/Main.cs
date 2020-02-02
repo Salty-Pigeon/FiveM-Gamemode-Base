@@ -19,11 +19,12 @@ namespace GamemodeCityClient
 
 
             EventHandlers["onClientResourceStart"] += new Action<string>( OnClientResourceStart );
-            EventHandlers["salty:StartGame"] += new Action<string, float>(StartGame);
+            EventHandlers["salty:StartGame"] += new Action<string, float, dynamic>(StartGame);
             EventHandlers["salty:CacheMap"] += new Action<int, string, string, Vector3, Vector3, dynamic>( CacheMap );
             EventHandlers["salty:OpenMapGUI"] += new Action( OpenMapGUI );
-            EventHandlers["salty:Spawn"] += new Action<Vector3>( Spawn );
-
+            EventHandlers["salty:Spawn"] += new Action<int, Vector3, uint>( Spawn );
+            EventHandlers["salty:SetTeam"] += new Action<int>( SetTeam );
+            
 
             RegisterNUICallback( "salty_nui_loaded", SetNUIReady );
             RegisterNUICallback( "salty_enable", EnableGUI );
@@ -38,7 +39,7 @@ namespace GamemodeCityClient
 
 
         void OpenMapGUI() {
-            MapMenu = new MapMenu( "Maps", "Modify maps", Globals.Maps );
+            MapMenu = new MapMenu( "Maps", "Modify maps", ClientGlobals.Maps );
         }
 
         void CacheMap( int id, string name, string gamemodes, Vector3 pos, Vector3 size, dynamic spawns ) {
@@ -47,15 +48,22 @@ namespace GamemodeCityClient
 
             map.SpawnsFromSendable( spawns );
 
-            Globals.Maps[id] = map;
+            ClientGlobals.Maps[id] = map;
         }
+
+        private void SetTeam( int team ) {
+            if( ClientGlobals.CurrentGame != null )
+                ClientGlobals.CurrentGame.SetTeam( team );
+        }
+
+        SaltyWeapon testWeapon;
 
         private void OnClientResourceStart( string resourceName ) {
             if( GetCurrentResourceName() != resourceName ) return;
 
             SetNuiFocus( false, false );
 
-            Globals.Init();
+            ClientGlobals.Init();
 
             RegisterCommand( "tdm", new Action<int, List<object>, string>( ( source, args, raw ) => {
                 TriggerServerEvent("salty:netStartGame", "tdm");
@@ -66,17 +74,23 @@ namespace GamemodeCityClient
             } ), false );
 
             RegisterCommand("noclip", new Action<int, List<object>, string>(( source, args, raw ) => {
-                Globals.SetNoClip(!Globals.isNoclip);
+                ClientGlobals.SetNoClip(!ClientGlobals.isNoclip);
             }), false);
 
             RegisterCommand( "maps", new Action<int, List<object>, string>( ( source, args, raw ) => {
                 TriggerServerEvent( "salty:netOpenMapGUI" );
             } ), false );
 
+            RegisterCommand( "weapon", new Action<int, List<object>, string>( ( source, args, raw ) => {
+                //testWeapon = new SaltyWeapon( SaltyEntity.Type.WEAPON, 3220176749, LocalPlayer.Character.Position + new Vector3( 0, 1, 0 ) );
+                Spawn( (int)SpawnType.WEAPON, LocalPlayer.Character.Position, 3220176749 );
+            } ), false );
+
+
 
             RegisterCommand( "mapname", new Action<int, List<object>, string>( ( source, args, raw ) => {
-                if( Globals.LastSelectedMap != null )
-                    TriggerServerEvent( "saltyMap:netUpdate", new Dictionary<string, dynamic> { { "create", false }, { "id", Globals.LastSelectedMap.ID }, { "name", string.Join( " ", args ) } } );
+                if( ClientGlobals.LastSelectedMap != null )
+                    TriggerServerEvent( "saltyMap:netUpdate", new Dictionary<string, dynamic> { { "create", false }, { "id", ClientGlobals.LastSelectedMap.ID }, { "name", string.Join( " ", args ) } } );
                 else
                     Globals.WriteChat( "Error", "Select a map with /maps", 255, 20, 20 );
             } ), false );
@@ -86,18 +100,33 @@ namespace GamemodeCityClient
 
 
 
-        public void StartGame( string ID, float gameLength ) {
-            Globals.CurrentGame = (BaseGamemode)Activator.CreateInstance( Globals.Gamemodes[ID.ToLower()].GetType() );
-            Globals.CurrentGame.Start( gameLength );
+        public void StartGame( string ID, float gameLength, dynamic gameWeps ) {
+
+            List<dynamic> weps = gameWeps as List<dynamic>;
+       
+            foreach( var wep in weps ) {
+                if( ClientGlobals.CurrentGame != null && !ClientGlobals.CurrentGame.GameWeapons.Contains(wep) )
+                    ClientGlobals.CurrentGame.GameWeapons.Add( wep );
+            }
+
+            if( ClientGlobals.CurrentGame != null ) {
+                ClientGlobals.CurrentGame.Map.ClearObjects();
+            }
+
+            ClientGlobals.CurrentGame = (BaseGamemode)Activator.CreateInstance( ClientGlobals.Gamemodes[ID.ToLower()].GetType() );
+            ClientGlobals.CurrentGame.Map = new ClientMap( -1, ID, new List<string>(), new Vector3( 0, 0, 0 ), new Vector3( 0, 0, 0 ), false );
+            ClientGlobals.CurrentGame.Start( gameLength );
         }
         
         private async Task Tick() {
-            if ( Globals.CurrentGame != null)
-                Globals.CurrentGame.Update();
-            if( Globals.isNoclip )
-                Globals.NoClipUpdate();
+            if ( ClientGlobals.CurrentGame != null)
+                ClientGlobals.CurrentGame.Update();
+            if( ClientGlobals.isNoclip )
+                ClientGlobals.NoClipUpdate();
             if( MapMenu != null )
                 MapMenu.Draw();
+            if( testWeapon != null )
+                testWeapon.Update();
         }
 
 
@@ -115,10 +144,10 @@ namespace GamemodeCityClient
 
         private void EditMap( dynamic data, CallbackDelegate _callback ) {
             if( data.name == "mapName" ) {
-                Globals.LastSelectedMap.Name = data.data;
+                ClientGlobals.LastSelectedMap.Name = data.data;
             }
             else if( data.name == "mapGamemode" ) {
-                Globals.LastSelectedMap.Gamemodes = (data.data as string).Split(',').ToList<string>();
+                ClientGlobals.LastSelectedMap.Gamemodes = (data.data as string).Split(',').ToList<string>();
             }
         }
 
@@ -137,8 +166,25 @@ namespace GamemodeCityClient
         }
 
 
-        public void Spawn( Vector3 spawn ) {
-            LocalPlayer.Character.Position = spawn;
+        public void Spawn( int typ, Vector3 spawn, uint hash ) {
+            SpawnType type = (SpawnType)typ;
+            if( type == SpawnType.PLAYER ) {
+                Debug.WriteLine( "Spawning Player" );
+
+                LocalPlayer.Character.Position = spawn;
+            } else if( type == SpawnType.WEAPON ) {
+                Debug.WriteLine( "Spawning weapon " + hash.ToString() + " at " + spawn.ToString() );
+                if( ClientGlobals.CurrentGame != null ) {
+                    if( ClientGlobals.CurrentGame.Map == null ) {
+                        Debug.WriteLine( "Map null" );
+                    } else {
+                        SaltyWeapon wep = new SaltyWeapon( SpawnType.WEAPON, hash, spawn );
+                        ClientGlobals.CurrentGame.Map.Weapons.Add( wep );
+                    }
+                } else {
+                    Debug.WriteLine( "Game null" );
+                }
+            }
         }
 
 

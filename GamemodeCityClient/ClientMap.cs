@@ -14,6 +14,8 @@ namespace GamemodeCityClient {
 
         public bool Draw = false;
 
+        public List<SaltyWeapon> Weapons = new List<SaltyWeapon>();
+
         public ClientMap( int id, string name, List<string> gamemode, Vector3 position, Vector3 size, bool justCreated ) : base ( id, name, gamemode, position, size ) {
             JustCreated = justCreated;
         }
@@ -39,22 +41,13 @@ namespace GamemodeCityClient {
         public void DrawSpawns() {
 
             foreach( Spawn spawn in Spawns ) {
-                int r = 255;
-                int g = 0;
-                int b = 0;
-                /*
-                if( spawn.SpawnType == SpawnType.PLAYER ) {
-                    r = 255;
-                } else if ( spawn.SpawnType == SpawnType.WEAPON ) {
-                    g = 255;
-                } else {
-                    b = 255;
-                }
-                */
-                DrawMarker( 2, spawn.Position.X, spawn.Position.Y, spawn.Position.Z+1, 0.0f, 0.0f, 0.0f, 0.0f, 180.0f, 0.0f, 2.0f, 2.0f, 2.0f, r, g, b, 50, false, true, 2, false, null, null, false );
-
+                DrawMarker( 2, spawn.Position.X, spawn.Position.Y, spawn.Position.Z + 1, 0.0f, 0.0f, 0.0f, 0.0f, 180.0f, 0.0f, 2.0f, 2.0f, 2.0f, spawn.R, spawn.G, spawn.B, 50, false, true, 2, false, null, null, false );
             }
            
+        }
+
+        public void RemoveObject( SaltyEntity wep ) {
+            Weapons.Remove( wep as SaltyWeapon );
         }
 
         public void ClearObjects() {

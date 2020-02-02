@@ -12,7 +12,6 @@ namespace GamemodeCityServer
     public class Main : BaseScript
     {
 
-        BaseGamemode CurrentGame;
         MapManager MapManager;
         Database Database;
 
@@ -48,14 +47,14 @@ namespace GamemodeCityServer
 
             if( killerID > -1 ) {
                 Debug.WriteLine("Killer is " + GetPlayerName( GetPlayerFromIndex( killerID ) ) );
-                CurrentGame.OnPlayerKilled( ply, GetPlayerFromIndex( killerID ) );
+                ServerGlobals.CurrentGame.OnPlayerKilled( ply, GetPlayerFromIndex( killerID ) );
             }
 
         }
 
         private void PlayerDied( [FromSource] Player ply, int killerType, List<dynamic> deathcords ) {
             Vector3 coords = new Vector3( (float)deathcords[0], (float)deathcords[1], (float)deathcords[2] );
-            CurrentGame.OnPlayerDied( ply, killerType, coords );
+            ServerGlobals.CurrentGame.OnPlayerDied( ply, killerType, coords );
             
         }
 
@@ -70,10 +69,10 @@ namespace GamemodeCityServer
 
 
         public void StartGame( [FromSource] Player ply, string ID ) {
-            CurrentGame = (BaseGamemode)Activator.CreateInstance( Globals.Gamemodes[ID.ToLower()].GetType() );
-            CurrentGame.Map = MapManager.FindMap( ID );
-            CurrentGame.Start();
-            Globals.WriteChat( ID.ToUpper(), "Playing map " + CurrentGame.Map.Name, 200, 30, 30 );
+            ServerGlobals.CurrentGame = (BaseGamemode)Activator.CreateInstance( ServerGlobals.Gamemodes[ID.ToLower()].GetType() );
+            ServerGlobals.CurrentGame.Map = MapManager.FindMap( ID );
+            ServerGlobals.CurrentGame.Start();
+            ServerGlobals.WriteChat( ID.ToUpper(), "Playing map " + ServerGlobals.CurrentGame.Map.Name, 200, 30, 30 );
         }
 
 

@@ -12,7 +12,7 @@ namespace GamemodeCityServer {
 
         string Gamemode;
 
-        public Map Map;
+        public ServerMap Map;
 
         public Settings Settings = new Settings();
 
@@ -21,13 +21,13 @@ namespace GamemodeCityServer {
 
         public BaseGamemode( string gamemode ) {
             Gamemode = gamemode.ToLower();
-            if( !Globals.Gamemodes.ContainsKey( Gamemode ) )
-                Globals.Gamemodes.Add( Gamemode, this);
+            if( !ServerGlobals.Gamemodes.ContainsKey( Gamemode ) )
+                ServerGlobals.Gamemodes.Add( Gamemode, this);
 
         }
 
         public virtual void Start( ) {
-            TriggerClientEvent( "salty:StartGame", Gamemode, Settings.GameLength );
+            TriggerClientEvent( "salty:StartGame", Gamemode, Settings.GameLength, Settings.Weapons );
         }
 
         public virtual void Update() {
@@ -42,8 +42,13 @@ namespace GamemodeCityServer {
 
         }
 
-        public void Spawn( Player player, int team ) {
-            player.TriggerEvent( "salty:Spawn", Map.GetSpawn( SpawnType.PLAYER, team ).Position );
+        public void SpawnPlayer( Player player, int team ) {
+            player.TriggerEvent( "salty:Spawn", (int)SpawnType.PLAYER, Map.GetSpawn( SpawnType.PLAYER, team ).Position, 0 );
+        }
+
+        public void SpawnWeapon( Vector3 pos, uint hash ) {
+            Debug.WriteLine( "Spawning weapon " + Globals.Weapons[hash]["Name"] );
+            TriggerClientEvent( "salty:Spawn", (int)SpawnType.WEAPON, pos, hash );
         }
 
         public void AddScore( Player ply, float amount ) {
@@ -52,6 +57,10 @@ namespace GamemodeCityServer {
             } else {
                 PlayerScores.Add( ply.Handle, amount );
             }
+        }
+
+        public void SetTeam( Player ply, int team ) {
+            ply.TriggerEvent( "salty:SetTeam", team );
         }
 
     }

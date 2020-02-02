@@ -13,19 +13,23 @@ namespace TTTServer
     {
 
         public Main() : base( "TTT" ) {
-            Settings.Weapons = new List<uint>() { 2725352035, 453432689, 736523883, 3220176749 };
+            Settings.Weapons = new List<uint>() { 2725352035, 453432689, 736523883, 3220176749, 4024951519, 2937143193, 3173288789 };
             Settings.GameLength = 5 * 1000 * 60;
+            
         }
 
         public override void Start() {
 
             base.Start();
 
+            Map.SpawnGuns();
+
             PlayerList playerList = new PlayerList();
 
 
             foreach( var player in playerList ) {
-                Spawn( player, 0 );
+                SpawnPlayer( player, 0 );
+                SetTeam( player, 0 );
             }
 
 

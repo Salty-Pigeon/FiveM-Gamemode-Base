@@ -14,7 +14,9 @@ namespace GamemodeCityShared {
         public string Entity;
         public int Team;
         public int ID;
-
+        public int R = 0;
+        public int G = 0;
+        public int B = 0;
 
         public Spawn( int id, Vector3 position, SpawnType type, string entName, int team ) {
             ID = id;
@@ -22,6 +24,17 @@ namespace GamemodeCityShared {
             SpawnType = type;
             Entity = entName;
             Team = team;
+            switch( type ) {
+                case SpawnType.PLAYER:
+                    R = 200;
+                    break;
+                case SpawnType.OBJECT:
+                    G = 200;
+                    break;
+                case SpawnType.WEAPON:
+                    B = 200;
+                    break;
+            }
         }
 
         public Dictionary<string,dynamic> SpawnAsSendable() {

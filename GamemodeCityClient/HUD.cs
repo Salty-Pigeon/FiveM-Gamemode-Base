@@ -26,21 +26,21 @@ namespace GamemodeCityClient {
         private float showScoreLength = 500;
         public float GoalTextTime = 0;
 
-        float latestAmmo = 0f;
+        public float latestAmmo = 0f;
 
 
         public virtual void Start() {
             HealthText.Scale = 0.4f;
             AmmoText.Scale = 0.4f;
             GameTimeText.Scale = 0.35f;
-
-            latestAmmo = Game.PlayerPed.Weapons.Current.Ammo - Game.PlayerPed.Weapons.Current.AmmoInClip;
-
-
+            DisplayRadar( false );
         }
+
         public virtual void DrawHealth() {
 
-            HideHudAndRadarThisFrame();
+            //HideHudAndRadarThisFrame();
+
+            HideReticle();
 
             HealthText.Caption = Game.Player.Character.Health.ToString();
 
@@ -76,7 +76,7 @@ namespace GamemodeCityClient {
         }
 
         public virtual void Draw() {
-
+            
         }
 
         public void DrawText2D( float x, float y, string text, float scale, int r, int g, int b, int a, bool centre ) {
@@ -216,7 +216,7 @@ namespace GamemodeCityClient {
 
         public void DrawGameTimer() {
 
-            TimeSpan time = TimeSpan.FromMilliseconds( Globals.CurrentGame.GameTimerEnd - GetGameTimer() );
+            TimeSpan time = TimeSpan.FromMilliseconds( ClientGlobals.CurrentGame.GameTimerEnd - GetGameTimer() );
 
             GameTimeText.Caption = string.Format( "{0:00}:{1:00}", Math.Ceiling( time.TotalMinutes - 1 ), time.Seconds );
 

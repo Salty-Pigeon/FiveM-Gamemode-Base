@@ -55,7 +55,7 @@
   <ItemGroup>
     <Compile Include="BaseGamemode.cs" />
     <Compile Include="SaltyEntity.cs" />
-    <Compile Include="Globals.cs" />
+    <Compile Include="ClientGlobals.cs" />
     <Compile Include="HUD.cs" />
     <Compile Include="Main.cs" />
     <Compile Include="ClientMap.cs" />

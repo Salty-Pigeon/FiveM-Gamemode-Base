@@ -9,9 +9,10 @@ using System.Dynamic;
 using GamemodeCityShared;
 
 namespace GamemodeCityServer {
-    public class Globals : BaseScript {
+    public class ServerGlobals : BaseScript {
         public static Dictionary<string, BaseGamemode> Gamemodes = new Dictionary<string, BaseGamemode>();
 
+        public static BaseGamemode CurrentGame;
 
         public static void SpawnPlayer( Spawn spawn, Player player ) {
 

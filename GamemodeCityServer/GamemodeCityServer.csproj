@@ -50,11 +50,12 @@
   <ItemGroup>
     <Compile Include="BaseGamemode.cs" />
     <Compile Include="Database.cs" />
-    <Compile Include="Globals.cs" />
+    <Compile Include="ServerGlobals.cs" />
     <Compile Include="Main.cs" />
     <Compile Include="ServerMap.cs" />
     <Compile Include="MapManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Settings.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\GamemodeCityShared\GamemodeCityShared.csproj">

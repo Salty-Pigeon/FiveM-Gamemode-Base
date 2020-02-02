@@ -36,11 +36,15 @@ namespace GamemodeCityShared {
         public Spawn GetSpawn( SpawnType type, int team ) {
             List<Spawn> shuffledSpawns = Spawns.OrderBy( a => Guid.NewGuid() ).ToList();
             foreach( var spawn in shuffledSpawns ) {
-                if( spawn.Team == team && spawn.SpawnType == type ) {
+                if( (spawn.Team == team && type == SpawnType.PLAYER) && spawn.SpawnType == type ) {
                     return spawn;
                 }
             }
             return new Spawn( -1, new Vector3( 0, 0, 0 ), SpawnType.PLAYER, "random", 0 );
+        }
+
+        public List<Spawn> GetSpawns( SpawnType type ) {
+            return Spawns.Select( x => x ).Where( x => x.SpawnType == type ).ToList();
         }
 
         public List<Dictionary<string,dynamic>> SpawnsAsSendable() {
