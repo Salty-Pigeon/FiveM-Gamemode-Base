@@ -14,7 +14,7 @@ namespace TTTServer
 
         public Main() : base( "TTT" ) {
             Settings.Weapons = new List<uint>() { 2725352035, 453432689, 736523883, 3220176749, 4024951519, 2937143193, 3173288789 };
-            Settings.GameLength = 5 * 1000 * 60;
+            Settings.GameLength = (1 * 1000 * 60) / 8;
             
         }
 

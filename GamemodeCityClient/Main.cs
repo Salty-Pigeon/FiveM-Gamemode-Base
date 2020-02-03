@@ -20,6 +20,7 @@ namespace GamemodeCityClient
 
             EventHandlers["onClientResourceStart"] += new Action<string>( OnClientResourceStart );
             EventHandlers["salty:StartGame"] += new Action<string, float, dynamic>(StartGame);
+            EventHandlers["salty:EndGame"] += new Action(EndGame);
             EventHandlers["salty:CacheMap"] += new Action<int, string, string, Vector3, Vector3, dynamic>( CacheMap );
             EventHandlers["salty:OpenMapGUI"] += new Action( OpenMapGUI );
             EventHandlers["salty:Spawn"] += new Action<int, Vector3, uint>( Spawn );
@@ -88,13 +89,6 @@ namespace GamemodeCityClient
 
 
 
-            RegisterCommand( "mapname", new Action<int, List<object>, string>( ( source, args, raw ) => {
-                if( ClientGlobals.LastSelectedMap != null )
-                    TriggerServerEvent( "saltyMap:netUpdate", new Dictionary<string, dynamic> { { "create", false }, { "id", ClientGlobals.LastSelectedMap.ID }, { "name", string.Join( " ", args ) } } );
-                else
-                    Globals.WriteChat( "Error", "Select a map with /maps", 255, 20, 20 );
-            } ), false );
-
 
         }
 
@@ -116,6 +110,13 @@ namespace GamemodeCityClient
             ClientGlobals.CurrentGame = (BaseGamemode)Activator.CreateInstance( ClientGlobals.Gamemodes[ID.ToLower()].GetType() );
             ClientGlobals.CurrentGame.Map = new ClientMap( -1, ID, new List<string>(), new Vector3( 0, 0, 0 ), new Vector3( 0, 0, 0 ), false );
             ClientGlobals.CurrentGame.Start( gameLength );
+        }
+
+        public void EndGame() {
+            if( ClientGlobals.CurrentGame != null ) {
+                ClientGlobals.CurrentGame.End();
+                ClientGlobals.CurrentGame = null;
+            }   
         }
         
         private async Task Tick() {
@@ -169,11 +170,8 @@ namespace GamemodeCityClient
         public void Spawn( int typ, Vector3 spawn, uint hash ) {
             SpawnType type = (SpawnType)typ;
             if( type == SpawnType.PLAYER ) {
-                Debug.WriteLine( "Spawning Player" );
-
                 LocalPlayer.Character.Position = spawn;
             } else if( type == SpawnType.WEAPON ) {
-                Debug.WriteLine( "Spawning weapon " + hash.ToString() + " at " + spawn.ToString() );
                 if( ClientGlobals.CurrentGame != null ) {
                     if( ClientGlobals.CurrentGame.Map == null ) {
                         Debug.WriteLine( "Map null" );

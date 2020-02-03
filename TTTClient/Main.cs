@@ -20,8 +20,6 @@ namespace TTTClient
         public override void Start( float gameTime ) {
             base.Start( gameTime );
 
-            Globals.WriteChat( "TTT", "Game started", 255, 0, 0 );
-
         }
 
         public override void Update() {

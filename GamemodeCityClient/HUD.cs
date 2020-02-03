@@ -36,40 +36,7 @@ namespace GamemodeCityClient {
             DisplayRadar( false );
         }
 
-        public virtual void DrawHealth() {
 
-            //HideHudAndRadarThisFrame();
-
-            HideReticle();
-
-            HealthText.Caption = Game.Player.Character.Health.ToString();
-
-
-            AmmoText.Caption = Game.PlayerPed.Weapons.Current.AmmoInClip.ToString() + " + " + latestAmmo;
-
-            if( Game.PlayerPed.IsReloading ) {
-                latestAmmo = Game.PlayerPed.Weapons.Current.Ammo - Game.PlayerPed.Weapons.Current.AmmoInClip;
-            }
-
-            DrawRectangle( 0.025f, 0.9038f, 0.12f, 0.035f, 0, 0, 0, 200 );
-            float healthPercent = (float)Game.Player.Character.Health / Game.Player.Character.MaxHealth;
-            if( healthPercent < 0 )
-                healthPercent = 0;
-            if( healthPercent > 1 )
-                healthPercent = 1;
-            DrawRectangle( 0.025f, 0.9038f, healthPercent * 0.12f, 0.035f, 200, 46, 48, 255 );
-            DrawRectangle( 0.025f, 0.9038f, 0.007f, 0.035f, 150, 1, 3, 255 );
-
-            float ammoPercent = (float)Game.PlayerPed.Weapons.Current.AmmoInClip / Game.PlayerPed.Weapons.Current.MaxAmmoInClip;
-
-            DrawRectangle( 0.025f, 0.94f, 0.12f, 0.03f, 0, 0, 0, 200 );
-            DrawRectangle( 0.025f, 0.94f, ammoPercent * 0.12f, 0.03f, 206, 155, 1, 200 );
-            DrawRectangle( 0.025f, 0.94f, 0.007f, 0.03f, 160, 106, 0, 255 );
-
-            HealthText.Draw();
-            AmmoText.Draw();
-
-        }
 
         public void DrawRectangle( float x, float y, float width, float height, int r, int g, int b, int alpha ) {
             DrawRect( x + (width / 2), y + (height / 2), width, height, r, g, b, alpha );

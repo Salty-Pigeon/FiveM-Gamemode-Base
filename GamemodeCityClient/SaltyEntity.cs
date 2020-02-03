@@ -17,7 +17,7 @@ namespace GamemodeCityClient {
         public Vector3 Position;
 
         public float pickupTime = 0;
-        public float pickupDelay = 5 * 1000;
+        public float pickupDelay = 1 * 1000;
         public float pickupRange = 5;
 
         public bool Equipped = false;
@@ -32,19 +32,19 @@ namespace GamemodeCityClient {
         }
 
         public void CreateEntity() {
-            Debug.WriteLine( "ID is " + ID );
-            ID = CreateObject( GetHashKey( Model ), Position.X, Position.Y, Position.Z, true, true, true);
-            SetObjectPhysicsParams( ID, 10, 10, 10, 3, 3, 10, 10, 10, 10, 10, 10 );
-            PlaceObjectOnGroundProperly( ID );
-            SetObjectSomething( ID, true );
+            ID = CreateObject( GetHashKey( Model ), Position.X, Position.Y, Position.Z, true, true, false);
+            //SetObjectPhysicsParams( ID, 100, 10, 10, 3, 3, 10, 10, 10, 10, 10, 10 );
+            //PlaceObjectOnGroundProperly( ID );
+            //SetObjectSomething( ID, true );
+            //Drop();
+            //ActivatePhysics( ID );
             Drop();
-            ActivatePhysics( ID );
             Position = GetEntityCoords( ID, true );
         }
 
         public void Drop() {
             Equipped = false;
-            SetObjectPhysicsParams(ID, 10, 10, 10, 3, 3, 10, 10, 10, 10, 10, 10);
+            SetObjectPhysicsParams(ID, 100, 10, 10, 3, 3, 10, 10, 10, 10, 10, 10);
             PlaceObjectOnGroundProperly(ID);
             ActivatePhysics(ID);
             pickupTime = GetGameTimer() + pickupDelay;
@@ -60,7 +60,6 @@ namespace GamemodeCityClient {
         }
 
         public void Destroy() {
-            Debug.WriteLine( "Deleting " + ID );
             DeleteObject( ref ID );
             if( ClientGlobals.CurrentGame != null ) {
                 ClientGlobals.CurrentGame.Map.RemoveObject( this );

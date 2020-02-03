@@ -38,8 +38,6 @@ namespace GamemodeCityClient {
 
         public void Equip() {
 
-            Debug.WriteLine( "Equipped" );
-
             Equipped = true;
             int pedId = PlayerPedId();
 

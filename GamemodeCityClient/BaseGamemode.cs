@@ -28,9 +28,16 @@ namespace GamemodeCityClient {
         }
 
         public virtual void Start( float gameTime ) {
+            ClientGlobals.WriteChat( Gamemode.ToUpper(), "Game started.", 255, 0, 0 );
             RemoveAllPedWeapons( PlayerPedId(), true );
             GameTimerEnd = GetGameTimer() + gameTime;
             HUD.Start();
+        }
+
+        public virtual void End() {
+            ClientGlobals.WriteChat( Gamemode.ToUpper(), "Game finished!", 255, 0, 0 );
+            Map.ClearObjects();
+            ClientGlobals.CurrentGame = null;
         }
 
         public virtual void Update() {
@@ -82,8 +89,6 @@ namespace GamemodeCityClient {
 
         public void DropWeapon() {
 
-            Debug.WriteLine( "Dropping" );
-
             if( Game.PlayerPed.Weapons.Current.Hash.ToString() == "Unarmed" )
                 return;
 
@@ -101,7 +106,12 @@ namespace GamemodeCityClient {
 
 
         public virtual void OnWeaponPickup( uint hash ) {
-            PlayerWeapons.Add( hash );
+            if( PlayerWeapons.Contains(hash) ) {   
+                HUD.latestAmmo = Math.Max( 0, Game.PlayerPed.Weapons.Current.Ammo - LocalPlayer.Character.Weapons.Current.DefaultClipSize );
+            }
+            else {
+                PlayerWeapons.Add( hash );
+            }
 
         }
 
@@ -118,7 +128,9 @@ namespace GamemodeCityClient {
             int ped = PlayerPedId();
             int pedAmmo = GetAmmoInPedWeapon( ped, Hash );
             SetPedAmmo( ped, Hash, pedAmmo + ammo );
-            HUD.latestAmmo = Math.Max( 0, Game.PlayerPed.Weapons.Current.Ammo - LocalPlayer.Character.Weapons.Current.DefaultClipSize );
+            if( (uint)Game.PlayerPed.Weapons.Current.Hash == Hash ) {
+                HUD.latestAmmo = Math.Max( 0, Game.PlayerPed.Weapons.Current.Ammo - LocalPlayer.Character.Weapons.Current.AmmoInClip );
+            }
         }
 
 
@@ -133,7 +145,6 @@ namespace GamemodeCityClient {
         public bool CanPickupWeapon( uint hash ) {
             foreach( var wep in PlayerWeapons ) {
                 if( GetWeapontypeGroup(hash) == GetWeapontypeGroup( wep ) ) {
-                    Debug.WriteLine( "Can't pickup" );
                     return false;
                 }
             }

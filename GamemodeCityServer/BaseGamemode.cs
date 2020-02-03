@@ -19,6 +19,8 @@ namespace GamemodeCityServer {
         public Dictionary<string, float> PlayerScores = new Dictionary<string, float>();
         public Dictionary<int, float> TeamScores = new Dictionary<int, float>();
 
+        public float GameTime = 0;
+
         public BaseGamemode( string gamemode ) {
             Gamemode = gamemode.ToLower();
             if( !ServerGlobals.Gamemodes.ContainsKey( Gamemode ) )
@@ -27,11 +29,16 @@ namespace GamemodeCityServer {
         }
 
         public virtual void Start( ) {
+            GameTime = GetGameTimer() + Settings.GameLength;
             TriggerClientEvent( "salty:StartGame", Gamemode, Settings.GameLength, Settings.Weapons );
         }
 
         public virtual void Update() {
 
+        }
+
+        public virtual void End() {
+            TriggerClientEvent( "salty:EndGame" );
         }
 
         public virtual void OnPlayerKilled( Player attacker, string victimSrc ) {
@@ -47,7 +54,6 @@ namespace GamemodeCityServer {
         }
 
         public void SpawnWeapon( Vector3 pos, uint hash ) {
-            Debug.WriteLine( "Spawning weapon " + Globals.Weapons[hash]["Name"] );
             TriggerClientEvent( "salty:Spawn", (int)SpawnType.WEAPON, pos, hash );
         }
 

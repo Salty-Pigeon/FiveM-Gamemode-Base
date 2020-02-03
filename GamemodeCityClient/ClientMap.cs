@@ -51,8 +51,13 @@ namespace GamemodeCityClient {
         }
 
         public void ClearObjects() {
+            Debug.WriteLine( "Clearing" );
+            foreach( var wep in Weapons.ToList() ) {
+                wep.Destroy();
+            }
             ClearAreaOfObjects(Position.X, Position.Y, Position.Z, Size.X + Size.Y + Size.Z, 0);
             ClearAreaOfProjectiles(Position.X, Position.Y, Position.Z, Size.X + Size.Y + Size.Z, true);
+            
         }
 
     }

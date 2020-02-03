@@ -11,14 +11,7 @@ using System.Dynamic;
 
 namespace GamemodeCityShared {
     public class Globals : BaseScript {
-
-
-        public static void WriteChat( string prefix, string str, int r, int g, int b ) {
-            TriggerEvent("chat:addMessage", new {
-                color = new[] { r, g, b },
-                args = new[] { prefix, str }
-            });
-        }
+  
 
         public static Vector3 StringToVector3( string vector ) {
             vector = vector.Replace("X:", "");

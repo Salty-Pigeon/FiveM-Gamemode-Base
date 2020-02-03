@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Dynamic;
+using GamemodeCityShared;
 
 namespace GamemodeCityServer
 {
@@ -28,8 +29,18 @@ namespace GamemodeCityServer
             EventHandlers["baseevents:onPlayerKilled"] += new Action<Player, int, ExpandoObject>( PlayerKilled );
             EventHandlers["baseevents:onPlayerDied"] += new Action<Player, int, List<dynamic>>( PlayerDied );
 
+            base.Tick += Tick;
 
+        }
 
+        private async Task Tick() {
+            if( ServerGlobals.CurrentGame != null ) {
+                ServerGlobals.CurrentGame.Update();
+               if( ServerGlobals.CurrentGame.GameTime < GetGameTimer() ) {
+                    ServerGlobals.CurrentGame.End();
+                    ServerGlobals.CurrentGame = null;
+               }
+            }
         }
 
         private void PlayerKilled( [FromSource] Player ply, int killerID, ExpandoObject deathData ) {
