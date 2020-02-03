@@ -9,7 +9,7 @@ namespace GamemodeCityServer {
 
         public List<uint> Weapons = new List<uint>();
         public Dictionary<uint, float> WeaponWeights = new Dictionary<uint, float>();
-        public float GameLength;
+        public float GameLength = 0;
 
         public int Lives = 0;
     }

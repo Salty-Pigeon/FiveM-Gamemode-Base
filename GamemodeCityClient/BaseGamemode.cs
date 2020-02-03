@@ -18,6 +18,8 @@ namespace GamemodeCityClient {
         public float GameTimerEnd;
 
         public List<uint> GameWeapons = new List<uint>();
+        IList<uint> PlayerWeapons = new List<uint>();
+        uint lastWep = 0;
 
 
         public BaseGamemode( string gamemode ) {
@@ -52,8 +54,7 @@ namespace GamemodeCityClient {
             Controls();
         }
 
-        IList<uint> PlayerWeapons = new List<uint>();
-        uint lastWep = 0;
+        
 
         public virtual void Events() {
 

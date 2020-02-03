@@ -17,13 +17,24 @@ namespace TDMServer
         
         public Main() : base("TDM") {
             Settings.Weapons =  new List<uint>(){ 2725352035, 453432689, 736523883, 3220176749 };
+            Settings.GameLength = (1 * 1000 * 60);
+
         }
 
         public override void Start() {
 
-            Globals.WriteChat( "TDM", "Game started", 255, 0, 0 );
             base.Start();
-            
+
+            Map.SpawnGuns();
+
+            PlayerList playerList = new PlayerList();
+
+
+            foreach( var player in playerList ) {
+                SpawnPlayer( player, 0 );
+                SetTeam( player, 0 );
+            }
+
         }
 
         public override void OnPlayerKilled( Player attacker, string victimSrc ) {
