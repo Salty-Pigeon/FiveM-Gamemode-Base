@@ -10,7 +10,7 @@ using System.Drawing;
 using GamemodeCityShared;
 
 namespace GamemodeCityClient {
-    public class MapMenu : BaseScript {
+    public class MapMenu : SaltyMenu {
 
         //public static Map currentMap;
         Dictionary<MenuItem, ClientMap> mapIndex = new Dictionary<MenuItem, ClientMap>();
@@ -232,20 +232,7 @@ namespace GamemodeCityClient {
             }
         }
 
-        public MenuItem AddMenuItem( Menu parent, Menu child, string name, string description, string label, bool bindMenu ) {
-            MenuItem menuItem = new MenuItem( name, description ) { Label = label };
-            parent.AddMenuItem( menuItem );
-            if( bindMenu ) {
-                MenuController.BindMenuItem( parent, child, menuItem );
-            }
-            return menuItem;
-        }
-
-        public Menu AddSubMenu( Menu parent, string name ) {
-            Menu subMenu = new Menu( null, name );
-            MenuController.AddSubmenu( parent, subMenu );
-            return subMenu;
-        }
+        
 
 
     }

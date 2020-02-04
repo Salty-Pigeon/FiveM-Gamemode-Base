@@ -34,6 +34,14 @@
     <Reference Include="CitizenFX.Core">
       <HintPath>..\GamemodeCityClient\CitizenFX.Core.dll</HintPath>
     </Reference>
+    <Reference Include="CitizenFX.Core.Client, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\GamemodeCityClient\CitizenFX.Core.Client.dll</HintPath>
+    </Reference>
+    <Reference Include="MenuAPI, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\GamemodeCityClient\bin\Debug\MenuAPI.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -46,6 +54,7 @@
   <ItemGroup>
     <Compile Include="Main.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TraitorMenu.cs" />
     <Compile Include="TTTHUD.cs" />
   </ItemGroup>
   <ItemGroup>

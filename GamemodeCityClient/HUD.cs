@@ -20,7 +20,6 @@ namespace GamemodeCityClient {
         public SaltyText AddScoreText = new SaltyText( 0.5f + (8), 0.025f, 0, 0, 0.3f, "", 255, 255, 255, 255, false, true, 0, true );
         public SaltyText TeamText = new SaltyText( 0.063f, 0.878f, 0, 0, 0.3f, "Traitor", 255, 255, 255, 255, false, true, 0, true );
 
-
         public float lastLooked = 0;
         private float showScoreTimer = 0;
         private float showScoreLength = 500;

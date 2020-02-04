@@ -21,15 +21,17 @@ namespace GamemodeCityClient {
         IList<uint> PlayerWeapons = new List<uint>();
         uint lastWep = 0;
 
+        public int SPECTATOR = -1;
 
         public BaseGamemode( string gamemode ) {
+            Globals.GameCoins = 0;
             Gamemode = gamemode.ToLower();
             if( !ClientGlobals.Gamemodes.ContainsKey( Gamemode ) )
                 ClientGlobals.Gamemodes.Add( Gamemode, this);
-
+            Game.PlayerPed.Opacity = 255;
         }
 
-        public virtual void Start( float gameTime ) {
+        public virtual void Start( float gameTime ) {      
             ClientGlobals.WriteChat( Gamemode.ToUpper(), "Game started.", 255, 0, 0 );
             RemoveAllPedWeapons( PlayerPedId(), true );
             GameTimerEnd = GetGameTimer() + gameTime;
@@ -141,6 +143,9 @@ namespace GamemodeCityClient {
 
         public virtual void SetTeam( int team ) {
             ClientGlobals.Team = team;
+            if( team == SPECTATOR ) {
+                LocalPlayer.IsInvincible = true;
+            }
         }
 
         public bool CanPickupWeapon( uint hash ) {

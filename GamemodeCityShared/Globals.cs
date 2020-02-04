@@ -11,7 +11,9 @@ using System.Dynamic;
 
 namespace GamemodeCityShared {
     public class Globals : BaseScript {
-  
+
+        public static float SaltyCoins = 0;
+        public static float GameCoins = 0;
 
         public static Vector3 StringToVector3( string vector ) {
             vector = vector.Replace("X:", "");

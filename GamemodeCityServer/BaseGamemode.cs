@@ -16,12 +16,16 @@ namespace GamemodeCityServer {
 
         public Settings Settings = new Settings();
 
-        public Dictionary<string, float> PlayerScores = new Dictionary<string, float>();
         public Dictionary<int, float> TeamScores = new Dictionary<int, float>();
 
         public float GameTime = 0;
 
+        public Dictionary<Player, Dictionary<PlayerDetail, dynamic>> PlayerDetails = new Dictionary<Player, Dictionary<PlayerDetail, dynamic>>();
+
+        public List<Player> Spectators = new List<Player>();
+
         public BaseGamemode( string gamemode ) {
+            Globals.GameCoins = 0;
             Gamemode = gamemode.ToLower();
             if( !ServerGlobals.Gamemodes.ContainsKey( Gamemode ) )
                 ServerGlobals.Gamemodes.Add( Gamemode, this);
@@ -53,21 +57,66 @@ namespace GamemodeCityServer {
             player.TriggerEvent( "salty:Spawn", (int)SpawnType.PLAYER, Map.GetSpawn( SpawnType.PLAYER, team ).Position, 0 );
         }
 
+        public void SpawnPlayers() {
+            foreach( var ply in new PlayerList() ) {
+                SpawnPlayer( ply );
+            }
+        }
+
+        public void SpawnPlayers( int team ) {
+            foreach( var ply in new PlayerList() ) {
+                SpawnPlayer( ply, team );
+            }
+        }
+
+        public void SpawnPlayer( Player player ) {
+            dynamic team = GetPlayerDetail( player, PlayerDetail.TEAM );
+            if( team != null ) {
+                player.TriggerEvent( "salty:Spawn", (int)SpawnType.PLAYER, Map.GetSpawn( SpawnType.PLAYER, (int)team ).Position, 0 );
+            } else {
+                SpawnPlayer( player, 0 );
+            }
+        }
+
         public void SpawnWeapon( Vector3 pos, uint hash ) {
             TriggerClientEvent( "salty:Spawn", (int)SpawnType.WEAPON, pos, hash );
         }
 
         public void AddScore( Player ply, float amount ) {
-            if( PlayerScores.ContainsKey(ply.Handle) ) {
-                PlayerScores[ply.Handle] += amount;
+            dynamic score = GetPlayerDetail( ply, PlayerDetail.SCORE );
+            if( score != null ) {
+                SetPlayerDetail( ply, PlayerDetail.SCORE, (float)score + amount );
             } else {
-                PlayerScores.Add( ply.Handle, amount );
+                SetPlayerDetail( ply, PlayerDetail.SCORE, amount );
             }
         }
 
         public void SetTeam( Player ply, int team ) {
             ply.TriggerEvent( "salty:SetTeam", team );
+            SetPlayerDetail( ply, PlayerDetail.TEAM, team );
+        }
+
+        public void SetPlayerDetail( Player ply, PlayerDetail detail, dynamic data ) {
+            if( !PlayerDetails.ContainsKey( ply ) ) {
+                PlayerDetails.Add( ply, new Dictionary<PlayerDetail, dynamic>() );
+            }
+            PlayerDetails[ply][PlayerDetail.TEAM] = data;
+        }
+
+        public dynamic GetPlayerDetail( Player ply, PlayerDetail detail ) {
+            if( !PlayerDetails.ContainsKey(ply) ) {
+                PlayerDetails.Add( ply, new Dictionary<PlayerDetail, dynamic>() );
+            } else if( PlayerDetails[ply].ContainsKey( detail ) ) {
+                return PlayerDetails[ply][detail];
+            }
+            return null;
         }
 
     }
+
+    public enum PlayerDetail {
+        TEAM,
+        SCORE
+    }
+
 }

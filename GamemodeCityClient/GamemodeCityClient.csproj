@@ -61,6 +61,7 @@
     <Compile Include="ClientMap.cs" />
     <Compile Include="MapMenu.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SaltyMenu.cs" />
     <Compile Include="SaltyText.cs" />
     <Compile Include="SaltyWeapon.cs" />
   </ItemGroup>

@@ -29,6 +29,18 @@ namespace GamemodeCityClient {
 
         }
 
+        public static bool BuyItem( int cost ) {
+            if( Globals.GameCoins >= cost ) {
+                Globals.GameCoins -= cost;
+                WriteChat( "Store", "Item bought.", 20, 200, 20 );
+                return true;
+            }
+            else {
+                WriteChat( "Store", "Out of coins.", 200, 20, 20 );
+                return false;
+            }
+        }
+
         public static void WriteChat( string prefix, string str, int r, int g, int b ) {
             TriggerEvent( "chat:addMessage", new {
                 color = new[] { r, g, b },
@@ -69,6 +81,9 @@ namespace GamemodeCityClient {
             API.SendNuiMessage( "{\"type\":\"salty\",\"name\":\"" + name + "\",\"data\":\"" + message + "\"}" );
         }
 
+        public static List<Player> GetInGamePlayers() {
+            return new PlayerList().Where( x => !x.IsInvincible ).ToList();
+        }
 
         public static void NoClipUpdate() {
 
