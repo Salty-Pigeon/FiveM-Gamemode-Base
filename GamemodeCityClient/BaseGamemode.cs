@@ -59,6 +59,9 @@ namespace GamemodeCityClient {
             Controls();
         }
 
+        public void CantExitVehichles() {
+            DisableControlAction( 0, 75, true );
+        }
 
         public virtual void Events() {
 

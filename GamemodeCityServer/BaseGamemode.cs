@@ -40,6 +40,10 @@ namespace GamemodeCityServer {
             TriggerClientEvent( "salty:StartGame", Gamemode, Settings.GameLength, Settings.Weapons );
         }
 
+        public virtual void OnTimerEnd() {
+            End();
+        }
+
         public virtual void Update() {
             if( PreGame ) {
                 if( PreGameTime < GetGameTimer() ) {
@@ -82,6 +86,8 @@ namespace GamemodeCityServer {
                 args = new[] { prefix, str }
             } );
         }
+
+        
 
         public static void WriteChat( Player ply, string prefix, string str, int r, int g, int b ) {
             ply.TriggerEvent( "chat:addMessage", new {

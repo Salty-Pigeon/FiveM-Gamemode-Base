@@ -49,7 +49,7 @@ namespace GamemodeCityServer
             if( ServerGlobals.CurrentGame != null ) {
                 ServerGlobals.CurrentGame.Update();
                if( ServerGlobals.CurrentGame.GameTime < GetGameTimer() ) {
-                    ServerGlobals.CurrentGame.End();                 
+                    ServerGlobals.CurrentGame.OnTimerEnd();                 
                }
             }
         }
