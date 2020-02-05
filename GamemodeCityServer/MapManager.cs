@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using System.Dynamic;
 
 namespace GamemodeCityServer {
-    class MapManager {
+    public class MapManager {
 
         public List<ServerMap> Maps = new List<ServerMap>();
 
@@ -24,6 +24,10 @@ namespace GamemodeCityServer {
         
         public ServerMap FindMap( string gamemode ) {
             return Maps.OrderBy( a => Guid.NewGuid() ).Where( x => x.Gamemodes.Contains( gamemode ) ).First();
+        }
+
+        public Dictionary<int, string> MapList() {
+            return Maps.ToDictionary( x => x.ID, x => x.Name );
         }
 
         public void Update( [FromSource] Player ply, ExpandoObject expandoObject ) {

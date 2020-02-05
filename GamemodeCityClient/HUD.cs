@@ -184,7 +184,15 @@ namespace GamemodeCityClient {
 
             TimeSpan time = TimeSpan.FromMilliseconds( ClientGlobals.CurrentGame.GameTimerEnd - GetGameTimer() );
 
-            GameTimeText.Caption = string.Format( "{0:00}:{1:00}", Math.Ceiling( time.TotalMinutes - 1 ), time.Seconds );
+            if( time.Seconds < 0 ) {
+                GameTimeText.Caption = string.Format( "{0:00}:{1:00}", Math.Ceiling( time.TotalMinutes - 1 ), time.Seconds );
+                GameTimeText.Colour = System.Drawing.Color.FromArgb( 200, 20, 20 );
+            }
+            else {
+                GameTimeText.Caption = string.Format( "{0:00}:{1:00}", Math.Ceiling( time.TotalMinutes - 1 ), time.Seconds );
+                GameTimeText.Colour = System.Drawing.Color.FromArgb( 255, 255, 255 );
+            }
+
 
             GameTimeText.Draw();
         }

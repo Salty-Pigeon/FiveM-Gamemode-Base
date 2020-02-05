@@ -18,6 +18,7 @@ namespace TDMServer
         public Main() : base("TDM") {
             Settings.Weapons =  new List<uint>(){ 2725352035, 453432689, 736523883, 3220176749 };
             Settings.GameLength = (1 * 1000 * 60);
+            Settings.Name = "Team Deathmatch";
 
         }
 
@@ -37,11 +38,11 @@ namespace TDMServer
 
         }
 
-        public override void OnPlayerKilled( Player attacker, string victimSrc ) {
+        public override void OnPlayerKilled( Player attacker, Player victim ) {
 
             AddScore( attacker, 1 );
 
-            base.OnPlayerKilled( attacker, victimSrc );
+            base.OnPlayerKilled( attacker, victim );
         }
     }
 }

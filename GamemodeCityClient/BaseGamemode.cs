@@ -31,7 +31,9 @@ namespace GamemodeCityClient {
             Game.PlayerPed.Opacity = 255;
         }
 
-        public virtual void Start( float gameTime ) {      
+        public virtual void Start( float gameTime ) {
+            LocalPlayer.Character.MaxHealth = 100;
+            ClientGlobals.SetSpectator( false );
             ClientGlobals.WriteChat( Gamemode.ToUpper(), "Game started.", 255, 0, 0 );
             RemoveAllPedWeapons( PlayerPedId(), true );
             GameTimerEnd = GetGameTimer() + gameTime;
@@ -41,6 +43,7 @@ namespace GamemodeCityClient {
         public virtual void End() {
             ClientGlobals.WriteChat( Gamemode.ToUpper(), "Game finished!", 255, 0, 0 );
             Map.ClearObjects();
+            ClientGlobals.SetSpectator( true );
             ClientGlobals.CurrentGame = null;
         }
 
@@ -56,7 +59,6 @@ namespace GamemodeCityClient {
             Controls();
         }
 
-        
 
         public virtual void Events() {
 
@@ -120,6 +122,10 @@ namespace GamemodeCityClient {
 
         public virtual void OnWeaponDropped( uint hash ) {
             PlayerWeapons.Remove( hash );
+        }
+
+        public virtual void PlayerSpawn() {
+
         }
 
         public virtual void OnWeaponChanged(  ) {

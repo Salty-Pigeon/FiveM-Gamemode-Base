@@ -14,18 +14,26 @@ namespace GamemodeCityClient
     public class Main : BaseScript {
 
         MapMenu MapMenu;
+        MapVote MapVote;
+        GameVote GameVote;
 
         public Main() {
 
 
             EventHandlers["onClientResourceStart"] += new Action<string>( OnClientResourceStart );
+
+            EventHandlers["playerSpawned"] += new Action<ExpandoObject>( PlayerSpawn );
+
             EventHandlers["salty:StartGame"] += new Action<string, float, dynamic>(StartGame);
             EventHandlers["salty:EndGame"] += new Action(EndGame);
             EventHandlers["salty:CacheMap"] += new Action<int, string, string, Vector3, Vector3, dynamic>( CacheMap );
             EventHandlers["salty:OpenMapGUI"] += new Action( OpenMapGUI );
             EventHandlers["salty:Spawn"] += new Action<int, Vector3, uint>( Spawn );
             EventHandlers["salty:SetTeam"] += new Action<int>( SetTeam );
-            
+            EventHandlers["salty:MapVote"] += new Action<ExpandoObject>( VoteMap );
+            EventHandlers["salty:GameVote"] += new Action<ExpandoObject>( VoteGame );
+            EventHandlers["salty:UpdateTime"] += new Action<float>( UpdateTime );
+
 
             RegisterNUICallback( "salty_nui_loaded", SetNUIReady );
             RegisterNUICallback( "salty_enable", EnableGUI );
@@ -37,7 +45,11 @@ namespace GamemodeCityClient
         }
 
         
-
+        void UpdateTime( float time ) {
+            if( ClientGlobals.CurrentGame != null ) {
+                ClientGlobals.CurrentGame.GameTimerEnd = time;
+            }
+        }
 
         void OpenMapGUI() {
             MapMenu = new MapMenu( "Maps", "Modify maps", ClientGlobals.Maps );
@@ -52,12 +64,44 @@ namespace GamemodeCityClient
             ClientGlobals.Maps[id] = map;
         }
 
+        private void VoteMap( ExpandoObject maps ) {
+            Dictionary<int, string> Maps = maps.ToDictionary( x => Convert.ToInt32(x.Key), x => x.Value.ToString() );
+            foreach( var i in Maps ) {
+                Debug.WriteLine( i.Value );
+            }
+            MapVote = new MapVote( Maps );
+            MapVote.VoteMenu.OpenMenu();
+        }
+
+        private void VoteGame( ExpandoObject gamemodes ) {
+            Dictionary<string, string> Gamemodes = gamemodes.ToDictionary( x =>  x.Key.ToString(), x => x.Value.ToString() );
+            foreach( var i in Gamemodes ) {
+                Debug.WriteLine( i.Value );
+            }
+            GameVote = new GameVote( Gamemodes );
+            GameVote.VoteMenu.OpenMenu();
+            
+        }
+
+        private void PlayerSpawn( ExpandoObject spawnInfo ) {
+
+            if( ClientGlobals.Team == -1 ) {
+                ClientGlobals.SetNoClip( true );
+            } else if( ClientGlobals.CurrentGame != null ) {
+                ClientGlobals.CurrentGame.PlayerSpawn();
+            } else {
+                ClientGlobals.SetSpectator( true );
+                ClientGlobals.SetNoClip( true );
+            }
+
+
+        }
+
         private void SetTeam( int team ) {
             if( ClientGlobals.CurrentGame != null )
                 ClientGlobals.CurrentGame.SetTeam( team );
         }
 
-        SaltyWeapon testWeapon;
 
         private void OnClientResourceStart( string resourceName ) {
             if( GetCurrentResourceName() != resourceName ) return;
@@ -80,6 +124,14 @@ namespace GamemodeCityClient
 
             RegisterCommand( "maps", new Action<int, List<object>, string>( ( source, args, raw ) => {
                 TriggerServerEvent( "salty:netOpenMapGUI" );
+            } ), false );
+
+            RegisterCommand( "kill", new Action<int, List<object>, string>( ( source, args, raw ) => {
+                LocalPlayer.Character.Kill();
+            } ), false );
+
+            RegisterCommand( "vote", new Action<int, List<object>, string>( ( source, args, raw ) => {
+                TriggerServerEvent( "salty:netBeginMapVote" );
             } ), false );
 
             RegisterCommand( "weapon", new Action<int, List<object>, string>( ( source, args, raw ) => {
@@ -126,8 +178,7 @@ namespace GamemodeCityClient
                 ClientGlobals.NoClipUpdate();
             if( MapMenu != null )
                 MapMenu.Draw();
-            if( testWeapon != null )
-                testWeapon.Update();
+
         }
 
 

@@ -48,6 +48,14 @@ namespace GamemodeCityClient {
             } );
         }
 
+        public static void SetSpectator( bool spectate ) {
+            if( !spectate )
+                SetNoClip( false );
+            Game.Player.Character.Opacity = spectate ? 0 : 255;
+            Team = spectate ? -1 : 0;
+
+        }
+
         public static void SendMap( ClientMap map ) {
 
             string gamemode = "";

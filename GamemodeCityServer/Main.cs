@@ -13,16 +13,28 @@ namespace GamemodeCityServer
     public class Main : BaseScript
     {
 
-        MapManager MapManager;
+        public static MapManager MapManager;
         Database Database;
+
+        public static Vote CurrentVote;
+
+        int currentRound = 0;
+
+        Dictionary<string, int> GameVotes = new Dictionary<string, int>();
+        Dictionary<int, int> MapVotes = new Dictionary<int, int>();
 
         public Main() {
 
             MapManager = new MapManager();
             Database = new Database( MapManager );
 
-            EventHandlers["salty:netStartGame"] += new Action<Player, string>(StartGame);
+            EventHandlers["salty:netStartGame"] += new Action<string>(StartGame);
             EventHandlers["salty:netOpenMapGUI"] += new Action<Player>( OpenMapGUI );
+
+            EventHandlers["salty:netBeginMapVote"] += new Action( BeginMapVote );
+
+            EventHandlers["salty:netVote"] += new Action<dynamic>( MakeVote );
+
 
             EventHandlers["saltyMap:netUpdate"] += new Action<Player, ExpandoObject>( MapManager.Update );
 
@@ -37,11 +49,41 @@ namespace GamemodeCityServer
             if( ServerGlobals.CurrentGame != null ) {
                 ServerGlobals.CurrentGame.Update();
                if( ServerGlobals.CurrentGame.GameTime < GetGameTimer() ) {
-                    ServerGlobals.CurrentGame.End();
-                    ServerGlobals.CurrentGame = null;
+                    ServerGlobals.CurrentGame.End();                 
                }
             }
         }
+
+
+
+        private void MakeVote( dynamic ID ) {
+            CurrentVote.MakeVote( ID );
+        }
+
+        public void BeginMapVote() {
+            CurrentVote = new Vote( EndMapVote );
+            TriggerClientEvent( "salty:MapVote", MapManager.MapList() );
+        }
+
+        public void EndMapVote( dynamic id ) {
+            int ID = Convert.ToInt32( id );
+            ServerMap winner = MapManager.Maps.Where( x => x.ID == ID ).FirstOrDefault();
+            BaseGamemode.WriteChat( "Map Vote", "Winner is " + winner.Name, 200, 200, 0 );
+        }
+
+        public static void BeginGameVote() {
+            CurrentVote = new Vote( EndGameVote );
+            TriggerClientEvent( "salty:GameVote", ServerGlobals.GamemodeList() );
+        }
+
+
+        public static void EndGameVote( dynamic id ) {
+            string ID = id.ToString();
+            BaseGamemode.WriteChat( "Game Vote", "Winner is " + ID, 200, 200, 0 );
+            StartGame( ID );
+        }
+
+
 
         private void PlayerKilled( [FromSource] Player ply, int killerID, ExpandoObject deathData ) {
 
@@ -58,14 +100,16 @@ namespace GamemodeCityServer
 
             if( killerID > -1 ) {
                 Debug.WriteLine("Killer is " + GetPlayerName( GetPlayerFromIndex( killerID ) ) );
-                ServerGlobals.CurrentGame.OnPlayerKilled( ply, GetPlayerFromIndex( killerID ) );
+                if( ServerGlobals.CurrentGame != null )
+                    ServerGlobals.CurrentGame.OnPlayerKilled( ply, ServerGlobals.CurrentGame.GetPlayer( GetPlayerFromIndex( killerID ) ) );
             }
 
         }
 
         private void PlayerDied( [FromSource] Player ply, int killerType, List<dynamic> deathcords ) {
             Vector3 coords = new Vector3( (float)deathcords[0], (float)deathcords[1], (float)deathcords[2] );
-            ServerGlobals.CurrentGame.OnPlayerDied( ply, killerType, coords );
+            if( ServerGlobals.CurrentGame != null )
+                ServerGlobals.CurrentGame.OnPlayerDied( ply, killerType, coords );
             
         }
 
@@ -79,11 +123,11 @@ namespace GamemodeCityServer
 
 
 
-        public void StartGame( [FromSource] Player ply, string ID ) {
+        public static void StartGame( string ID ) {
             ServerGlobals.CurrentGame = (BaseGamemode)Activator.CreateInstance( ServerGlobals.Gamemodes[ID.ToLower()].GetType() );
             ServerGlobals.CurrentGame.Map = MapManager.FindMap( ID );
             ServerGlobals.CurrentGame.Start();
-            ServerGlobals.WriteChat( ID.ToUpper(), "Playing map " + ServerGlobals.CurrentGame.Map.Name, 200, 30, 30 );
+            BaseGamemode.WriteChat( ID.ToUpper(), "Playing map " + ServerGlobals.CurrentGame.Map.Name, 200, 30, 30 );
         }
 
 

@@ -10,7 +10,7 @@ using GamemodeCityShared;
 namespace GamemodeCityServer {
     public class BaseGamemode : BaseScript {
 
-        string Gamemode;
+        public string Gamemode;
 
         public ServerMap Map;
 
@@ -23,6 +23,9 @@ namespace GamemodeCityServer {
         public Dictionary<Player, Dictionary<PlayerDetail, dynamic>> PlayerDetails = new Dictionary<Player, Dictionary<PlayerDetail, dynamic>>();
 
         public List<Player> Spectators = new List<Player>();
+
+        public bool PreGame = false;
+        private float PreGameTime = 0;
 
         public BaseGamemode( string gamemode ) {
             Globals.GameCoins = 0;
@@ -38,19 +41,53 @@ namespace GamemodeCityServer {
         }
 
         public virtual void Update() {
-
+            if( PreGame ) {
+                if( PreGameTime < GetGameTimer() ) {
+                    PreGame = false;
+                    Main.StartGame( ServerGlobals.CurrentGame.Gamemode );
+                }
+            }
         }
 
         public virtual void End() {
             TriggerClientEvent( "salty:EndGame" );
+            ServerGlobals.CurrentRound++;
+            if( ServerGlobals.CurrentRound < Settings.Rounds ) {
+                WriteChat( "GamemodeCity", "Next round starting in " + Math.Round( Settings.PreGameTime / 1000 ), 200, 200, 20 );
+                PreGameTime = GetGameTimer() + Settings.PreGameTime;
+                PreGame = true;
+            }
+            else {
+                ServerGlobals.CurrentRound = 0;
+                ServerGlobals.CurrentGame = null;
+                Main.BeginGameVote();
+            }
         }
 
-        public virtual void OnPlayerKilled( Player attacker, string victimSrc ) {
+        public Player GetPlayer( string src ) {
+            return new PlayerList().Where( x => x.Handle == src ).First();
+        }
+
+        public virtual void OnPlayerKilled( Player attacker, Player victim ) {
             
         }
 
-        public virtual void OnPlayerDied( Player attacker, int killerType, Vector3 deathCoords ) {
+        public virtual void OnPlayerDied( Player victim, int killerType, Vector3 deathCoords ) {
 
+        }
+
+        public static void WriteChat( string prefix, string str, int r, int g, int b ) {
+            TriggerClientEvent( "chat:addMessage", new {
+                color = new[] { r, g, b },
+                args = new[] { prefix, str }
+            } );
+        }
+
+        public static void WriteChat( Player ply, string prefix, string str, int r, int g, int b ) {
+            ply.TriggerEvent( "chat:addMessage", new {
+                color = new[] { r, g, b },
+                args = new[] { prefix, str }
+            } );
         }
 
         public void SpawnPlayer( Player player, int team ) {

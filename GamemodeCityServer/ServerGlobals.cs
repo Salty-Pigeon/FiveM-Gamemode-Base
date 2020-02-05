@@ -14,22 +14,14 @@ namespace GamemodeCityServer {
 
         public static BaseGamemode CurrentGame;
 
+        public static int CurrentRound = 0;
+
         public static void SpawnPlayer( Spawn spawn, Player player ) {
 
         }
 
-        public static void WriteChat( string prefix, string str, int r, int g, int b ) {
-            TriggerClientEvent( "chat:addMessage", new {
-                color = new[] { r, g, b },
-                args = new[] { prefix, str }
-            } );
-        }
-
-        public static void WriteChat( Player ply, string prefix, string str, int r, int g, int b ) {
-            ply.TriggerEvent( "chat:addMessage", new {
-                color = new[] { r, g, b },
-                args = new[] { prefix, str }
-            } );
+        public static Dictionary<string, string> GamemodeList() {
+            return Gamemodes.ToDictionary( x => x.Key, x => x.Value.Settings.Name );
         }
 
     }
