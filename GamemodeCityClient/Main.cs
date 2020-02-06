@@ -16,6 +16,7 @@ namespace GamemodeCityClient
         MapMenu MapMenu;
         MapVote MapVote;
         GameVote GameVote;
+        ClientMap MapBounds;
 
         public Main() {
 
@@ -24,7 +25,7 @@ namespace GamemodeCityClient
 
             EventHandlers["playerSpawned"] += new Action<ExpandoObject>( PlayerSpawn );
 
-            EventHandlers["salty:StartGame"] += new Action<string, float, dynamic>(StartGame);
+            EventHandlers["salty:StartGame"] += new Action<string, float, dynamic, Vector3, Vector3>(StartGame);
             EventHandlers["salty:EndGame"] += new Action(EndGame);
             EventHandlers["salty:CacheMap"] += new Action<int, string, string, Vector3, Vector3, dynamic>( CacheMap );
             EventHandlers["salty:OpenMapGUI"] += new Action( OpenMapGUI );
@@ -110,8 +111,8 @@ namespace GamemodeCityClient
 
             ClientGlobals.Init();
 
-            RegisterCommand( "tdm", new Action<int, List<object>, string>( ( source, args, raw ) => {
-                TriggerServerEvent("salty:netStartGame", "tdm");
+            RegisterCommand( "icm", new Action<int, List<object>, string>( ( source, args, raw ) => {
+                TriggerServerEvent("salty:netStartGame", "icm");
             } ), false );
 
             RegisterCommand( "ttt", new Action<int, List<object>, string>( ( source, args, raw ) => {
@@ -146,7 +147,9 @@ namespace GamemodeCityClient
 
 
 
-        public void StartGame( string ID, float gameLength, dynamic gameWeps ) {
+        public void StartGame( string ID, float gameLength, dynamic gameWeps, Vector3 mapPos, Vector3 mapSize ) {
+
+            MapBounds = new ClientMap(-1, "", new List<string>(), mapPos, mapSize, false );
 
             List<dynamic> weps = gameWeps as List<dynamic>;
        
@@ -167,18 +170,46 @@ namespace GamemodeCityClient
         public void EndGame() {
             if( ClientGlobals.CurrentGame != null ) {
                 ClientGlobals.CurrentGame.End();
-                ClientGlobals.CurrentGame = null;
+                MapBounds = null;
+                ClientGlobals.CurrentGame = null;               
+                ClientGlobals.SetSpectator( true );
+                ClientGlobals.SetNoClip( true );
             }   
         }
-        
+
+        float deathTimer = 0;
+        float gracePeriod = 1000 * 5;
+
         private async Task Tick() {
-            if ( ClientGlobals.CurrentGame != null)
+            if( ClientGlobals.CurrentGame != null )
                 ClientGlobals.CurrentGame.Update();
             if( ClientGlobals.isNoclip )
                 ClientGlobals.NoClipUpdate();
             if( MapMenu != null )
                 MapMenu.Draw();
+            if( MapBounds != null && ClientGlobals.CurrentGame != null ) {
 
+                MapBounds.DrawBoundarys();
+
+                if( MapBounds.IsInZone( LocalPlayer.Character.Position ) ) {
+                    deathTimer = 0;
+                }
+                else {
+                    if( deathTimer == 0 )
+                        deathTimer = GetGameTimer();
+
+                    float secondsLeft = deathTimer + gracePeriod - GetGameTimer();
+                    if( secondsLeft < 0 ) {
+                        Game.Player.Character.Kill();
+                        deathTimer = 0;
+                    }
+                    ClientGlobals.CurrentGame.HUD.BoundText.Colour = System.Drawing.Color.FromArgb( 255, 0, 0 );
+                    ClientGlobals.CurrentGame.HUD.BoundText.Caption = "You have " + Math.Round( secondsLeft / 1000 ) + " seconds to return or you will die.";
+                    ClientGlobals.CurrentGame.HUD.BoundText.Draw();
+                }
+
+
+            }
         }
 
 
@@ -219,9 +250,11 @@ namespace GamemodeCityClient
 
 
         public void Spawn( int typ, Vector3 spawn, uint hash ) {
+            ClientGlobals.LastSpawn = spawn;
             SpawnType type = (SpawnType)typ;
             if( type == SpawnType.PLAYER ) {
                 LocalPlayer.Character.Position = spawn;
+                PlayerSpawn( null );
             } else if( type == SpawnType.WEAPON ) {
                 if( ClientGlobals.CurrentGame != null ) {
                     if( ClientGlobals.CurrentGame.Map == null ) {

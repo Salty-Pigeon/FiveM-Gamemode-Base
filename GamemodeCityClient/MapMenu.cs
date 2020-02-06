@@ -167,20 +167,28 @@ namespace GamemodeCityClient {
 
             MenuItem spawnEditItem = AddMenuItem( parent, spawnEditMenu, name, "", "", true );
             spawnEditMenu.AddMenuItem( spawnTypes );
+
+            MenuSliderItem slider = new MenuSliderItem( "Slider", 0, 10, 0, false );
+            spawnEditMenu.AddMenuItem( slider );
+
+
+            // Add team here
             spawnEditMenu.AddMenuItem( new MenuItem( "Save" ) );
 
             spawnEditMenu.OnItemSelect += ( _menu, _item, _index ) => {
                 if( _item.Text == "Save" ) {
                     if( spawn.ID == -3 ) {
-                        map.Spawns.Add( new Spawn( -1, LocalPlayer.Character.Position, (SpawnType)spawnTypes.ListIndex, "player", 0 ) );
-                        EditSpawnMenu( parent, map, new Spawn( -1, LocalPlayer.Character.Position, (SpawnType)spawnTypes.ListIndex, "player", 0 ) );
+                        Debug.WriteLine( slider.Position.ToString() );
+                        var spawny = new Spawn( -1, LocalPlayer.Character.Position, (SpawnType)spawnTypes.ListIndex, "player", slider.Position );
+                        map.Spawns.Add( spawny );
+                        EditSpawnMenu( parent, map, spawny );
                         spawnEditMenu.GoBack();
                     } else {
                         spawn.SpawnType = (SpawnType)spawnTypes.ListIndex;
                         parent.GetCurrentMenuItem().Text = spawn.SpawnType.ToString();
                         spawnEditMenu.GoBack();
                     }
-                }
+                }            
             };
 
             return spawnEditMenu;

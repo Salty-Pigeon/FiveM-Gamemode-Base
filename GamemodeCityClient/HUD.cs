@@ -42,7 +42,7 @@ namespace GamemodeCityClient {
         }
 
         public virtual void Draw() {
-            
+            DrawGameTimer();
         }
 
         public void DrawText2D( float x, float y, string text, float scale, int r, int g, int b, int a, bool centre ) {

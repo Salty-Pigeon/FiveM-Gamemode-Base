@@ -28,7 +28,7 @@ namespace GamemodeCityServer {
         private float PreGameTime = 0;
 
         public BaseGamemode( string gamemode ) {
-            Globals.GameCoins = 0;
+            Globals.GameCoins = 0;         
             Gamemode = gamemode.ToLower();
             if( !ServerGlobals.Gamemodes.ContainsKey( Gamemode ) )
                 ServerGlobals.Gamemodes.Add( Gamemode, this);
@@ -36,8 +36,8 @@ namespace GamemodeCityServer {
         }
 
         public virtual void Start( ) {
-            GameTime = GetGameTimer() + Settings.GameLength;
-            TriggerClientEvent( "salty:StartGame", Gamemode, Settings.GameLength, Settings.Weapons );
+            
+            TriggerClientEvent( "salty:StartGame", Gamemode, Settings.GameLength, Settings.Weapons, Map.Position, Map.Size );
         }
 
         public virtual void OnTimerEnd() {

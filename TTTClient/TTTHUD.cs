@@ -25,7 +25,6 @@ namespace TTTClient {
             DrawHealth();
             //DrawScore();
             TeamText.Draw();
-            DrawGameTimer();
             
             DrawTeam();
 

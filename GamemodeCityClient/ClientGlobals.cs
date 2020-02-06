@@ -22,6 +22,7 @@ namespace GamemodeCityClient {
 
         public static BaseGamemode CurrentGame;
 
+        public static Vector3 LastSpawn;
 
         public static int Team = 0;
 
@@ -50,8 +51,7 @@ namespace GamemodeCityClient {
 
         public static void SetSpectator( bool spectate ) {
             if( !spectate )
-                SetNoClip( false );
-            Game.Player.Character.Opacity = spectate ? 0 : 255;
+                SetNoClip( false );        
             Team = spectate ? -1 : 0;
 
         }
@@ -79,6 +79,7 @@ namespace GamemodeCityClient {
 
         public static void SetNoClip( bool toggle ) {
             isNoclip = toggle;
+            Game.Player.Character.Opacity = toggle ? 0 : 255;
             SetEntityVisible( PlayerPedId(), !isNoclip, false );
             SetEntityCollision( PlayerPedId(), !isNoclip, !isNoclip );
             SetEntityInvincible( PlayerPedId(), isNoclip );

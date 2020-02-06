@@ -31,15 +31,21 @@ namespace ICMServer
             base.Start();
 
 
-            PlayerList playerList = new PlayerList();
+            List<Player> playerList = new PlayerList().ToList();
 
+            var icecreamman = playerList.OrderBy( x => Guid.NewGuid() ).First();
+            playerList.Remove( icecreamman );
+            SetTeam( icecreamman, 0 );
+            SpawnPlayer( icecreamman );
 
             foreach( var player in playerList ) {
-                SpawnPlayer( player, 0 );
-                SetTeam( player, 0 );
+                SetTeam( player, 1 );
+                SpawnPlayer( player );
             }
 
         }
+        
+
         public override void OnTimerEnd() {
             WriteChat( "Ice Cream Man", "Ice cream man delivered ice cream safely", 255, 0, 0 );
             base.OnTimerEnd();

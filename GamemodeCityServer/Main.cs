@@ -47,7 +47,7 @@ namespace GamemodeCityServer
 
         private async Task Tick() {
             if( ServerGlobals.CurrentGame != null ) {
-                ServerGlobals.CurrentGame.Update();
+               ServerGlobals.CurrentGame.Update();
                if( ServerGlobals.CurrentGame.GameTime < GetGameTimer() ) {
                     ServerGlobals.CurrentGame.OnTimerEnd();                 
                }
@@ -125,6 +125,7 @@ namespace GamemodeCityServer
 
         public static void StartGame( string ID ) {
             ServerGlobals.CurrentGame = (BaseGamemode)Activator.CreateInstance( ServerGlobals.Gamemodes[ID.ToLower()].GetType() );
+            ServerGlobals.CurrentGame.GameTime = GetGameTimer() + ServerGlobals.CurrentGame.Settings.GameLength;
             ServerGlobals.CurrentGame.Map = MapManager.FindMap( ID );
             ServerGlobals.CurrentGame.Start();
             BaseGamemode.WriteChat( ID.ToUpper(), "Playing map " + ServerGlobals.CurrentGame.Map.Name, 200, 30, 30 );
