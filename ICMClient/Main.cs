@@ -51,9 +51,9 @@ namespace ICMClient
         public override void PlayerSpawn() {           
             base.PlayerSpawn();
 
-            if( ClientGlobals.Team == 0 ) {
+            if( Team == 0 ) {
                 SpawnTruck();
-            } else if ( ClientGlobals.Team == 1 ) {
+            } else if ( Team == 1 ) {
                 SpawnBike();
             } 
 
@@ -61,7 +61,7 @@ namespace ICMClient
 
         public override void Update() {
             CantExitVehichles();
-            if( ClientGlobals.Team == 0 ) {
+            if( Team == 0 ) {
                 if( !Game.PlayerPed.IsInVehicle() && Truck != null ) {
                     Game.PlayerPed.SetIntoVehicle( Truck, VehicleSeat.Driver );
                 }
@@ -79,7 +79,7 @@ namespace ICMClient
                     //AddScore( 1 );
                 }
             }
-            if( ClientGlobals.Team == 1 && !CanKill ) {
+            if( Team == 1 && !CanKill ) {
                 Game.PlayerPed.CanBeKnockedOffBike = false;
                 if( !Game.PlayerPed.IsInVehicle() && Bike != null ) {
                     Game.PlayerPed.SetIntoVehicle( Bike, VehicleSeat.Driver );

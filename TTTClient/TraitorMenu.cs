@@ -25,8 +25,10 @@ namespace TTTClient {
 
             var radar = new MenuItem( "(1) Radar" );
             var teleport = new MenuItem( "(1) Teleport" );
+            var disguise = new MenuItem( "(1) Disguise" );
             buyMenu.AddMenuItem( radar );
             buyMenu.AddMenuItem( teleport );
+            buyMenu.AddMenuItem( disguise );
 
             buyMenu.OnItemSelect += ( _menu, _item, _index ) => {
 
@@ -41,6 +43,15 @@ namespace TTTClient {
                         ((Main)(ClientGlobals.CurrentGame)).CanTeleport = true;
                     }
                 }
+
+                if( _item == disguise ) {
+                    if( ClientGlobals.BuyItem( 1 ) ) {
+                        ((Main)(ClientGlobals.CurrentGame)).CanDisguise = true;
+                    }
+                }
+
+                buyMenu.CloseMenu();
+
             };
 
         }

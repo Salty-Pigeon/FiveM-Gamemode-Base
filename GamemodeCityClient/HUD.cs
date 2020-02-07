@@ -21,6 +21,7 @@ namespace GamemodeCityClient {
         public SaltyText TeamText = new SaltyText( 0.063f, 0.878f, 0, 0, 0.3f, "Traitor", 255, 255, 255, 255, false, true, 0, true );
 
         public float lastLooked = 0;
+
         private float showScoreTimer = 0;
         private float showScoreLength = 500;
         public float GoalTextTime = 0;

@@ -17,11 +17,45 @@ namespace GamemodeCityClient {
 
         public float GameTimerEnd;
 
+        float deathTimer = 0;
+        float gracePeriod = 1000 * 5;
+
         public List<uint> GameWeapons = new List<uint>();
         IList<uint> PlayerWeapons = new List<uint>();
         uint lastWep = 0;
 
         public int SPECTATOR = -1;
+
+        public static int Team = 0;
+
+        public Dictionary<int, Dictionary<string, dynamic>> PlayerDetails = new Dictionary<int, Dictionary<string, dynamic>>();
+
+
+        public virtual void OnDetailUpdate( int ply, string key, dynamic oldValue, dynamic newValue ) {
+
+        }
+
+        public void SetPlayerDetail( int ply, string detail, dynamic data ) {
+            if( !PlayerDetails.ContainsKey( ply ) ) {
+                PlayerDetails.Add( ply, new Dictionary<string, dynamic>() );
+            }
+            if( !PlayerDetails[ply].ContainsKey( detail ) ) {
+                PlayerDetails[ply].Add( detail, data );
+            }
+            OnDetailUpdate( ply, detail, PlayerDetails[ply][detail], data );
+            PlayerDetails[ply][detail] = data;
+        }
+
+        public dynamic GetPlayerDetail( int ply, string detail ) {
+            if( !PlayerDetails.ContainsKey( ply ) ) {
+                PlayerDetails.Add( ply, new Dictionary<string, dynamic>() );
+            }
+            else if( PlayerDetails[ply].ContainsKey( detail ) ) {
+                return PlayerDetails[ply][detail];
+            }
+            return null;
+        }
+
 
         public BaseGamemode( string gamemode ) {
             Globals.GameCoins = 0;
@@ -32,19 +66,25 @@ namespace GamemodeCityClient {
         }
 
         public virtual void Start( float gameTime ) {
+            LocalPlayer.Character.Health = 100;
             LocalPlayer.Character.MaxHealth = 100;
             ClientGlobals.SetSpectator( false );
-            ClientGlobals.WriteChat( Gamemode.ToUpper(), "Game started.", 255, 0, 0 );
+            WriteChat( Gamemode.ToUpper(), "Game started.", 255, 0, 0 );
             RemoveAllPedWeapons( PlayerPedId(), true );
             GameTimerEnd = GetGameTimer() + gameTime;
             HUD.Start();
         }
 
         public virtual void End() {
-            ClientGlobals.WriteChat( Gamemode.ToUpper(), "Game finished!", 255, 0, 0 );
+            WriteChat( Gamemode.ToUpper(), "Game finished!", 255, 0, 0 );
             Map.ClearObjects();
             ClientGlobals.SetSpectator( true );
             ClientGlobals.CurrentGame = null;
+        }
+
+        public void CantEnterVehichles() {
+            SetPlayerMayNotEnterAnyVehicle( PlayerId() );
+            DisableControlAction( 0, 75, true );
         }
 
         public virtual void Update() {
@@ -55,8 +95,39 @@ namespace GamemodeCityClient {
                 wep.Update();
             }
 
+            if( Map != null ) {
+
+                Map.DrawBoundarys();
+
+                if( Map.IsInZone( LocalPlayer.Character.Position ) ) {
+                    deathTimer = 0;
+                }
+                else {
+                    if( deathTimer == 0 )
+                        deathTimer = GetGameTimer();
+
+                    float secondsLeft = deathTimer + gracePeriod - GetGameTimer();
+                    if( secondsLeft < 0 ) {
+                        Game.Player.Character.Kill();
+                        deathTimer = 0;
+                    }
+                    ClientGlobals.CurrentGame.HUD.BoundText.Colour = System.Drawing.Color.FromArgb( 255, 0, 0 );
+                    ClientGlobals.CurrentGame.HUD.BoundText.Caption = "You have " + Math.Round( secondsLeft / 1000 ) + " seconds to return or you will die.";
+                    ClientGlobals.CurrentGame.HUD.BoundText.Draw();
+                }
+
+
+            }
+
             Events();
             Controls();
+        }
+
+        public static void WriteChat( string prefix, string str, int r, int g, int b ) {
+            TriggerEvent( "chat:addMessage", new {
+                color = new[] { r, g, b },
+                args = new[] { prefix, str }
+            } );
         }
 
         public void CantExitVehichles() {
@@ -151,7 +222,7 @@ namespace GamemodeCityClient {
         }
 
         public virtual void SetTeam( int team ) {
-            ClientGlobals.Team = team;
+            Team = team;
             if( team == SPECTATOR ) {
                 LocalPlayer.IsInvincible = true;
             }

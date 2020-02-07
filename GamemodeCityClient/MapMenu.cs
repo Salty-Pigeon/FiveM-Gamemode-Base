@@ -178,7 +178,6 @@ namespace GamemodeCityClient {
             spawnEditMenu.OnItemSelect += ( _menu, _item, _index ) => {
                 if( _item.Text == "Save" ) {
                     if( spawn.ID == -3 ) {
-                        Debug.WriteLine( slider.Position.ToString() );
                         var spawny = new Spawn( -1, LocalPlayer.Character.Position, (SpawnType)spawnTypes.ListIndex, "player", slider.Position );
                         map.Spawns.Add( spawny );
                         EditSpawnMenu( parent, map, spawny );

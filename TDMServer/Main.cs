@@ -38,11 +38,11 @@ namespace TDMServer
 
         }
 
-        public override void OnPlayerKilled( Player attacker, Player victim ) {
+        public override void OnPlayerKilled( Player attacker, Player victim, Vector3 deathCoords, uint weaponHash ) {
 
             AddScore( attacker, 1 );
 
-            base.OnPlayerKilled( attacker, victim );
+            base.OnPlayerKilled( attacker, victim, deathCoords, weaponHash );
         }
     }
 }

@@ -16,7 +16,6 @@ namespace GamemodeCityClient
         MapMenu MapMenu;
         MapVote MapVote;
         GameVote GameVote;
-        ClientMap MapBounds;
 
         public Main() {
 
@@ -34,7 +33,8 @@ namespace GamemodeCityClient
             EventHandlers["salty:MapVote"] += new Action<ExpandoObject>( VoteMap );
             EventHandlers["salty:GameVote"] += new Action<ExpandoObject>( VoteGame );
             EventHandlers["salty:UpdateTime"] += new Action<float>( UpdateTime );
-
+            EventHandlers["salty:updatePlayerDetail"] += new Action<int, string, dynamic>( UpdateDetail );
+        
 
             RegisterNUICallback( "salty_nui_loaded", SetNUIReady );
             RegisterNUICallback( "salty_enable", EnableGUI );
@@ -45,7 +45,13 @@ namespace GamemodeCityClient
            
         }
 
-        
+
+        private void UpdateDetail( int ply, string key, dynamic data ) {
+            if( ClientGlobals.CurrentGame != null ) {
+                ClientGlobals.CurrentGame.SetPlayerDetail( ply, key, data );
+            }
+        }
+
         void UpdateTime( float time ) {
             if( ClientGlobals.CurrentGame != null ) {
                 ClientGlobals.CurrentGame.GameTimerEnd = time;
@@ -67,18 +73,12 @@ namespace GamemodeCityClient
 
         private void VoteMap( ExpandoObject maps ) {
             Dictionary<int, string> Maps = maps.ToDictionary( x => Convert.ToInt32(x.Key), x => x.Value.ToString() );
-            foreach( var i in Maps ) {
-                Debug.WriteLine( i.Value );
-            }
             MapVote = new MapVote( Maps );
             MapVote.VoteMenu.OpenMenu();
         }
 
         private void VoteGame( ExpandoObject gamemodes ) {
             Dictionary<string, string> Gamemodes = gamemodes.ToDictionary( x =>  x.Key.ToString(), x => x.Value.ToString() );
-            foreach( var i in Gamemodes ) {
-                Debug.WriteLine( i.Value );
-            }
             GameVote = new GameVote( Gamemodes );
             GameVote.VoteMenu.OpenMenu();
             
@@ -86,7 +86,7 @@ namespace GamemodeCityClient
 
         private void PlayerSpawn( ExpandoObject spawnInfo ) {
 
-            if( ClientGlobals.Team == -1 ) {
+            if( BaseGamemode.Team == -1 ) {
                 ClientGlobals.SetNoClip( true );
             } else if( ClientGlobals.CurrentGame != null ) {
                 ClientGlobals.CurrentGame.PlayerSpawn();
@@ -119,6 +119,10 @@ namespace GamemodeCityClient
                 TriggerServerEvent( "salty:netStartGame", "ttt" );
             } ), false );
 
+            RegisterCommand( "mvb", new Action<int, List<object>, string>( ( source, args, raw ) => {
+                TriggerServerEvent( "salty:netStartGame", "mvb" );
+            } ), false );
+
             RegisterCommand("noclip", new Action<int, List<object>, string>(( source, args, raw ) => {
                 ClientGlobals.SetNoClip(!ClientGlobals.isNoclip);
             }), false);
@@ -149,8 +153,6 @@ namespace GamemodeCityClient
 
         public void StartGame( string ID, float gameLength, dynamic gameWeps, Vector3 mapPos, Vector3 mapSize ) {
 
-            MapBounds = new ClientMap(-1, "", new List<string>(), mapPos, mapSize, false );
-
             List<dynamic> weps = gameWeps as List<dynamic>;
        
             foreach( var wep in weps ) {
@@ -163,22 +165,20 @@ namespace GamemodeCityClient
             }
 
             ClientGlobals.CurrentGame = (BaseGamemode)Activator.CreateInstance( ClientGlobals.Gamemodes[ID.ToLower()].GetType() );
-            ClientGlobals.CurrentGame.Map = new ClientMap( -1, ID, new List<string>(), new Vector3( 0, 0, 0 ), new Vector3( 0, 0, 0 ), false );
+            ClientGlobals.CurrentGame.Map = new ClientMap( -1, ID, new List<string>(), mapPos, mapSize, false );
             ClientGlobals.CurrentGame.Start( gameLength );
         }
 
         public void EndGame() {
             if( ClientGlobals.CurrentGame != null ) {
                 ClientGlobals.CurrentGame.End();
-                MapBounds = null;
                 ClientGlobals.CurrentGame = null;               
                 ClientGlobals.SetSpectator( true );
                 ClientGlobals.SetNoClip( true );
             }   
         }
 
-        float deathTimer = 0;
-        float gracePeriod = 1000 * 5;
+
 
         private async Task Tick() {
             if( ClientGlobals.CurrentGame != null )
@@ -187,29 +187,7 @@ namespace GamemodeCityClient
                 ClientGlobals.NoClipUpdate();
             if( MapMenu != null )
                 MapMenu.Draw();
-            if( MapBounds != null && ClientGlobals.CurrentGame != null ) {
 
-                MapBounds.DrawBoundarys();
-
-                if( MapBounds.IsInZone( LocalPlayer.Character.Position ) ) {
-                    deathTimer = 0;
-                }
-                else {
-                    if( deathTimer == 0 )
-                        deathTimer = GetGameTimer();
-
-                    float secondsLeft = deathTimer + gracePeriod - GetGameTimer();
-                    if( secondsLeft < 0 ) {
-                        Game.Player.Character.Kill();
-                        deathTimer = 0;
-                    }
-                    ClientGlobals.CurrentGame.HUD.BoundText.Colour = System.Drawing.Color.FromArgb( 255, 0, 0 );
-                    ClientGlobals.CurrentGame.HUD.BoundText.Caption = "You have " + Math.Round( secondsLeft / 1000 ) + " seconds to return or you will die.";
-                    ClientGlobals.CurrentGame.HUD.BoundText.Draw();
-                }
-
-
-            }
         }
 
 

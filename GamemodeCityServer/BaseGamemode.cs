@@ -20,7 +20,7 @@ namespace GamemodeCityServer {
 
         public float GameTime = 0;
 
-        public Dictionary<Player, Dictionary<PlayerDetail, dynamic>> PlayerDetails = new Dictionary<Player, Dictionary<PlayerDetail, dynamic>>();
+        public Dictionary<Player, Dictionary<string, dynamic>> PlayerDetails = new Dictionary<Player, Dictionary<string, dynamic>>();
 
         public List<Player> Spectators = new List<Player>();
 
@@ -36,7 +36,7 @@ namespace GamemodeCityServer {
         }
 
         public virtual void Start( ) {
-            
+           
             TriggerClientEvent( "salty:StartGame", Gamemode, Settings.GameLength, Settings.Weapons, Map.Position, Map.Size );
         }
 
@@ -72,7 +72,7 @@ namespace GamemodeCityServer {
             return new PlayerList().Where( x => x.Handle == src ).First();
         }
 
-        public virtual void OnPlayerKilled( Player attacker, Player victim ) {
+        public virtual void OnPlayerKilled( Player victim, Player attacker, Vector3 deathcords , uint weaponHash) {
             
         }
 
@@ -113,7 +113,7 @@ namespace GamemodeCityServer {
         }
 
         public void SpawnPlayer( Player player ) {
-            dynamic team = GetPlayerDetail( player, PlayerDetail.TEAM );
+            dynamic team = GetPlayerDetail( player, "team" );
             if( team != null ) {
                 player.TriggerEvent( "salty:Spawn", (int)SpawnType.PLAYER, Map.GetSpawn( SpawnType.PLAYER, (int)team ).Position, 0 );
             } else {
@@ -126,29 +126,49 @@ namespace GamemodeCityServer {
         }
 
         public void AddScore( Player ply, float amount ) {
-            dynamic score = GetPlayerDetail( ply, PlayerDetail.SCORE );
+            dynamic score = GetPlayerDetail( ply, "score" );
             if( score != null ) {
-                SetPlayerDetail( ply, PlayerDetail.SCORE, (float)score + amount );
+                SetPlayerDetail( ply, "score", (float)score + amount );
             } else {
-                SetPlayerDetail( ply, PlayerDetail.SCORE, amount );
+                SetPlayerDetail( ply, "score", amount );
             }
         }
 
         public void SetTeam( Player ply, int team ) {
             ply.TriggerEvent( "salty:SetTeam", team );
-            SetPlayerDetail( ply, PlayerDetail.TEAM, team );
+            SetPlayerDetail( ply, "team", team );
         }
 
-        public void SetPlayerDetail( Player ply, PlayerDetail detail, dynamic data ) {
-            if( !PlayerDetails.ContainsKey( ply ) ) {
-                PlayerDetails.Add( ply, new Dictionary<PlayerDetail, dynamic>() );
+        public List<Player> GetTeamPlayers(int team ) {
+            List<Player> teamPlayers = new List<Player>();
+            foreach( var player in new PlayerList() ) {
+                int plyTeam = GetPlayerDetail( player, "team" );
+                if( plyTeam == team ) {
+                    teamPlayers.Add( player );
+                }
             }
-            PlayerDetails[ply][PlayerDetail.TEAM] = data;
+            return teamPlayers;
         }
 
-        public dynamic GetPlayerDetail( Player ply, PlayerDetail detail ) {
+
+        public virtual void OnDetailUpdate( Player ply, string key, dynamic oldValue, dynamic newValue ) {
+            TriggerClientEvent( "salty:updatePlayerDetail", ply.Handle, key, newValue );
+        }
+
+        public void SetPlayerDetail( Player ply, string detail, dynamic data ) {
+            if( !PlayerDetails.ContainsKey( ply ) ) {
+                PlayerDetails.Add( ply, new Dictionary<string, dynamic>() );
+            }
+            if( !PlayerDetails[ply].ContainsKey(detail) ) {
+                PlayerDetails[ply].Add( detail, data );
+            }
+            OnDetailUpdate( ply, detail, PlayerDetails[ply][detail], data );
+            PlayerDetails[ply][detail] = data;
+        }
+
+        public dynamic GetPlayerDetail( Player ply, string detail ) {
             if( !PlayerDetails.ContainsKey(ply) ) {
-                PlayerDetails.Add( ply, new Dictionary<PlayerDetail, dynamic>() );
+                PlayerDetails.Add( ply, new Dictionary<string, dynamic>() );
             } else if( PlayerDetails[ply].ContainsKey( detail ) ) {
                 return PlayerDetails[ply][detail];
             }
@@ -157,9 +177,5 @@ namespace GamemodeCityServer {
 
     }
 
-    public enum PlayerDetail {
-        TEAM,
-        SCORE
-    }
 
 }

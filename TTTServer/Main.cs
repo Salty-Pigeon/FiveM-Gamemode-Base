@@ -26,14 +26,19 @@ namespace TTTServer
         double traitorsPerPlayers = 4;
         double detectivesPerPlayers = 4;
         float timeAddedOnDeath = 1 * 1000 * 45;
-        
+
+        public Dictionary<int, bool> DeadBodies = new Dictionary<int, bool>();
+
+
 
         public Main() : base( "TTT" ) {
             Settings.Weapons = new List<uint>() { 2725352035, 453432689, 736523883, 3220176749, 4024951519, 2937143193, 3173288789 };
             Settings.Name = "Trouble in Terrorist Town";
             Settings.Rounds = 1;
-            Settings.GameLength = (1 * 1000 * 60);
+            Settings.GameLength = (10 * 1000 * 60);
             Settings.PreGameTime = (1 * 1000 * 15);
+
+            EventHandlers["salty::netBodyDiscovered"] += new Action<Player, int>( BodyDiscovered );
         }
 
         public override void Start() {
@@ -73,14 +78,14 @@ namespace TTTServer
 
         }
 
-        public override void OnPlayerKilled( Player attacker, Player victim ) {
-
-            base.OnPlayerKilled( attacker, victim );
+        public override void OnPlayerKilled( Player victim, Player attacker, Vector3 deathCoords, uint weaponHash ) {
+            TriggerClientEvent( "salty::SpawnDeadBody", deathCoords, Convert.ToInt32( victim.Handle ), Convert.ToInt32( victim.Handle ), weaponHash );
+            base.OnPlayerKilled( attacker, victim, deathCoords, weaponHash );
         }
 
         public override void OnPlayerDied( Player victim, int killerType, Vector3 deathCoords ) {
 
-            Teams team = (Teams)GetPlayerDetail( victim, PlayerDetail.TEAM );
+            Teams team = (Teams)GetPlayerDetail( victim, "team" );
             if( Traitors.Contains( victim ) ) {
                 Traitors.Remove( victim );
                 if( Traitors.Count == 0 ) {
@@ -112,6 +117,19 @@ namespace TTTServer
 
             base.OnPlayerDied( victim, killerType, deathCoords );
         }
+
+        public override void OnDetailUpdate( Player ply, string key, dynamic oldValue, dynamic newValue ) {
+            if( key == "disguise" ) {
+
+            }
+            base.OnDetailUpdate( ply, key, (object)oldValue, (object)newValue );
+        }
+
+        public void BodyDiscovered( [FromSource] Player ply, int body ) {
+            DeadBodies[body] = true;
+            TriggerClientEvent( "salty::UpdateDeadBody", body );
+        }
+
 
         public override void End( ) {
             if( GameTime < GetGameTimer() ) {

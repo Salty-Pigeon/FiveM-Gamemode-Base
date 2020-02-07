@@ -24,7 +24,6 @@ namespace GamemodeCityClient {
 
         public static Vector3 LastSpawn;
 
-        public static int Team = 0;
 
         public static void Init() {
 
@@ -33,26 +32,21 @@ namespace GamemodeCityClient {
         public static bool BuyItem( int cost ) {
             if( Globals.GameCoins >= cost ) {
                 Globals.GameCoins -= cost;
-                WriteChat( "Store", "Item bought.", 20, 200, 20 );
+                BaseGamemode.WriteChat( "Store", "Item bought.", 20, 200, 20 );
                 return true;
             }
             else {
-                WriteChat( "Store", "Out of coins.", 200, 20, 20 );
+                BaseGamemode.WriteChat( "Store", "Out of coins.", 200, 20, 20 );
                 return false;
             }
         }
 
-        public static void WriteChat( string prefix, string str, int r, int g, int b ) {
-            TriggerEvent( "chat:addMessage", new {
-                color = new[] { r, g, b },
-                args = new[] { prefix, str }
-            } );
-        }
+
 
         public static void SetSpectator( bool spectate ) {
             if( !spectate )
                 SetNoClip( false );        
-            Team = spectate ? -1 : 0;
+            BaseGamemode.Team = spectate ? -1 : 0;
 
         }
 

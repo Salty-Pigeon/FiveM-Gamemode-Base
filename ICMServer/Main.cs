@@ -12,15 +12,18 @@ namespace ICMServer
 {
 
     public enum Teams {
-        Kiddie,
-        IceCreamMan
+        IceCreamMan,
+        Kiddie      
     }
 
 
     public class Main : BaseGamemode
     {
+
+        Player IceCreamMan;
+
         public Main() : base( "ICM" ) {
-            Settings.GameLength = (1 * 1000 * 60);
+            Settings.GameLength = (10 * 1000 * 60);
             Settings.Name = "Ice Cream Man";
             Settings.Rounds = 1;
             Settings.PreGameTime = (1 * 1000 * 15);
@@ -33,13 +36,13 @@ namespace ICMServer
 
             List<Player> playerList = new PlayerList().ToList();
 
-            var icecreamman = playerList.OrderBy( x => Guid.NewGuid() ).First();
-            playerList.Remove( icecreamman );
-            SetTeam( icecreamman, 0 );
-            SpawnPlayer( icecreamman );
+            IceCreamMan = playerList.OrderBy( x => Guid.NewGuid() ).First();
+            playerList.Remove( IceCreamMan );
+            SetTeam( IceCreamMan, (int)Teams.IceCreamMan );
+            SpawnPlayer( IceCreamMan );
 
             foreach( var player in playerList ) {
-                SetTeam( player, 1 );
+                SetTeam( player, (int)Teams.Kiddie );
                 SpawnPlayer( player );
             }
 
@@ -51,21 +54,23 @@ namespace ICMServer
             base.OnTimerEnd();
         }
 
-        public override void OnPlayerKilled( Player player, Player victim ) {
-            if( GetPlayerDetail( victim, PlayerDetail.TEAM ) == (int)Teams.IceCreamMan ) {
+        public override void OnPlayerKilled( Player victim, Player attacker, Vector3 deathCoords, uint weaponHash ) {
+            Teams team = (Teams)GetPlayerDetail( victim, "team" );
+            if( team == Teams.IceCreamMan ) {
                 WriteChat( "Ice Cream Man", "Ice cream man defeated. Bikers win.", 255, 0, 0 );
                 End();
             }
-            base.OnPlayerKilled( player, victim );
+            base.OnPlayerKilled( victim, attacker, deathCoords, weaponHash );
         }
 
 
 
-        public override void OnPlayerDied( Player player, int killerType, Vector3 deathcords ) {
-            if( GetPlayerDetail( player, PlayerDetail.TEAM ) == (int)Teams.Kiddie ) {
-                AddScore( player, 1 );
+        public override void OnPlayerDied( Player victim, int killerType, Vector3 deathcords ) {
+            Teams team = (Teams)GetPlayerDetail( victim, "team" );
+            if( team == Teams.Kiddie ) {
+                AddScore( IceCreamMan, 1 );
             }
-            base.OnPlayerDied( player, killerType, deathcords );
+            base.OnPlayerDied( victim, killerType, deathcords );
         }
 
 

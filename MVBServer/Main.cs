@@ -10,10 +10,15 @@ using System.Threading.Tasks;
 
 namespace MVBServer
 {
+
+    public enum Teams {
+        Trucker,
+        Bikie
+    }
     public class Main : BaseGamemode
     {
         public Main() : base( "MVB" ) {
-            Settings.GameLength = (1 * 1000 * 60);
+            Settings.GameLength = (10 * 1000 * 60);
             Settings.Name = "Monster Trucks vs Motorbikes";
             Settings.Rounds = 1;
             Settings.PreGameTime = (1 * 1000 * 15);
@@ -24,18 +29,28 @@ namespace MVBServer
             base.Start();
 
 
-            PlayerList playerList = new PlayerList();
+            List<Player> playerList = new PlayerList().ToList();
 
+            var trucker = playerList.OrderBy( x => Guid.NewGuid() ).First();
+            playerList.Remove( trucker );
+            SetTeam( trucker, (int)Teams.Bikie );
+            SpawnPlayer( trucker );
 
             foreach( var player in playerList ) {
-                SpawnPlayer( player, 0 );
-                SetTeam( player, 0 );
+                SetTeam( player, (int)Teams.Bikie );
+                SpawnPlayer( player );
             }
 
         }
 
         public override void OnPlayerDied( Player victim, int killerType, Vector3 deathCoords ) {
-
+            Teams team = (Teams)GetPlayerDetail( victim, "team" );
+            if( team == Teams.Bikie ) {
+                SetTeam( victim, (int)Teams.Trucker );
+            }
+            if( GetTeamPlayers( (int)Teams.Bikie ).Count == 0 ) {
+                End();
+            }
             base.OnPlayerDied( victim, killerType, deathCoords );
         }
     }

@@ -51,7 +51,6 @@ namespace GamemodeCityClient {
         }
 
         public void ClearObjects() {
-            Debug.WriteLine( "Clearing" );
             foreach( var wep in Weapons.ToList() ) {
                 wep.Destroy();
             }

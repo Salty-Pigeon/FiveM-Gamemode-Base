@@ -20,6 +20,8 @@ namespace TTTClient
     public class Main : BaseGamemode
     {
 
+        public static Dictionary<int, DeadBody> DeadBodies = new Dictionary<int, DeadBody>();
+
         TraitorMenu BuyMenu;
 
         public bool CanTeleport = false;
@@ -31,8 +33,15 @@ namespace TTTClient
         float teleportWait = 0;
         float teleportDelay = 5 * 1000;
 
+        public bool CanDisguise = false;
+        public bool isDisguised = false;
+
         public Main() : base( "TTT" ) {
+            RequestStreamedTextureDict( "saltyTextures", true );
             HUD = new TTTHUD();
+
+            EventHandlers["salty::SpawnDeadBody"] += new Action<Vector3, int, int, uint>( SpawnDeadBody );
+            EventHandlers["salty::UpdateDeadBody"] += new Action<int>( BodyDiscovered );
         }
 
         public override void Start( float gameTime ) {
@@ -49,13 +58,17 @@ namespace TTTClient
                 DoTeleport();
             }
 
+            CantEnterVehichles();
+            foreach( var body in DeadBodies ) {
+                if( !IsPedRagdoll( body.Value.ID ) )
+                    body.Value.Update();
+            }
         }
 
         public override void Controls() {
             base.Controls();
 
             if( IsControlJustReleased( 0, (int)eControl.ControlInteractionMenu ) ) { // M 244
-                int Team = ClientGlobals.Team;
                 if( Team == (int)Teams.Traitor ) {
                     BuyMenu = new TraitorMenu( "Traitor Menu", "Traitor Buy Menu" );
                 }
@@ -64,7 +77,7 @@ namespace TTTClient
 
             if( IsControlJustPressed( 0, (int)eControl.ControlVehicleFlyAttackCamera ) ) { // Insert 121
                 if( CanTeleport ) {
-                    ClientGlobals.WriteChat( "TTT", "Position set", 200, 200, 0 );
+                    WriteChat( "TTT", "Position set", 200, 200, 0 );
                     SavedTeleport = Game.PlayerPed.Position;
                 }
             }
@@ -74,7 +87,42 @@ namespace TTTClient
                     TeleportToSaved( 3 * 1000 );
             }
 
+            if( IsControlJustPressed( 0, 38 ) ) { // E 38 dead body
+                foreach( var body in DeadBodies ) {
+                    Vector3 myPos = Game.PlayerPed.Position;
+                    float dist = GetDistanceBetweenCoords( myPos.X, myPos.Y, myPos.Z, body.Value.Position.X, body.Value.Position.Y, body.Value.Position.Z, true );
+                    if( dist > 2 ) { continue; }
+                    if( body.Value.isDiscovered ) {
+                        if( Team == (int)Teams.Detective ) {
+                            WriteChat( "TTT", "Scanning DNA", 0, 0, 230 );
+                            ((TTTHUD)HUD).DetectiveTracing = body.Value.KillerPed;
+                        }
+                    }
+                    else {
+                        body.Value.View();
+                        TriggerServerEvent( "salty::netBodyDiscovered", body.Key );
+                    }
+                }
+            }
+
+            if( IsControlJustPressed( 0, 243 ) ) { // Tilde
+                if( CanDisguise ) {             
+                    isDisguised = !isDisguised;
+                    TriggerServerEvent( "salty:netUpdatePlayerDetail", "disguised", isDisguised );
+                }
+            }
+
         }
+
+        public override void OnDetailUpdate( int ply, string key, dynamic oldValue, dynamic newValue ) {
+
+        }
+
+        public override void PlayerSpawn() {
+            base.PlayerSpawn();
+            LocalPlayer.Character.Position = ClientGlobals.LastSpawn;
+        }
+
 
         public void TeleportToSaved( float time ) {
             if( isTeleporting ) {
@@ -82,14 +130,14 @@ namespace TTTClient
             }
             if( teleportWait > GetGameTimer() ) {
                 TimeSpan timer = TimeSpan.FromMilliseconds( teleportWait - GetGameTimer() );
-                ClientGlobals.WriteChat( "TTT", "Cooldown " + timer.Seconds + "s", 200, 20, 20 );
+                WriteChat( "TTT", "Cooldown " + timer.Seconds + "s", 200, 20, 20 );
                 return;
             }
             if( Game.PlayerPed.IsShooting || Game.PlayerPed.IsJumping || Game.PlayerPed.IsInAir || Game.PlayerPed.IsReloading || Game.PlayerPed.IsClimbing || Game.PlayerPed.IsGoingIntoCover || Game.PlayerPed.IsRagdoll || Game.PlayerPed.IsGettingUp )
                 return;
 
             if( SavedTeleport == Vector3.Zero ) {
-                ClientGlobals.WriteChat( "TTT", "No destination set", 0, 0, 200 );
+                WriteChat( "TTT", "No destination set", 0, 0, 200 );
                 return;
             }
             teleportLength = time;
@@ -123,6 +171,19 @@ namespace TTTClient
                 hasTeleported = false;
                 teleportWait = GetGameTimer() + teleportDelay;
             }
+        }
+
+        public void BodyDiscovered( int body ) {
+            if( !DeadBodies[body].isDiscovered ) {
+                DeadBodies[body].Discovered();
+                WriteChat( "TTT", DeadBodies[body].Name + "'s body has been discovered", 255, 0, 0 );
+            }
+        }
+
+        public void SpawnDeadBody( Vector3 position, int ply, int killer, uint weaponHash ) {
+            int player = GetPlayerFromServerId( ply );
+            int kill = GetPlayerFromServerId( killer );
+            DeadBodies.Add( ply, new DeadBody( position, player, kill, weaponHash ) );
         }
 
         public override void SetTeam( int team ) {

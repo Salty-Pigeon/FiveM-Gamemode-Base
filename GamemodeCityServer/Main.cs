@@ -35,6 +35,8 @@ namespace GamemodeCityServer
 
             EventHandlers["salty:netVote"] += new Action<dynamic>( MakeVote );
 
+            EventHandlers["salty:netUpdatePlayerDetail"] += new Action<Player, string, dynamic>( UpdateDetail );
+
 
             EventHandlers["saltyMap:netUpdate"] += new Action<Player, ExpandoObject>( MapManager.Update );
 
@@ -54,7 +56,11 @@ namespace GamemodeCityServer
             }
         }
 
-
+        private void UpdateDetail( [FromSource] Player ply, string key, dynamic data ) {
+            if( ServerGlobals.CurrentGame != null ) {
+                ServerGlobals.CurrentGame.SetPlayerDetail( ply, key, data );
+            }
+        }
 
         private void MakeVote( dynamic ID ) {
             CurrentVote.MakeVote( ID );
@@ -89,6 +95,7 @@ namespace GamemodeCityServer
 
             int killerType = 0;
             List<dynamic> deathCoords = new List<dynamic>();
+            uint weaponHash = 0;
             foreach( var data in deathData ) {
                 if( data.Key == "killertype" ) {
                     killerType = (int)data.Value;
@@ -96,12 +103,18 @@ namespace GamemodeCityServer
                 if( data.Key == "killerpos" ) {
                     deathCoords = data.Value as List<dynamic>;
                 }
+                if( data.Key == "weaponhash" ) {
+                    weaponHash = (uint)data.Value;
+                }
             }
 
+            Vector3 DeathCoords = new Vector3( (float)deathCoords[0], (float)deathCoords[1], (float)deathCoords[2] );
+
             if( killerID > -1 ) {
-                Debug.WriteLine("Killer is " + GetPlayerName( GetPlayerFromIndex( killerID ) ) );
                 if( ServerGlobals.CurrentGame != null )
-                    ServerGlobals.CurrentGame.OnPlayerKilled( ply, ServerGlobals.CurrentGame.GetPlayer( GetPlayerFromIndex( killerID ) ) );
+                    ServerGlobals.CurrentGame.OnPlayerKilled( ply, ServerGlobals.CurrentGame.GetPlayer( GetPlayerFromIndex( killerID ) ), DeathCoords, weaponHash );
+            } else {
+                ServerGlobals.CurrentGame.OnPlayerKilled( ply, null, DeathCoords, weaponHash );
             }
 
         }
