@@ -152,7 +152,8 @@ namespace GamemodeCityServer {
 
 
         public virtual void OnDetailUpdate( Player ply, string key, dynamic oldValue, dynamic newValue ) {
-            TriggerClientEvent( "salty:updatePlayerDetail", ply.Handle, key, newValue );
+            
+            TriggerClientEvent( "salty:updatePlayerDetail", Convert.ToInt32( ply.Handle ), key, newValue );
         }
 
         public void SetPlayerDetail( Player ply, string detail, dynamic data ) {
@@ -164,6 +165,10 @@ namespace GamemodeCityServer {
             }
             OnDetailUpdate( ply, detail, PlayerDetails[ply][detail], data );
             PlayerDetails[ply][detail] = data;
+        }
+
+        public void AddPlayerDetail( Player ply, string detail, float amount ) {
+            SetPlayerDetail( ply, detail, GetPlayerDetail( ply, detail ) + amount );
         }
 
         public dynamic GetPlayerDetail( Player ply, string detail ) {

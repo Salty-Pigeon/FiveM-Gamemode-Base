@@ -126,7 +126,7 @@ namespace TTTClient {
 
             }
 
-            DrawText2D( 0.025f, 0.97f, "Radar update in " + (Math.Round( (RadarTime - GetGameTimer()) / 1000 )).ToString(), 0.3f, 255, 255, 255, 255, false );
+            DrawText2D( 0.025f, 0.97f, "Radar update in " + (Math.Floor( (RadarTime - GetGameTimer()) / 1000 )).ToString(), 0.3f, 255, 255, 255, 255, false );
 
         }
 
@@ -151,7 +151,7 @@ namespace TTTClient {
             RaycastResult result = Raycast( Game.PlayerPed.Position, position, 75, IntersectOptions.Peds1, null );
             if( result.DitHitEntity ) {
                 if( result.HitEntity != Game.PlayerPed ) {
-                    int ent = NetworkGetEntityFromNetworkId( result.HitEntity.Handle );
+                    int ent = result.HitEntity.Handle;
                     if( (bool)((Main)ClientGlobals.CurrentGame).GetPlayerDetail( result.HitEntity.NetworkId, "disguised" ) ) {
                         return;
                     }

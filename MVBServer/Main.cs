@@ -33,7 +33,7 @@ namespace MVBServer
 
             var trucker = playerList.OrderBy( x => Guid.NewGuid() ).First();
             playerList.Remove( trucker );
-            SetTeam( trucker, (int)Teams.Bikie );
+            SetTeam( trucker, (int)Teams.Trucker );
             SpawnPlayer( trucker );
 
             foreach( var player in playerList ) {
@@ -49,6 +49,7 @@ namespace MVBServer
                 SetTeam( victim, (int)Teams.Trucker );
             }
             if( GetTeamPlayers( (int)Teams.Bikie ).Count == 0 ) {
+                WriteChat( "ICM", "Game over.", 200, 200, 20 );
                 End();
             }
             base.OnPlayerDied( victim, killerType, deathCoords );

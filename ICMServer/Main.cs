@@ -27,7 +27,11 @@ namespace ICMServer
             Settings.Name = "Ice Cream Man";
             Settings.Rounds = 1;
             Settings.PreGameTime = (1 * 1000 * 15);
+
+
         }
+
+        
 
         public override void Start() {
 

@@ -32,7 +32,7 @@ namespace GamemodeCityClient {
 
 
         public virtual void OnDetailUpdate( int ply, string key, dynamic oldValue, dynamic newValue ) {
-
+            Debug.WriteLine( ply + " : " + key );
         }
 
         public void SetPlayerDetail( int ply, string detail, dynamic data ) {
@@ -57,8 +57,25 @@ namespace GamemodeCityClient {
         }
 
 
+        public bool BuyItem( int cost ) {
+            dynamic gameCoins = GetPlayerDetail( LocalPlayer.ServerId, "coins" );
+            if( gameCoins == null ) { gameCoins = 0; };
+            if( gameCoins >= cost ) {
+                TriggerServerEvent( "salty:netUpdatePlayerDetail", "coins", (int)gameCoins - 1 );
+                BaseGamemode.WriteChat( "Store", "Item bought.", 20, 200, 20 );
+                return true;
+            }
+            else {
+                BaseGamemode.WriteChat( "Store", "Out of coins.", 200, 20, 20 );
+                return false;
+            }
+        }
+
         public BaseGamemode( string gamemode ) {
             Globals.GameCoins = 0;
+            Game.PlayerPed.IsInvincible = false;
+            Game.PlayerPed.Weapons.Current.InfiniteAmmo = false;
+            Game.PlayerPed.Weapons.Current.InfiniteAmmoClip = false;
             Gamemode = gamemode.ToLower();
             if( !ClientGlobals.Gamemodes.ContainsKey( Gamemode ) )
                 ClientGlobals.Gamemodes.Add( Gamemode, this);
@@ -66,6 +83,7 @@ namespace GamemodeCityClient {
         }
 
         public virtual void Start( float gameTime ) {
+            SetMaxWantedLevel( 0 );
             LocalPlayer.Character.Health = 100;
             LocalPlayer.Character.MaxHealth = 100;
             ClientGlobals.SetSpectator( false );

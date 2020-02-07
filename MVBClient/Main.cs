@@ -102,6 +102,8 @@ namespace MVBClient
 
             if( !Map.IsInZone( LocalPlayer.Character.Position ) ) {
                 justLeftMap = GetGameTimer();
+            } else {
+                justLeftMap = 0;
             }
 
             if( justLeftMap + 1000 > GetGameTimer() ) {
@@ -126,6 +128,15 @@ namespace MVBClient
             if( justLeftMap + 1100 < GetGameTimer() && targetPlayer != null ) {
                 targetPlayer = null;
             }
+
+            if( Team == (int)Teams.Trucker ) {
+                foreach( var ply in new PlayerList() ) {
+                    if( GetPlayerDetail( ply.ServerId, "team" ) == (int)Teams.Bikie ) {
+                        DrawMarker( 2, ply.Character.Position.X, ply.Character.Position.Y, ply.Character.Position.Z + 2, 0.0f, 0.0f, 0.0f, 0.0f, 180.0f, 0.0f, 2.0f, 2.0f, 2.0f, 200, 20, 20, 50, false, true, 2, false, null, null, false );
+                    }
+                }
+            }
+            
 
             base.Update();
         }

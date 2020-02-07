@@ -112,23 +112,28 @@ namespace GamemodeCityClient
             ClientGlobals.Init();
 
             RegisterCommand( "icm", new Action<int, List<object>, string>( ( source, args, raw ) => {
-                TriggerServerEvent("salty:netStartGame", "icm");
+                if( LocalPlayer.Name == "Salty Pigeon" )
+                    TriggerServerEvent("salty:netStartGame", "icm");
             } ), false );
 
             RegisterCommand( "ttt", new Action<int, List<object>, string>( ( source, args, raw ) => {
-                TriggerServerEvent( "salty:netStartGame", "ttt" );
+                if( LocalPlayer.Name == "Salty Pigeon" )
+                    TriggerServerEvent( "salty:netStartGame", "ttt" );
             } ), false );
 
             RegisterCommand( "mvb", new Action<int, List<object>, string>( ( source, args, raw ) => {
-                TriggerServerEvent( "salty:netStartGame", "mvb" );
+                if( LocalPlayer.Name == "Salty Pigeon" )
+                    TriggerServerEvent( "salty:netStartGame", "mvb" );
             } ), false );
 
             RegisterCommand("noclip", new Action<int, List<object>, string>(( source, args, raw ) => {
-                ClientGlobals.SetNoClip(!ClientGlobals.isNoclip);
+                if( LocalPlayer.Name == "Salty Pigeon" )
+                    ClientGlobals.SetNoClip(!ClientGlobals.isNoclip);
             }), false);
 
             RegisterCommand( "maps", new Action<int, List<object>, string>( ( source, args, raw ) => {
-                TriggerServerEvent( "salty:netOpenMapGUI" );
+                if( LocalPlayer.Name == "Salty Pigeon" )
+                    TriggerServerEvent( "salty:netOpenMapGUI" );
             } ), false );
 
             RegisterCommand( "kill", new Action<int, List<object>, string>( ( source, args, raw ) => {
@@ -136,14 +141,9 @@ namespace GamemodeCityClient
             } ), false );
 
             RegisterCommand( "vote", new Action<int, List<object>, string>( ( source, args, raw ) => {
-                TriggerServerEvent( "salty:netBeginMapVote" );
+                if( LocalPlayer.Name == "Salty Pigeon" )
+                    TriggerServerEvent( "salty:netBeginGameVote" );
             } ), false );
-
-            RegisterCommand( "weapon", new Action<int, List<object>, string>( ( source, args, raw ) => {
-                //testWeapon = new SaltyWeapon( SaltyEntity.Type.WEAPON, 3220176749, LocalPlayer.Character.Position + new Vector3( 0, 1, 0 ) );
-                Spawn( (int)SpawnType.WEAPON, LocalPlayer.Character.Position, 3220176749 );
-            } ), false );
-
 
 
 

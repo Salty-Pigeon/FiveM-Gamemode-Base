@@ -56,6 +56,7 @@ namespace TTTServer
                 playerList.Remove( player );
                 Traitors.Add( player );
                 SetTeam( player, (int)Teams.Traitor );
+                SetPlayerDetail( player, "coins", 1 );
             }
 
             if( playerList.Count > 0 ) {
@@ -64,6 +65,7 @@ namespace TTTServer
                     playerList.Remove( player );
                     Detectives.Add( player );
                     SetTeam( player, (int)Teams.Detective );
+                    SetPlayerDetail( player, "coins", 1 );
                 }
             }
 
@@ -79,12 +81,15 @@ namespace TTTServer
         }
 
         public override void OnPlayerKilled( Player victim, Player attacker, Vector3 deathCoords, uint weaponHash ) {
-            TriggerClientEvent( "salty::SpawnDeadBody", deathCoords, Convert.ToInt32( victim.Handle ), Convert.ToInt32( victim.Handle ), weaponHash );
+            TriggerClientEvent( "salty::SpawnDeadBody", deathCoords, Convert.ToInt32( victim.Handle ), Convert.ToInt32( attacker.Handle ), weaponHash );
+            if( attacker != null && Traitors.Contains( attacker )  ) {
+                AddPlayerDetail( attacker, "coins", 1 );
+            }
+                
             base.OnPlayerKilled( attacker, victim, deathCoords, weaponHash );
         }
 
         public override void OnPlayerDied( Player victim, int killerType, Vector3 deathCoords ) {
-
             Teams team = (Teams)GetPlayerDetail( victim, "team" );
             if( Traitors.Contains( victim ) ) {
                 Traitors.Remove( victim );
@@ -96,8 +101,8 @@ namespace TTTServer
             }
 
             if( !Traitors.Contains( victim ) ) {
+                GameTime += timeAddedOnDeath;
                 foreach( var ply in Traitors ) {
-                    GameTime += timeAddedOnDeath;
                     ply.TriggerEvent( "salty:UpdateTime", GameTime );
                 }
             }

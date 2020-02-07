@@ -32,6 +32,7 @@ namespace GamemodeCityServer
             EventHandlers["salty:netOpenMapGUI"] += new Action<Player>( OpenMapGUI );
 
             EventHandlers["salty:netBeginMapVote"] += new Action( BeginMapVote );
+            EventHandlers["salty:netBeginGameVote"] += new Action( BeginGameVote );
 
             EventHandlers["salty:netVote"] += new Action<dynamic>( MakeVote );
 

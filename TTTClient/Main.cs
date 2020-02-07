@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using GamemodeCityShared;
-
+using MenuAPI;
 
 namespace TTTClient
 {
@@ -22,9 +22,10 @@ namespace TTTClient
 
         public static Dictionary<int, DeadBody> DeadBodies = new Dictionary<int, DeadBody>();
 
-        TraitorMenu BuyMenu;
+        BuyMenu BuyMenu;
+        ControlsMenu ControlsMenu;
 
-        public bool CanTeleport = false;
+        public static bool CanTeleport = false;
         public Vector3 SavedTeleport;
         float teleportLength;
         float teleportTime = 0;
@@ -33,15 +34,23 @@ namespace TTTClient
         float teleportWait = 0;
         float teleportDelay = 5 * 1000;
 
-        public bool CanDisguise = false;
+        public static bool CanDisguise = false;
         public bool isDisguised = false;
+
+        bool menuOpen = false;
 
         public Main() : base( "TTT" ) {
             RequestStreamedTextureDict( "saltyTextures", true );
             HUD = new TTTHUD();
-
+            CanTeleport = false;
+            CanDisguise = false;
             EventHandlers["salty::SpawnDeadBody"] += new Action<Vector3, int, int, uint>( SpawnDeadBody );
             EventHandlers["salty::UpdateDeadBody"] += new Action<int>( BodyDiscovered );
+
+            RegisterCommand( "controls", new Action<int, List<object>, string>( ( source, args, raw ) => {
+                ControlsMenu = new ControlsMenu( "Control Menu", "TTT Controls" );
+                ControlsMenu.controlMenu.OpenMenu();
+            } ), false );
         }
 
         public override void Start( float gameTime ) {
@@ -65,13 +74,56 @@ namespace TTTClient
             }
         }
 
+        public void DetectiveMenu() {
+            BuyMenu = new BuyMenu( "Buy Menu", "Detective" );
+            Action radar = () => {
+                ((TTTHUD)HUD).SetRadarActive( true );
+            };
+            BuyMenu.AddItem( "Radar", 1, radar );
+            Action teleport = () => {
+                CanTeleport = true;
+            };
+            BuyMenu.AddItem( "Teleporter", 1, teleport );
+            Action disguise = () => {
+                CanDisguise = true;
+            };
+            BuyMenu.AddItem( "Disguise", 1, disguise );
+            menuOpen = true;
+            BuyMenu.buyMenu.OpenMenu();
+        }
+
+        public void TraitorMenu() {
+            BuyMenu = new BuyMenu( "Buy Menu", "Traitor" );
+            Action radar = () => {
+                ((TTTHUD)HUD).SetRadarActive( true );
+            };
+            BuyMenu.AddItem( "Radar", 1, radar );
+            Action teleport = () => {
+                CanTeleport = true;
+            };
+            BuyMenu.AddItem( "Teleporter", 1, teleport );
+            Action disguise = () => {
+                CanDisguise = true;
+            };
+            BuyMenu.AddItem( "Disguise", 1, disguise );
+            menuOpen = true;
+            BuyMenu.buyMenu.OpenMenu();
+        }
+
         public override void Controls() {
             base.Controls();
 
             if( IsControlJustReleased( 0, (int)eControl.ControlInteractionMenu ) ) { // M 244
-                if( Team == (int)Teams.Traitor ) {
-                    BuyMenu = new TraitorMenu( "Traitor Menu", "Traitor Buy Menu" );
+                menuOpen = !menuOpen;
+                if( menuOpen ) {
+                    if( Team == (int)Teams.Traitor ) {
+                        TraitorMenu();
+                    }
+                    else if( Team == (int)Teams.Detective ) {
+                        DetectiveMenu();
+                    }
                 }
+
             }
 
 
@@ -109,13 +161,18 @@ namespace TTTClient
                 if( CanDisguise ) {             
                     isDisguised = !isDisguised;
                     TriggerServerEvent( "salty:netUpdatePlayerDetail", "disguised", isDisguised );
+                    if( isDisguised ) {
+                        WriteChat( "TTT", "Disguise enabled", 200, 200, 20 );
+                    } else {
+                        WriteChat( "TTT", "Disguise disabled", 200, 200, 20 );
+                    }
                 }
             }
 
         }
 
         public override void OnDetailUpdate( int ply, string key, dynamic oldValue, dynamic newValue ) {
-
+            base.OnDetailUpdate( ply, key, (object)oldValue, (object)newValue );
         }
 
         public override void PlayerSpawn() {

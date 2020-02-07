@@ -31,14 +31,24 @@ namespace ICMClient
         public Main(  ) : base ( "ICM" ) {
             HUD = new HUD();
             rand = new Random( GetGameTimer() );
+            EventHandlers["salty:icmDriverKillable"] += new Action( Killable );
+        }
+
+        private void Killable() {
+            if( Truck != null ) {
+                Truck.IsInvincible = false;
+                Truck.IsExplosionProof = false;
+            }
         }
 
         public override void Start( float gameTime ) {
             base.Start( gameTime );
+            HUD.SetGameTimePosition( 0, 0, false );
 
         }
 
         public override void End() {
+            SetWeaponDamageModifier( (uint)GetHashKey( "WEAPON_MICROSMG" ), 1 );
 
             if( Truck != null )
                 Truck.Delete();
@@ -61,10 +71,12 @@ namespace ICMClient
 
         public override void Update() {
             CantExitVehichles();
+
             if( Team == 0 ) {
                 if( !Game.PlayerPed.IsInVehicle() && Truck != null ) {
                     Game.PlayerPed.SetIntoVehicle( Truck, VehicleSeat.Driver );
                 }
+                
                 uint streetName = 0;
                 uint crossingName = 0;
                 GetStreetNameAtCoord( Game.PlayerPed.Position.X, Game.PlayerPed.Position.Y, Game.PlayerPed.Position.Z, ref streetName, ref crossingName );
@@ -88,16 +100,29 @@ namespace ICMClient
                 uint crossingName = 0;
                 GetStreetNameAtCoord( Game.PlayerPed.Position.X, Game.PlayerPed.Position.Y, Game.PlayerPed.Position.Z, ref streetName, ref crossingName );
                 if( streetName == 3436239235 || crossingName == 3436239235 ) {
-                    CanKill = true;
-                    GiveWeaponToPed( PlayerPedId(), (uint)GetHashKey( "weapon_rpg" ), 100, false, true );
+
+                    if( Bike != null ) {
+                        Bike.MaxSpeed = 500;
+                        Bike.EnginePowerMultiplier = 500;
+                        Bike.Position = ClientGlobals.LastSpawn;
+                        Bike.Heading = 266.6f;
+                        Bike.Velocity = Bike.ForwardVector * 5f;
+                        Bike.Speed *= 15f;
+                        SetGameplayCamRelativeHeading( 0 );
+                        TriggerEvent( "salty:icmDriverKillable" );
+                    }
+
+                    GiveWeaponToPed( PlayerPedId(), (uint)GetHashKey( "WEAPON_MICROSMG" ), 100, false, true );
+                    SetWeaponDamageModifier( (uint)GetHashKey( "WEAPON_MICROSMG" ), 9999 );
+                    Game.PlayerPed.IsInvincible = true;
+                    Game.PlayerPed.Weapons.Current.InfiniteAmmo = true;
+                    Game.PlayerPed.Weapons.Current.InfiniteAmmoClip = true;
+ 
                 }
             }
 
             if( CanKill ) {
-                SetPedMoveRateOverride( PlayerPedId(), 4f );
-                Game.PlayerPed.IsInvincible = true;
-                Game.PlayerPed.Weapons.Current.InfiniteAmmo = true;
-                Game.PlayerPed.Weapons.Current.InfiniteAmmoClip = true;
+
             }
 
             base.Update();
@@ -109,9 +134,11 @@ namespace ICMClient
                 Bike.Delete();
             Game.PlayerPed.Position = ClientGlobals.LastSpawn;
             Bike = await World.CreateVehicle( Bikes[rand.Next( 0, Bikes.Count )], Game.PlayerPed.Position, 266.6f );
-            Bike.MaxSpeed = 12;
+            Bike.MaxSpeed = 60;
+            Bike.EnginePowerMultiplier = 60;
             Game.PlayerPed.SetIntoVehicle( Bike, VehicleSeat.Driver );
             SetGameplayCamRelativeHeading( 0 );
+
         }
 
         public async Task SpawnTruck() {
@@ -126,10 +153,15 @@ namespace ICMClient
             Truck.EngineHealth = 999999;
             Truck.MaxHealth = 999999;
             Truck.Health = 999999;
-            Truck.EnginePowerMultiplier = 100;
+            Truck.EnginePowerMultiplier = 150;
+            Truck.MaxSpeed = 999;
             Truck.Gravity = 50;
             Truck.IsInvincible = true;
             Truck.IsFireProof = true;
+
+            SetPlayerVehicleDamageModifier( PlayerId(), 99999f );
+            SetVehicleDamageModifier( Truck.Handle, 99999 );
+
 
             SetVehicleHandlingFloat( NetworkGetEntityFromNetworkId( Truck.NetworkId ), "CHandlingData", "fCamberStiffnesss", 0.1f );
             SetVehicleHandlingFloat( NetworkGetEntityFromNetworkId( Truck.NetworkId ), "CHandlingData", "fMass", 10000f );

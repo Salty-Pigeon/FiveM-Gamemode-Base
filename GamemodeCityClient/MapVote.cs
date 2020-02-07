@@ -16,8 +16,6 @@ namespace GamemodeCityClient {
 
         public MapVote( Dictionary<int,string> Maps ) {
 
-            MenuController.CloseAllMenus();
-
             MenuController.MenuAlignment = MenuController.MenuAlignmentOption.Right;
             MenuController.DisableBackButton = true;
 
@@ -36,7 +34,6 @@ namespace GamemodeCityClient {
                         voted = true;
                         TriggerServerEvent( "salty:netVote", map.Key );
                         MenuController.DisableBackButton = false;
-                        MenuController.CloseAllMenus();
                         VoteMenu.CloseMenu();
                     }
                 };

@@ -14,7 +14,7 @@ namespace GamemodeCityClient {
 
         //public static Map currentMap;
         Dictionary<MenuItem, ClientMap> mapIndex = new Dictionary<MenuItem, ClientMap>();
-
+        
 
         private double DegreeToRadian( double angle ) {
             return Math.PI * angle / 180.0;
