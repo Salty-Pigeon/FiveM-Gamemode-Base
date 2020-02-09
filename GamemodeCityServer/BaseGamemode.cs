@@ -24,7 +24,7 @@ namespace GamemodeCityServer {
 
         public List<Player> Spectators = new List<Player>();
 
-        public bool PreGame = false;
+        public bool PreGame = true;
         private float PreGameTime = 0;
 
         public BaseGamemode( string gamemode ) {
@@ -32,7 +32,6 @@ namespace GamemodeCityServer {
             Gamemode = gamemode.ToLower();
             if (!ServerGlobals.Gamemodes.ContainsKey(Gamemode))
                 ServerGlobals.Gamemodes.Add(Gamemode, this);
-            PreGame = true;
 
         }
 
@@ -51,7 +50,7 @@ namespace GamemodeCityServer {
         }
 
         public virtual void Update() {
-            if( PreGame ) {
+            if( PreGame && PreGameTime > 0 ) {
                 if( PreGameTime < GetGameTimer() ) {
                     PreGame = false;
                     Main.StartGame( ServerGlobals.CurrentGame.Gamemode );
