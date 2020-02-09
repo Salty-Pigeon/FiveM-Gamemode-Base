@@ -28,12 +28,18 @@ namespace GamemodeCityServer {
         private float PreGameTime = 0;
 
         public BaseGamemode( string gamemode ) {
-            Globals.GameCoins = 0;         
+            Globals.GameCoins = 0;
             Gamemode = gamemode.ToLower();
-            if( !ServerGlobals.Gamemodes.ContainsKey( Gamemode ) )
-                ServerGlobals.Gamemodes.Add( Gamemode, this);
+            if (!ServerGlobals.Gamemodes.ContainsKey(Gamemode))
+                ServerGlobals.Gamemodes.Add(Gamemode, this);
+            PreGame = true;
 
         }
+
+        ~BaseGamemode() {
+            Debug.WriteLine("gamemode disposed");
+        }
+
 
         public virtual void Start( ) {
            
