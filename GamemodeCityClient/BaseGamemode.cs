@@ -32,7 +32,7 @@ namespace GamemodeCityClient {
 
 
         public virtual void OnDetailUpdate( int ply, string key, dynamic oldValue, dynamic newValue ) {
-            Debug.WriteLine( ply + " : " + key );
+
         }
 
         public void SetPlayerDetail( int ply, string detail, dynamic data ) {

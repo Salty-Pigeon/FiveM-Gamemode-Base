@@ -50,17 +50,21 @@ namespace TTTServer
 
             List<Player> playerList = new PlayerList().ToList();
 
-
-            for( var i = 0; i <= Math.Ceiling(playerList.Count / traitorsPerPlayers); i++ ) {
+            for( var i = 0; i < Math.Ceiling(playerList.Count / traitorsPerPlayers); i++ ) {
                 var player = playerList.OrderBy( x => Guid.NewGuid() ).First();
+                Debug.WriteLine( playerList.Count.ToString() );
+
                 playerList.Remove( player );
+
                 Traitors.Add( player );
                 SetTeam( player, (int)Teams.Traitor );
                 SetPlayerDetail( player, "coins", 1 );
             }
 
+
             if( playerList.Count > 0 ) {
                 for( var i = 0; i < Math.Floor( playerList.Count / detectivesPerPlayers ); i++ ) {
+
                     var player = playerList.OrderBy( x => Guid.NewGuid() ).First();
                     playerList.Remove( player );
                     Detectives.Add( player );
@@ -90,6 +94,7 @@ namespace TTTServer
         }
 
         public override void OnPlayerDied( Player victim, int killerType, Vector3 deathCoords ) {
+
             Teams team = (Teams)GetPlayerDetail( victim, "team" );
             if( Traitors.Contains( victim ) ) {
                 Traitors.Remove( victim );

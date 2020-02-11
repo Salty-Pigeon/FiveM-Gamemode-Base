@@ -149,10 +149,13 @@ namespace TTTClient {
             ShowDeadName();
             Vector3 position = Game.PlayerPed.ForwardVector;
             RaycastResult result = Raycast( Game.PlayerPed.Position, position, 75, IntersectOptions.Peds1, null );
-            if( result.DitHitEntity ) {
+            if( result.DitHitEntity ) {              
                 if( result.HitEntity != Game.PlayerPed ) {
                     int ent = result.HitEntity.Handle;
-                    if( (bool)((Main)ClientGlobals.CurrentGame).GetPlayerDetail( result.HitEntity.NetworkId, "disguised" ) ) {
+                   
+                    Debug.WriteLine( NetworkGetPlayerIndex( result.HitEntity.Handle ) + " > " + Game.Player.ServerId + " > " + NetworkGetPlayerIndexFromPed( result.HitEntity.NetworkId ).ToString() );
+                    dynamic val = (ClientGlobals.CurrentGame).GetPlayerDetail( result.HitEntity.NetworkId, "disguised" );
+                    if( val != null && (bool)val ) {
                         return;
                     }
                     if( IsPedAPlayer( ent ) ) {

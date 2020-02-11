@@ -22,11 +22,11 @@ namespace TTTClient
 
         public static Dictionary<int, DeadBody> DeadBodies = new Dictionary<int, DeadBody>();
 
-        BuyMenu BuyMenu;
+        public static BuyMenu BuyMenu;
         ControlsMenu ControlsMenu;
 
         public static bool CanTeleport = false;
-        public Vector3 SavedTeleport;
+        public static Vector3 SavedTeleport;
         float teleportLength;
         float teleportTime = 0;
         bool hasTeleported = false;
