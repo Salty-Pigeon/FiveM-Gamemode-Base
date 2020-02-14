@@ -33,7 +33,7 @@ namespace TTTClient {
             TeamText.Draw();
             
             DrawTeam();
-
+            DrawGoal();
             DrawRectangle( 0.098f, 0.87824f, 0.007f, 0.025f, 68, 74, 96, 255 );
 
             if( isRadarActive )

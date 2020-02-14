@@ -19,6 +19,8 @@ namespace GamemodeCityServer
         public static Vote CurrentVote;
 
         int currentRound = 0;
+        static float gameStartTimer = 0;
+        static string gameStartID;
 
         Dictionary<string, int> GameVotes = new Dictionary<string, int>();
         Dictionary<int, int> MapVotes = new Dictionary<int, int>();
@@ -55,6 +57,10 @@ namespace GamemodeCityServer
                     ServerGlobals.CurrentGame.OnTimerEnd();                 
                }
             }
+            if( gameStartTimer > 0 && gameStartTimer < GetGameTimer() ) {
+                StartGame( gameStartID );
+                gameStartTimer = 0;
+            }
         }
 
         private void UpdateDetail( [FromSource] Player ply, string key, dynamic data ) {
@@ -87,7 +93,8 @@ namespace GamemodeCityServer
         public static void EndGameVote( dynamic id ) {
             string ID = id.ToString();
             BaseGamemode.WriteChat( "Game Vote", "Winner is " + ID, 200, 200, 0 );
-            StartGame( ID );
+            gameStartTimer = GetGameTimer() + (1 * 1000 * 10);
+            gameStartID = ID;
         }
 
 

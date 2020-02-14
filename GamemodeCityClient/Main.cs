@@ -104,6 +104,7 @@ namespace GamemodeCityClient
         }
 
 
+
         private void OnClientResourceStart( string resourceName ) {
             if( GetCurrentResourceName() != resourceName ) return;
 

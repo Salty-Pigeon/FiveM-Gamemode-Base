@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using GamemodeCityShared;
 
 namespace GamemodeCityClient {
-    public class BaseGamemode : BaseScript {
+    public class BaseGamemode : BaseScript, IDisposable {
 
         string Gamemode;
 
@@ -33,6 +33,37 @@ namespace GamemodeCityClient {
 
         public virtual void OnDetailUpdate( int ply, string key, dynamic oldValue, dynamic newValue ) {
 
+        }
+
+        bool disposed = false;
+
+        // Public implementation of Dispose pattern callable by consumers.
+        public void Dispose() {
+            Dispose( true );
+            GC.SuppressFinalize( this );
+        }
+
+        // Protected implementation of Dispose pattern.
+        protected virtual void Dispose( bool disposing ) {
+            if( disposed )
+                return;
+
+            if( disposing ) {
+                // Free any other managed objects here.
+                //
+            }
+
+            HUD.Dispose();
+            Map = null;
+
+            // Free any unmanaged objects here.
+            //
+
+            disposed = true;
+        }
+
+        ~BaseGamemode() {
+            Dispose( false );
         }
 
         public void SetPlayerDetail( int ply, string detail, dynamic data ) {
@@ -98,6 +129,7 @@ namespace GamemodeCityClient {
             Map.ClearObjects();
             ClientGlobals.SetSpectator( true );
             ClientGlobals.CurrentGame = null;
+            Dispose();
         }
 
         public void CantEnterVehichles() {

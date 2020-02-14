@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace GamemodeCityClient {
-    public class HUD {
+    public class HUD : IDisposable {
 
         public SaltyText HealthText = new SaltyText( 0.034f, 0.906f, 0, 0, 0.5f, "Health: ", 255, 255, 255, 255, false, false, 0, true );
         public SaltyText AmmoText = new SaltyText( 0.034f, 0.938f, 0, 0, 0.5f, "Ammo: ", 255, 255, 255, 255, false, false, 0, true );
@@ -36,7 +36,35 @@ namespace GamemodeCityClient {
             DisplayRadar( false );
         }
 
+        bool disposed = false;
 
+        // Public implementation of Dispose pattern callable by consumers.
+        public void Dispose() {
+            Dispose( true );
+            GC.SuppressFinalize( this );
+        }
+
+        // Protected implementation of Dispose pattern.
+        protected virtual void Dispose( bool disposing ) {
+            if( disposed )
+                return;
+
+            if( disposing ) {
+                // Free any other managed objects here.
+                //
+            }
+
+
+
+            // Free any unmanaged objects here.
+            //
+
+            disposed = true;
+        }
+
+        ~HUD() {
+            Dispose( false );
+        }
 
         public void DrawRectangle( float x, float y, float width, float height, int r, int g, int b, int alpha ) {
             DrawRect( x + (width / 2), y + (height / 2), width, height, r, g, b, alpha );

@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using GamemodeCityShared;
 
 namespace GamemodeCityServer {
-    public class BaseGamemode : BaseScript {
+    public class BaseGamemode : BaseScript, IDisposable {
 
         public string Gamemode;
 
@@ -35,10 +35,32 @@ namespace GamemodeCityServer {
 
         }
 
-        ~BaseGamemode() {
-            Debug.WriteLine("gamemode disposed");
+        bool disposed = false;
+
+        // Public implementation of Dispose pattern callable by consumers.
+        public void Dispose() {
+            Dispose( true );
+            GC.SuppressFinalize( this );
         }
 
+        // Protected implementation of Dispose pattern.
+        protected virtual void Dispose( bool disposing ) {
+            if( disposed )
+                return;
+
+            if( disposing ) {
+                // Free any other managed objects here.
+                //
+            }
+
+            // Free any unmanaged objects here.
+            //
+            disposed = true;
+        }
+
+        ~BaseGamemode() {
+            Dispose( false );
+        }
 
         public virtual void Start( ) {
            
@@ -71,6 +93,7 @@ namespace GamemodeCityServer {
                 ServerGlobals.CurrentGame = null;
                 Main.BeginGameVote();
             }
+            Dispose();
         }
 
         public Player GetPlayer( string src ) {

@@ -248,12 +248,15 @@ namespace TTTClient
             switch( team ) {
                 case 0:
                     HUD.TeamText.Caption = "Innocent";
+                    HUD.SetGoal( "Defeat the traitors", 20, 200, 20, 200, 5 );
                     break;
                 case 1:
                     HUD.TeamText.Caption = "Traitor";
+                    HUD.SetGoal( "You are a Traitor", 200, 20, 20, 200, 5 );
                     break;
                 case 2:
                     HUD.TeamText.Caption = "Detective";
+                    HUD.SetGoal( "Help the innocents find the traitors", 20, 20, 200, 200, 5 );
                     break;
                 default:
                     HUD.TeamText.Caption = "Spectator";
