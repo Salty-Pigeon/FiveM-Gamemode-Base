@@ -1,246 +1,318 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using MenuAPI;
 using CitizenFX.Core;
 using static CitizenFX.Core.Native.API;
-using System.Drawing;
 using GamemodeCityShared;
 
 namespace GamemodeCityClient {
     public class MapMenu : SaltyMenu {
 
-        //public static Map currentMap;
         Dictionary<MenuItem, ClientMap> mapIndex = new Dictionary<MenuItem, ClientMap>();
-        
-
-        private double DegreeToRadian( double angle ) {
-            return Math.PI * angle / 180.0;
-        }
-
+        private static readonly string[] AvailableGamemodes = { "tdm", "ttt", "icm", "mvb" };
 
         public void EditMapMenu( Menu parent, ClientMap map ) {
 
+            // -- Map Name --
+            MenuItem nameItem = new MenuItem( "Name: " + map.Name, "Use /mapname <name> in chat to change" );
+            parent.AddMenuItem( nameItem );
 
-            Menu deleteMapMenu = AddSubMenu( parent, "Delete " + map.Name + "?" );
-            deleteMapMenu.AddMenuItem( new MenuItem( "Yes", "" ) );
-            deleteMapMenu.AddMenuItem( new MenuItem( "No", "" ) );
-            deleteMapMenu.OnItemSelect += ( _menu, _item, _index ) => {
-                if( _item.Text == "Yes" ) {
+            // -- Author --
+            MenuItem authorItem = new MenuItem( "Author: " + map.Author, "Use /mapauthor <name> in chat to change" );
+            parent.AddMenuItem( authorItem );
 
-                }
-                if( _item.Text == "No" ) {
-                    deleteMapMenu.CloseMenu();
-                }
-            };
-
-
-            parent.AddMenuItem( new MenuItem( "Show/Hide" ) );
-            parent.AddMenuItem( new MenuItem( "Teleport to" ) );
-            parent.AddMenuItem( new MenuItem( "Set Map Name" ) );
-            parent.AddMenuItem( new MenuItem( "Set Gamemodes" ) );
-
-
-            parent.OnItemSelect += ( _menu, _item, _index ) => {
-                if( _item.Text == "Show/Hide" ) {
-
-                }
-                if( _item.Text == "Teleport to" ) {
-
-                }
-                if( _item.Text == "Set Map Name" ) {
-                    ClientGlobals.SendNUIMessage( "enable", "mapName" );
-                }
-                if( _item.Text == "Set Gamemodes" ) {
-                    ClientGlobals.SendNUIMessage( "enable", "mapGamemode" );
-                }
-                if( _item.Text == "Save" ) {
-                    ClientGlobals.SendMap( map );
-                    parent.CloseMenu();
-                    TriggerServerEvent( "salty:netOpenMapGUI" );
+            // -- Enabled Toggle --
+            MenuCheckboxItem enabledToggle = new MenuCheckboxItem( "Enabled", "Is this map available for gameplay?", map.Enabled );
+            parent.AddMenuItem( enabledToggle );
+            parent.OnCheckboxChange += ( _menu, _item, _index, _checked ) => {
+                if( _item == enabledToggle ) {
+                    map.Enabled = _checked;
                 }
             };
 
+            // -- Gamemodes (checkboxes) --
+            Menu gamemodeMenu = AddSubMenu( parent, "Gamemodes" );
+            MenuItem gamemodeItem = AddMenuItem( parent, gamemodeMenu, "Gamemodes", "Select which gamemodes this map supports", "->", true );
 
+            Dictionary<MenuCheckboxItem, string> gamemodeChecks = new Dictionary<MenuCheckboxItem, string>();
+            foreach( string gm in AvailableGamemodes ) {
+                bool isChecked = map.Gamemodes.Contains( gm );
+                MenuCheckboxItem gmCheck = new MenuCheckboxItem( gm.ToUpper(), "", isChecked );
+                gamemodeMenu.AddMenuItem( gmCheck );
+                gamemodeChecks[gmCheck] = gm;
+            }
 
-            Vector2 dimensions = new Vector2( 100, 100 );
+            gamemodeMenu.OnCheckboxChange += ( _menu, _item, _index, _checked ) => {
+                if( gamemodeChecks.ContainsKey( _item ) ) {
+                    string gm = gamemodeChecks[_item];
+                    if( _checked && !map.Gamemodes.Contains( gm ) ) {
+                        map.Gamemodes.Add( gm );
+                    } else if( !_checked && map.Gamemodes.Contains( gm ) ) {
+                        map.Gamemodes.Remove( gm );
+                    }
+                }
+            };
 
-            MenuSliderItem sliderOffset = new MenuSliderItem( "Offset: 1", -25, 25, 1, false );
-            MenuSliderItem sliderX = new MenuSliderItem( "Centre X: ", -999999, 999999, (int)dimensions.X, false );
-            MenuSliderItem sliderY = new MenuSliderItem( "Centre Y: ", -999999, 999999, (int)dimensions.Y, false );
-            MenuSliderItem sliderWidth = new MenuSliderItem( "Width: ", -9999, 9999, (int)dimensions.X, false );
-            MenuSliderItem sliderLength = new MenuSliderItem( "Length: ", -9999, 9999, (int)dimensions.Y, false );
+            // -- Teleport to Map --
+            parent.AddMenuItem( new MenuItem( "Teleport to Map Center", "Teleport to the center of this map" ) );
+
+            // -- Show/Hide Boundaries --
+            parent.AddMenuItem( new MenuItem( "Show/Hide Boundaries", "Toggle boundary visualization" ) );
+
+            // -- Position Controls --
+            MenuSliderItem sliderOffset = new MenuSliderItem( "Offset: 1", 0, 50, 1, false ) { Description = "Adjustment step size" };
+            MenuSliderItem sliderX = new MenuSliderItem( "Centre X: " + (int)map.Position.X, -999999, 999999, 0, false );
+            MenuSliderItem sliderY = new MenuSliderItem( "Centre Y: " + (int)map.Position.Y, -999999, 999999, 0, false );
+            MenuSliderItem sliderZ = new MenuSliderItem( "Centre Z: " + (int)map.Position.Z, -999999, 999999, 0, false );
 
             parent.AddMenuItem( sliderOffset );
             parent.AddMenuItem( sliderX );
             parent.AddMenuItem( sliderY );
+            parent.AddMenuItem( sliderZ );
+
+            // -- Size Controls --
+            MenuSliderItem sliderWidth = new MenuSliderItem( "Width (X): " + (int)map.Size.X, -9999, 9999, 0, false );
+            MenuSliderItem sliderLength = new MenuSliderItem( "Length (Y): " + (int)map.Size.Y, -9999, 9999, 0, false );
+            MenuSliderItem sliderHeight = new MenuSliderItem( "Height (Z): " + (int)map.Size.Z, -9999, 9999, 0, false ) { Description = "0 = no height limit" };
+
             parent.AddMenuItem( sliderWidth );
             parent.AddMenuItem( sliderLength );
+            parent.AddMenuItem( sliderHeight );
 
-            MenuItem deleteMapItem = AddMenuItem( parent, deleteMapMenu, "Delete Map", "Delete entire map", "", true );
+            // -- Player Count --
+            MenuSliderItem sliderMinPlayers = new MenuSliderItem( "Min Players: " + map.MinPlayers, 1, 32, map.MinPlayers, false );
+            MenuSliderItem sliderMaxPlayers = new MenuSliderItem( "Max Players: " + map.MaxPlayers, 1, 32, map.MaxPlayers, false );
 
+            parent.AddMenuItem( sliderMinPlayers );
+            parent.AddMenuItem( sliderMaxPlayers );
 
-
+            // -- Slider Events --
             parent.OnSliderPositionChange += ( _menu, _sliderItem, _oldPosition, _newPosition, _itemIndex ) => {
+                int offset = Math.Max( 1, sliderOffset.Position );
+
                 if( _sliderItem == sliderOffset ) {
                     _sliderItem.Text = "Offset: " + _newPosition;
                 }
                 if( _sliderItem == sliderX ) {
-                    map.Position.X += (_newPosition - _oldPosition) * sliderOffset.Position;
-                    _sliderItem.Text = "Centre X: " + map.Position.X;
+                    map.Position = new Vector3( map.Position.X + (_newPosition - _oldPosition) * offset, map.Position.Y, map.Position.Z );
+                    _sliderItem.Text = "Centre X: " + (int)map.Position.X;
                 }
                 if( _sliderItem == sliderY ) {
-                    map.Position.Y += (_newPosition - _oldPosition) * sliderOffset.Position;
-                    _sliderItem.Text = "Centre Y: " + map.Position.Y;
+                    map.Position = new Vector3( map.Position.X, map.Position.Y + (_newPosition - _oldPosition) * offset, map.Position.Z );
+                    _sliderItem.Text = "Centre Y: " + (int)map.Position.Y;
+                }
+                if( _sliderItem == sliderZ ) {
+                    map.Position = new Vector3( map.Position.X, map.Position.Y, map.Position.Z + (_newPosition - _oldPosition) * offset );
+                    _sliderItem.Text = "Centre Z: " + (int)map.Position.Z;
                 }
                 if( _sliderItem == sliderWidth ) {
-                    map.Size.X += (_newPosition - _oldPosition) * sliderOffset.Position;
-                    _sliderItem.Text = "Width: " + map.Size.X;
+                    map.Size = new Vector3( map.Size.X + (_newPosition - _oldPosition) * offset, map.Size.Y, map.Size.Z );
+                    _sliderItem.Text = "Width (X): " + (int)map.Size.X;
                 }
                 if( _sliderItem == sliderLength ) {
-                    map.Size.Y += (_newPosition - _oldPosition) * sliderOffset.Position;
-                    _sliderItem.Text = "Length: " + map.Size.Y;
+                    map.Size = new Vector3( map.Size.X, map.Size.Y + (_newPosition - _oldPosition) * offset, map.Size.Z );
+                    _sliderItem.Text = "Length (Y): " + (int)map.Size.Y;
                 }
-
-
+                if( _sliderItem == sliderHeight ) {
+                    map.Size = new Vector3( map.Size.X, map.Size.Y, map.Size.Z + (_newPosition - _oldPosition) * offset );
+                    _sliderItem.Text = "Height (Z): " + (int)map.Size.Z;
+                }
+                if( _sliderItem == sliderMinPlayers ) {
+                    map.MinPlayers = _newPosition;
+                    _sliderItem.Text = "Min Players: " + _newPosition;
+                }
+                if( _sliderItem == sliderMaxPlayers ) {
+                    map.MaxPlayers = _newPosition;
+                    _sliderItem.Text = "Max Players: " + _newPosition;
+                }
             };
 
+            // -- Spawns Submenu --
+            Menu spawnMenu = AddSubMenu( parent, "Spawns - " + map.Name );
+            MenuItem spawnMenuItem = AddMenuItem( parent, spawnMenu, "Spawns (" + map.Spawns.Count + ")", "Add and edit spawn points", "->", true );
+
+            // Create spawn option
+            Menu createSpawnMenu = AddSubMenu( spawnMenu, "Create New Spawn" );
+            MenuItem createSpawnItem = AddMenuItem( spawnMenu, createSpawnMenu, "Create Spawn", "Create spawn at your current position", "->", true );
+            BuildSpawnEditor( createSpawnMenu, map, null );
+
+            // Existing spawns
+            foreach( var spawn in map.Spawns ) {
+                string spawnLabel = spawn.SpawnType.ToString() + " T" + spawn.Team + " #" + spawn.ID;
+                Menu editSpawnMenu = AddSubMenu( spawnMenu, "Edit: " + spawnLabel );
+                MenuItem editSpawnItem = AddMenuItem( spawnMenu, editSpawnMenu, spawnLabel, "Edit this spawn point", "->", true );
+                BuildSpawnEditor( editSpawnMenu, map, spawn );
+            }
+
+            // -- Save --
+            parent.AddMenuItem( new MenuItem( "~g~Save Map", "Save all changes to this map" ) );
+
+            // -- Delete Map --
+            Menu deleteMenu = AddSubMenu( parent, "Delete " + map.Name + "?" );
+            MenuItem deleteItem = AddMenuItem( parent, deleteMenu, "~r~Delete Map", "Permanently delete this map", "->", true );
+            deleteMenu.AddMenuItem( new MenuItem( "~r~Yes, Delete", "This cannot be undone!" ) );
+            deleteMenu.AddMenuItem( new MenuItem( "No, Go Back", "" ) );
+            deleteMenu.OnItemSelect += ( _menu, _item, _index ) => {
+                if( _item.Text == "~r~Yes, Delete" && map.ID > 0 ) {
+                    ClientGlobals.DeleteMap( map.ID );
+                    ClientGlobals.Maps.Remove( map.ID );
+                    BaseGamemode.WriteChat( "Maps", "Map '" + map.Name + "' deleted. Use /maps to reopen editor.", 200, 30, 30 );
+                    MenuAPI.MenuController.CloseAllMenus();
+                }
+                if( _item.Text == "No, Go Back" ) {
+                    deleteMenu.GoBack();
+                }
+            };
+
+            // -- Menu item select events --
+            parent.OnItemSelect += ( _menu, _item, _index ) => {
+                if( _item.Text == "Teleport to Map Center" ) {
+                    Game.PlayerPed.Position = map.Position;
+                }
+                if( _item.Text == "Show/Hide Boundaries" ) {
+                    map.Draw = !map.Draw;
+                    if( map.Draw ) {
+                        map.CreateBlip();
+                    } else {
+                        map.RemoveBlip();
+                    }
+                }
+                if( _item.Text == "~g~Save Map" ) {
+                    ClientGlobals.SendMap( map );
+                    BaseGamemode.WriteChat( "Maps", "Map '" + map.Name + "' saved! Use /maps to reopen editor.", 30, 200, 30 );
+                    MenuAPI.MenuController.CloseAllMenus();
+                }
+            };
+
+            // -- Menu open/close events --
             parent.OnMenuOpen += ( _ ) => {
                 ClientGlobals.LastSelectedMap = map;
+                ClientGlobals.IsEditingMap = true;
+
                 if( map.JustCreated ) {
-                    map.Position = LocalPlayer.Character.Position;
-                    map.Size = new Vector3( 0, 0, 0 );
-                    map.Name = "unnamed" + Game.GameTime;
+                    map.Position = Game.PlayerPed.Position;
+                    map.Size = new Vector3( 100, 100, 0 );
+                    map.Name = "unnamed_" + Game.GameTime;
+                    map.Author = Game.Player.Name;
                 }
-                sliderX.Text = "Centre X: " + map.Position.X;
-                sliderY.Text = "Centre Y: " + map.Position.Y;
-                sliderWidth.Text = "Width: " + map.Size.X;
-                sliderLength.Text = "Length: " + map.Size.Y;
+
+                nameItem.Text = "Name: " + map.Name;
+                authorItem.Text = "Author: " + map.Author;
+                sliderX.Text = "Centre X: " + (int)map.Position.X;
+                sliderY.Text = "Centre Y: " + (int)map.Position.Y;
+                sliderZ.Text = "Centre Z: " + (int)map.Position.Z;
+                sliderWidth.Text = "Width (X): " + (int)map.Size.X;
+                sliderLength.Text = "Length (Y): " + (int)map.Size.Y;
+                sliderHeight.Text = "Height (Z): " + (int)map.Size.Z;
+                spawnMenuItem.Text = "Spawns (" + map.Spawns.Count + ")";
             };
 
             parent.OnMenuClose += ( _ ) => {
-
+                ClientGlobals.IsEditingMap = false;
             };
+        }
 
+        private void BuildSpawnEditor( Menu spawnEditMenu, Map map, Spawn existingSpawn ) {
+            bool isNew = existingSpawn == null;
 
+            MenuListItem spawnTypeList = new MenuListItem( "Type", Enum.GetNames( typeof( SpawnType ) ).ToList(), isNew ? 0 : (int)existingSpawn.SpawnType );
+            spawnEditMenu.AddMenuItem( spawnTypeList );
 
-            Menu playerSpawnMenu = AddSubMenu( parent, "Edit " + map.Name + " player spawns" );
-            playerSpawnMenu.AddMenuItem( new MenuItem( "Save" ) );
-            MenuItem playerSpawnItem = AddMenuItem( parent, playerSpawnMenu, "Player Spawns", "Modify player spawn points", "", true );
+            MenuSliderItem teamSlider = new MenuSliderItem( "Team: " + (isNew ? 0 : existingSpawn.Team), 0, 3, isNew ? 0 : existingSpawn.Team, false );
+            spawnEditMenu.AddMenuItem( teamSlider );
 
-
-
-            Menu addSpawnMenu = EditSpawnMenu( playerSpawnMenu, map, new Spawn( -3, LocalPlayer.Character.Position, 0, "player", 0 ) );
-
-
-            foreach( var spawn in map.Spawns ) {
-                Menu editSpawnMenu = EditSpawnMenu( playerSpawnMenu, map, spawn );
+            if( !isNew ) {
+                spawnEditMenu.AddMenuItem( new MenuItem( "Teleport Here", "Teleport to this spawn point" ) );
+                spawnEditMenu.AddMenuItem( new MenuItem( "Move to My Position", "Move this spawn to where you are standing" ) );
             }
 
-            playerSpawnMenu.OnItemSelect += ( _menu, _item, _index ) => {
-                if( _item.Text == "Save" ) {
-                    ClientGlobals.SendMap( map );
-                    playerSpawnMenu.CloseMenu();
-                    TriggerServerEvent( "salty:netOpenMapGUI" );
+            spawnEditMenu.AddMenuItem( new MenuItem( isNew ? "~g~Create Spawn" : "~g~Save Spawn", "" ) );
+
+            if( !isNew ) {
+                spawnEditMenu.AddMenuItem( new MenuItem( "~r~Delete Spawn", "Remove this spawn point" ) );
+            }
+
+            spawnEditMenu.OnSliderPositionChange += ( _menu, _sliderItem, _oldPosition, _newPosition, _itemIndex ) => {
+                if( _sliderItem == teamSlider ) {
+                    _sliderItem.Text = "Team: " + _newPosition;
                 }
             };
 
-            parent.AddMenuItem( new MenuItem( "Save", "Saves new position and size" ) );
-
-
-        }
-
-        public Menu EditSpawnMenu( Menu parent, Map map, Spawn spawn ) {
-
-            MenuListItem spawnTypes = new MenuListItem( "Set spawn type", Enum.GetNames( typeof( SpawnType ) ).ToList<string>(), 0 );
-
-
-            if( spawn.ID == -3 ) {
-                spawn = new Spawn( -3, LocalPlayer.Character.Position, 0, "player", 0 );
-            }
-
-            Menu spawnEditMenu = AddSubMenu( parent, "Edit spawn" );
-
-            string name = spawn.ID == -3 ? "Create spawn" : spawn.SpawnType.ToString();
-
-            MenuItem spawnEditItem = AddMenuItem( parent, spawnEditMenu, name, "", "", true );
-            spawnEditMenu.AddMenuItem( spawnTypes );
-
-            MenuSliderItem slider = new MenuSliderItem( "Slider", 0, 10, 0, false );
-            spawnEditMenu.AddMenuItem( slider );
-
-
-            // Add team here
-            spawnEditMenu.AddMenuItem( new MenuItem( "Save" ) );
-
             spawnEditMenu.OnItemSelect += ( _menu, _item, _index ) => {
-                if( _item.Text == "Save" ) {
-                    if( spawn.ID == -3 ) {
-                        var spawny = new Spawn( -1, LocalPlayer.Character.Position, (SpawnType)spawnTypes.ListIndex, "player", slider.Position );
-                        map.Spawns.Add( spawny );
-                        EditSpawnMenu( parent, map, spawny );
-                        spawnEditMenu.GoBack();
-                    } else {
-                        spawn.SpawnType = (SpawnType)spawnTypes.ListIndex;
-                        parent.GetCurrentMenuItem().Text = spawn.SpawnType.ToString();
-                        spawnEditMenu.GoBack();
-                    }
-                }            
+                if( _item.Text == "Teleport Here" && existingSpawn != null ) {
+                    Game.PlayerPed.Position = existingSpawn.Position;
+                }
+                if( _item.Text == "Move to My Position" && existingSpawn != null ) {
+                    existingSpawn.Position = Game.PlayerPed.Position;
+                    BaseGamemode.WriteChat( "Maps", "Spawn moved to your position.", 30, 200, 200 );
+                }
+                if( _item.Text == "~g~Create Spawn" ) {
+                    var newSpawn = new Spawn( -1, Game.PlayerPed.Position, (SpawnType)spawnTypeList.ListIndex, "player", teamSlider.Position );
+                    map.Spawns.Add( newSpawn );
+                    BaseGamemode.WriteChat( "Maps", "Spawn created at your position. Type: " + newSpawn.SpawnType + " Team: " + newSpawn.Team, 30, 200, 200 );
+                    spawnEditMenu.GoBack();
+                }
+                if( _item.Text == "~g~Save Spawn" && existingSpawn != null ) {
+                    existingSpawn.SpawnType = (SpawnType)spawnTypeList.ListIndex;
+                    existingSpawn.Team = teamSlider.Position;
+                    BaseGamemode.WriteChat( "Maps", "Spawn updated.", 30, 200, 200 );
+                    spawnEditMenu.GoBack();
+                }
+                if( _item.Text == "~r~Delete Spawn" && existingSpawn != null ) {
+                    map.Spawns.Remove( existingSpawn );
+                    BaseGamemode.WriteChat( "Maps", "Spawn deleted.", 200, 30, 30 );
+                    spawnEditMenu.GoBack();
+                }
             };
-
-            return spawnEditMenu;
         }
 
         public MapMenu( string name, string subtitle, Dictionary<int, ClientMap> Maps ) {
-
 
             MenuController.MenuAlignment = MenuController.MenuAlignmentOption.Right;
             Menu mapMenu = new Menu( name, subtitle ) { Visible = true };
             MenuController.AddMenu( mapMenu );
 
-            Menu createMapSubMenu = AddSubMenu( mapMenu, "Create map" );
-            MenuItem createMapItem = AddMenuItem( mapMenu, createMapSubMenu, "Create Map", "Modify Map", "", true );
-            EditMapMenu( createMapSubMenu, new ClientMap( -1, "unnamed" + Game.GameTime, new List<string>() { "tdm" }, LocalPlayer.Character.Position, new Vector3( 0, 0, 0 ), true ) );
+            // -- Create Map --
+            Menu createMapSubMenu = AddSubMenu( mapMenu, "Create New Map" );
+            MenuItem createMapItem = AddMenuItem( mapMenu, createMapSubMenu, "~g~Create New Map", "Create a map at your current position", "->", true );
+            EditMapMenu( createMapSubMenu, new ClientMap( -1, "unnamed_" + Game.GameTime, new List<string>() { "tdm" }, Game.PlayerPed.Position, new Vector3( 100, 100, 0 ), true ) );
 
+            // -- Existing Maps --
             foreach( var map in Maps ) {
-                Menu mapSubMenu = AddSubMenu( mapMenu, "Edit " + map.Value.Name );
-                MenuItem mapItem = AddMenuItem( mapMenu, mapSubMenu, map.Value.Name, "Modify Map", "", true );
+                string mapLabel = map.Value.Name;
+                if( !map.Value.Enabled ) mapLabel = "~s~" + mapLabel + " (Disabled)";
+
+                Menu mapSubMenu = AddSubMenu( mapMenu, "Edit: " + map.Value.Name );
+                MenuItem mapItem = AddMenuItem( mapMenu, mapSubMenu, mapLabel, "Gamemodes: " + string.Join( ", ", map.Value.Gamemodes ) + " | Spawns: " + map.Value.Spawns.Count, "->", true );
                 EditMapMenu( mapSubMenu, map.Value );
                 mapIndex.Add( mapItem, map.Value );
             }
 
-            mapMenu.OnItemSelect += ( _menu, _item, _index ) => {
-                if( mapIndex.ContainsKey( _item ) ) {
-                    ClientGlobals.LastSelectedMap = mapIndex[_item];
-                }
-            };
-
+            // -- Map info display on selection --
             mapMenu.OnIndexChange += ( _menu, _oldItem, _newItem, _oldIndex, _newIndex ) => {
                 if( mapIndex.ContainsKey( _newItem ) ) {
                     ClientGlobals.LastSelectedMap = mapIndex[_newItem];
-                }
-                else {
+                } else {
                     ClientGlobals.LastSelectedMap = null;
                 }
             };
 
             mapMenu.OnMenuClose += ( _ ) => {
                 ClientGlobals.LastSelectedMap = null;
+                ClientGlobals.IsEditingMap = false;
+                // Clean up any blips
+                foreach( var map in Maps.Values ) {
+                    map.RemoveBlip();
+                }
             };
-
         }
 
         public void Draw() {
             if( ClientGlobals.LastSelectedMap != null ) {
-                ClientGlobals.LastSelectedMap.DrawBoundarys();
+                ClientGlobals.LastSelectedMap.DrawBoundaries();
                 ClientGlobals.LastSelectedMap.DrawSpawns();
             }
         }
-
-        
-
-
     }
 }
