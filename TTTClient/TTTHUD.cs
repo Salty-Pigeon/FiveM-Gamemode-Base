@@ -149,13 +149,25 @@ namespace TTTClient {
             ShowDeadName();
             Vector3 position = Game.PlayerPed.ForwardVector;
             RaycastResult result = Raycast( Game.PlayerPed.Position, position, 75, IntersectOptions.Peds1, null );
-            if( result.DitHitEntity ) {              
+            if( result.DitHitEntity ) {
                 if( result.HitEntity != Game.PlayerPed ) {
                     int ent = result.HitEntity.Handle;
-                   
+
+                    // Check if it's a test bot first
+                    TestBot bot = Main.TestBots.FirstOrDefault( b => b.Handle == ent );
+                    if( bot != null ) {
+                        // Check if bot is disguised
+                        if( bot.IsDisguised ) {
+                            return; // Don't show name if disguised
+                        }
+                        HUDText.Caption = bot.Name + " [Innocent]";
+                        lastLooked = GetGameTimer();
+                        return;
+                    }
+
                     Debug.WriteLine( NetworkGetPlayerIndex( result.HitEntity.Handle ) + " > " + Game.Player.ServerId + " > " + NetworkGetPlayerIndexFromPed( result.HitEntity.NetworkId ).ToString() );
-                    dynamic val = (ClientGlobals.CurrentGame).GetPlayerDetail( result.HitEntity.NetworkId, "disguised" );
-                    if( val != null && (bool)val ) {
+                    object val = (ClientGlobals.CurrentGame).GetPlayerDetail( result.HitEntity.NetworkId, "disguised" );
+                    if( val != null && Convert.ToBoolean( val ) ) {
                         return;
                     }
                     if( IsPedAPlayer( ent ) ) {

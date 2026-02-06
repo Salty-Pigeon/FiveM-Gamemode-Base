@@ -15,9 +15,13 @@ namespace GamemodeCityClient {
 
 
         public SaltyWeapon( SpawnType entType, uint hash, Vector3 position ) : base( entType, hash, position ) {
-            Model = Globals.Weapons[hash]["ModelHashKey"];
-            AmmoCount = Convert.ToInt32(Globals.Weapons[hash]["DefaultClipSize"]);
-            CreateEntity();
+            if( Globals.Weapons.ContainsKey( hash ) ) {
+                Model = Globals.Weapons[hash]["ModelHashKey"];
+                AmmoCount = Convert.ToInt32( Globals.Weapons[hash]["DefaultClipSize"] );
+                if( !string.IsNullOrEmpty( Model ) ) {
+                    CreateEntity();
+                }
+            }
         }
 
 

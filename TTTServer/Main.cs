@@ -1,4 +1,5 @@
 ﻿using GamemodeCityServer;
+using GamemodeCityShared;
 using CitizenFX.Core;
 using static CitizenFX.Core.Native.API;
 using System;
@@ -47,7 +48,53 @@ namespace TTTServer
         private void StartSoloMode() {
             SoloTestMode = true;
             WriteChat( "TTT", "Solo test mode enabled - starting as Traitor", 200, 200, 0 );
-            GamemodeCityServer.Main.StartGame( "ttt" );
+
+            // End any current game first
+            if( ServerGlobals.CurrentGame != null ) {
+                ServerGlobals.CurrentGame.End();
+            }
+
+            var existingMap = GamemodeCityServer.Main.MapManager.FindMap( "ttt" );
+            if( existingMap != null ) {
+                // Start directly, bypassing normal StartGame to avoid any issues
+                ServerGlobals.CurrentGame = (BaseGamemode)Activator.CreateInstance( ServerGlobals.Gamemodes["ttt"].GetType() );
+                ServerGlobals.CurrentGame.GameTime = GetGameTimer() + ServerGlobals.CurrentGame.Settings.GameLength;
+                ServerGlobals.CurrentGame.Map = existingMap;
+                ServerGlobals.CurrentGame.Start();
+                WriteChat( "TTT", "Playing on " + existingMap.Name, 200, 200, 0 );
+            } else {
+                StartWithTestMap();
+            }
+        }
+
+        private void StartWithTestMap() {
+            // Create a test map centered around Legion Square in Los Santos
+            Vector3 mapCenter = new Vector3( 195f, -935f, 30f );
+            Vector3 mapSize = new Vector3( 100f, 100f, 50f );
+
+            ServerMap testMap = new ServerMap( -999, "Solo Test Arena", new List<string> { "ttt" }, mapCenter, mapSize );
+            testMap.Author = "Solo Mode";
+            testMap.Description = "Temporary test map for solo debugging";
+            testMap.MinPlayers = 1;
+
+            // Add player spawn points (team 0 for all teams in solo mode)
+            testMap.Spawns.Add( new Spawn( 1, new Vector3( 195f, -935f, 30.5f ), SpawnType.PLAYER, "spawn1", 0 ) );
+            testMap.Spawns.Add( new Spawn( 2, new Vector3( 200f, -930f, 30.5f ), SpawnType.PLAYER, "spawn2", 0 ) );
+            testMap.Spawns.Add( new Spawn( 3, new Vector3( 190f, -940f, 30.5f ), SpawnType.PLAYER, "spawn3", 0 ) );
+
+            // Add weapon spawn points around the area
+            testMap.Spawns.Add( new Spawn( 10, new Vector3( 198f, -932f, 30.5f ), SpawnType.WEAPON, "wep1", 0 ) );
+            testMap.Spawns.Add( new Spawn( 11, new Vector3( 192f, -938f, 30.5f ), SpawnType.WEAPON, "wep2", 0 ) );
+            testMap.Spawns.Add( new Spawn( 12, new Vector3( 205f, -928f, 30.5f ), SpawnType.WEAPON, "wep3", 0 ) );
+            testMap.Spawns.Add( new Spawn( 13, new Vector3( 188f, -945f, 30.5f ), SpawnType.WEAPON, "wep4", 0 ) );
+            testMap.Spawns.Add( new Spawn( 14, new Vector3( 210f, -935f, 30.5f ), SpawnType.WEAPON, "wep5", 0 ) );
+
+            // Start the game with this test map
+            ServerGlobals.CurrentGame = (BaseGamemode)Activator.CreateInstance( ServerGlobals.Gamemodes["ttt"].GetType() );
+            ServerGlobals.CurrentGame.GameTime = GetGameTimer() + ServerGlobals.CurrentGame.Settings.GameLength;
+            ServerGlobals.CurrentGame.Map = testMap;
+            ServerGlobals.CurrentGame.Start();
+            WriteChat( "TTT", "Playing on Solo Test Arena", 200, 200, 0 );
         }
 
         public override void Start() {

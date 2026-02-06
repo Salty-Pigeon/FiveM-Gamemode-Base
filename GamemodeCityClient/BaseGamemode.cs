@@ -115,9 +115,15 @@ namespace GamemodeCityClient {
 
         public virtual void Start( float gameTime ) {
             SetMaxWantedLevel( 0 );
-            LocalPlayer.Character.Health = 100;
-            LocalPlayer.Character.MaxHealth = 100;
             ClientGlobals.SetSpectator( false );
+
+            // Resurrect the player to ensure they're alive and not in death state
+            Vector3 pos = Game.PlayerPed.Position;
+            NetworkResurrectLocalPlayer( pos.X, pos.Y, pos.Z, Game.PlayerPed.Heading, true, false );
+            LocalPlayer.Character.MaxHealth = 100;
+            LocalPlayer.Character.Health = 100;
+            Game.PlayerPed.IsInvincible = false;
+
             WriteChat( Gamemode.ToUpper(), "Game started.", 255, 0, 0 );
             RemoveAllPedWeapons( PlayerPedId(), true );
             GameTimerEnd = GetGameTimer() + gameTime;
@@ -210,10 +216,12 @@ namespace GamemodeCityClient {
         }
 
         public virtual void Controls() {
-            if( IsControlJustReleased( 0, (int)eControl.ControlEnter) ) {
+            int dropKey = ControlConfig.GetControl( Gamemode, "DropWeapon" );
+            if( dropKey > 0 && IsControlJustReleased( 0, dropKey ) ) {
+                DropWeapon();
+            } else if( dropKey <= 0 && IsControlJustReleased( 0, (int)eControl.ControlEnter ) ) {
                 DropWeapon();
             }
-
         }
 
         public void DropWeapon() {

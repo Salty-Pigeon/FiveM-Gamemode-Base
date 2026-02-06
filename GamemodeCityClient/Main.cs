@@ -229,22 +229,56 @@ namespace GamemodeCityClient {
                 MapMenu.Draw();
         }
 
-        public void Spawn( int typ, Vector3 spawn, uint hash ) {
+        public async void Spawn( int typ, Vector3 spawn, uint hash ) {
             ClientGlobals.LastSpawn = spawn;
             SpawnType type = (SpawnType)typ;
             if( type == SpawnType.PLAYER ) {
-                LocalPlayer.Character.Position = spawn;
+                // Freeze player while we load the area
+                FreezeEntityPosition( PlayerPedId(), true );
+
+                // Request collision and load the area around the spawn point
+                RequestCollisionAtCoord( spawn.X, spawn.Y, spawn.Z );
+                NewLoadSceneStart( spawn.X, spawn.Y, spawn.Z, spawn.X, spawn.Y, spawn.Z, 50f, 0 );
+
+                // Wait for collision to load (up to 2 seconds)
+                int timeout = 0;
+                while( !HasCollisionLoadedAroundEntity( PlayerPedId() ) && timeout < 20 ) {
+                    await Delay( 100 );
+                    timeout++;
+                }
+
+                // Teleport the player
+                SetEntityCoordsNoOffset( PlayerPedId(), spawn.X, spawn.Y, spawn.Z, false, false, false );
+                NewLoadSceneStop();
+
+                // Small delay then unfreeze
+                await Delay( 100 );
+                FreezeEntityPosition( PlayerPedId(), false );
+
                 PlayerSpawn( null );
             } else if( type == SpawnType.WEAPON ) {
                 if( ClientGlobals.CurrentGame != null ) {
                     if( ClientGlobals.CurrentGame.Map == null ) {
-                        Debug.WriteLine( "Map null" );
+                        Debug.WriteLine( "[TTT] Map null when spawning weapon" );
                     } else {
+                        // Pre-load the weapon model before creating the entity
+                        if( Globals.Weapons.ContainsKey( hash ) ) {
+                            string model = Globals.Weapons[hash]["ModelHashKey"];
+                            if( !string.IsNullOrEmpty( model ) ) {
+                                uint modelHash = (uint)GetHashKey( model );
+                                RequestModel( modelHash );
+                                int wepTimeout = 0;
+                                while( !HasModelLoaded( modelHash ) && wepTimeout < 50 ) {
+                                    await Delay( 50 );
+                                    wepTimeout++;
+                                }
+                            }
+                        }
                         SaltyWeapon wep = new SaltyWeapon( SpawnType.WEAPON, hash, spawn );
                         ClientGlobals.CurrentGame.Map.Weapons.Add( wep );
                     }
                 } else {
-                    Debug.WriteLine( "Game null" );
+                    Debug.WriteLine( "[TTT] Game null when spawning weapon" );
                 }
             }
         }

@@ -17,6 +17,23 @@ namespace TTTClient
         Detective
     }
 
+    // Test bot for solo mode
+    public class TestBot {
+        public int Handle;
+        public int FakeServerId;
+        public string Name;
+        public bool IsDisguised;
+        public Teams Team;
+
+        public TestBot( int handle, int fakeId, string name, Teams team ) {
+            Handle = handle;
+            FakeServerId = fakeId;
+            Name = name;
+            Team = team;
+            IsDisguised = false;
+        }
+    }
+
     public class Main : BaseGamemode
     {
 
@@ -39,6 +56,10 @@ namespace TTTClient
 
         bool menuOpen = false;
 
+        // Test bots for solo mode
+        public static List<TestBot> TestBots = new List<TestBot>();
+        static int nextBotId = 9000; // Fake server IDs for bots
+
         public Main() : base( "TTT" ) {
             RequestStreamedTextureDict( "saltyTextures", true );
             HUD = new TTTHUD();
@@ -51,6 +72,94 @@ namespace TTTClient
                 ControlsMenu = new ControlsMenu( "Control Menu", "TTT Controls" );
                 ControlsMenu.controlMenu.OpenMenu();
             } ), false );
+
+            // Solo testing bot commands
+            RegisterCommand( "spawnbot", new Action<int, List<object>, string>( async ( source, args, raw ) => {
+                await SpawnTestBot();
+            } ), false );
+
+            RegisterCommand( "botdisguise", new Action<int, List<object>, string>( ( source, args, raw ) => {
+                ToggleBotDisguise();
+            } ), false );
+
+            RegisterCommand( "clearbots", new Action<int, List<object>, string>( ( source, args, raw ) => {
+                ClearTestBots();
+            } ), false );
+        }
+
+        public static async Task SpawnTestBot() {
+            Vector3 playerPos = Game.PlayerPed.Position;
+            Vector3 spawnPos = playerPos + Game.PlayerPed.ForwardVector * 3f;
+
+            // Random ped models for variety
+            string[] pedModels = { "a_m_y_hipster_01", "a_f_y_hipster_02", "a_m_m_business_01", "a_f_m_business_02", "a_m_y_skater_01" };
+            string modelName = pedModels[new Random().Next( pedModels.Length )];
+
+            uint modelHash = (uint)GetHashKey( modelName );
+            RequestModel( modelHash );
+
+            int timeout = 0;
+            while( !HasModelLoaded( modelHash ) && timeout < 100 ) {
+                await BaseScript.Delay( 10 );
+                timeout++;
+            }
+
+            if( !HasModelLoaded( modelHash ) ) {
+                WriteChat( "TTT", "Failed to load bot model", 200, 30, 30 );
+                return;
+            }
+
+            int ped = CreatePed( 4, modelHash, spawnPos.X, spawnPos.Y, spawnPos.Z, 0f, true, false );
+            SetEntityAsMissionEntity( ped, true, true );
+            SetBlockingOfNonTemporaryEvents( ped, true );
+            SetPedFleeAttributes( ped, 0, false );
+            SetPedCombatAttributes( ped, 17, true );
+            TaskStandStill( ped, -1 );
+
+            SetModelAsNoLongerNeeded( modelHash );
+
+            int botId = nextBotId++;
+            string botName = "Bot_" + (TestBots.Count + 1);
+            TestBot bot = new TestBot( ped, botId, botName, Teams.Innocent );
+            TestBots.Add( bot );
+
+            // Register bot in player details system
+            if( ClientGlobals.CurrentGame != null ) {
+                ClientGlobals.CurrentGame.SetPlayerDetail( botId, "team", (int)Teams.Innocent );
+                ClientGlobals.CurrentGame.SetPlayerDetail( botId, "disguised", false );
+            }
+
+            WriteChat( "TTT", $"Spawned {botName} as Innocent. Use /botdisguise to toggle disguise.", 30, 200, 30 );
+        }
+
+        public static void ToggleBotDisguise() {
+            if( TestBots.Count == 0 ) {
+                WriteChat( "TTT", "No bots spawned. Use /spawnbot first.", 200, 200, 30 );
+                return;
+            }
+
+            // Toggle disguise on the most recent bot
+            TestBot bot = TestBots[TestBots.Count - 1];
+            bot.IsDisguised = !bot.IsDisguised;
+
+            if( ClientGlobals.CurrentGame != null ) {
+                ClientGlobals.CurrentGame.SetPlayerDetail( bot.FakeServerId, "disguised", bot.IsDisguised );
+            }
+
+            string status = bot.IsDisguised ? "ON (name hidden)" : "OFF (name visible)";
+            WriteChat( "TTT", $"{bot.Name} disguise: {status}", 200, 200, 30 );
+        }
+
+        public static void ClearTestBots() {
+            foreach( var bot in TestBots ) {
+                if( DoesEntityExist( bot.Handle ) ) {
+                    int handle = bot.Handle;
+                    SetEntityAsMissionEntity( handle, false, true );
+                    DeletePed( ref handle );
+                }
+            }
+            TestBots.Clear();
+            WriteChat( "TTT", "All test bots cleared.", 200, 200, 30 );
         }
 
         public override void Start( float gameTime ) {
@@ -58,6 +167,9 @@ namespace TTTClient
 
             Globals.GameCoins = 1;
 
+            // Clear any leftover bots from previous games
+            ClearTestBots();
+            DeadBodies.Clear();
         }
 
         public override void Update() {
@@ -71,6 +183,27 @@ namespace TTTClient
             foreach( var body in DeadBodies ) {
                 if( !IsPedRagdoll( body.Value.ID ) )
                     body.Value.Update();
+            }
+
+            // Update test bots - show markers and handle interactions
+            UpdateTestBots();
+        }
+
+        void UpdateTestBots() {
+            foreach( var bot in TestBots.ToList() ) {
+                if( !DoesEntityExist( bot.Handle ) ) {
+                    TestBots.Remove( bot );
+                    continue;
+                }
+
+                Vector3 botPos = GetEntityCoords( bot.Handle, true );
+
+                // Draw marker above innocent bots (green for innocent)
+                int r = 30, g = 200, b = 30;
+                if( bot.IsDisguised ) {
+                    r = 200; g = 200; b = 30; // Yellow when disguised
+                }
+                DrawMarker( 2, botPos.X, botPos.Y, botPos.Z + 1.2f, 0, 0, 0, 0, 180, 0, 0.3f, 0.3f, 0.3f, r, g, b, 150, false, true, 2, false, null, null, false );
             }
         }
 
@@ -113,7 +246,13 @@ namespace TTTClient
         public override void Controls() {
             base.Controls();
 
-            if( IsControlJustReleased( 0, (int)eControl.ControlInteractionMenu ) ) { // M 244
+            int buyMenuKey = ControlConfig.GetControl( "ttt", "BuyMenu" );
+            int setTeleportKey = ControlConfig.GetControl( "ttt", "SetTeleport" );
+            int useTeleportKey = ControlConfig.GetControl( "ttt", "UseTeleport" );
+            int interactKey = ControlConfig.GetControl( "ttt", "Interact" );
+            int disguiseKey = ControlConfig.GetControl( "ttt", "Disguise" );
+
+            if( IsControlJustReleased( 0, buyMenuKey ) ) {
                 menuOpen = !menuOpen;
                 if( menuOpen ) {
                     if( Team == (int)Teams.Traitor ) {
@@ -123,23 +262,21 @@ namespace TTTClient
                         DetectiveMenu();
                     }
                 }
-
             }
 
-
-            if( IsControlJustPressed( 0, (int)eControl.ControlVehicleFlyAttackCamera ) ) { // Insert 121
+            if( IsControlJustPressed( 0, setTeleportKey ) ) {
                 if( CanTeleport ) {
                     WriteChat( "TTT", "Position set", 200, 200, 0 );
                     SavedTeleport = Game.PlayerPed.Position;
                 }
             }
 
-            if( IsControlJustPressed( 0, (int)eControl.ControlFrontendSocialClub ) ) { // Home 212
+            if( IsControlJustPressed( 0, useTeleportKey ) ) {
                 if( CanTeleport )
                     TeleportToSaved( 3 * 1000 );
             }
 
-            if( IsControlJustPressed( 0, 38 ) ) { // E 38 dead body
+            if( IsControlJustPressed( 0, interactKey ) ) {
                 foreach( var body in DeadBodies ) {
                     Vector3 myPos = Game.PlayerPed.Position;
                     float dist = GetDistanceBetweenCoords( myPos.X, myPos.Y, myPos.Z, body.Value.Position.X, body.Value.Position.Y, body.Value.Position.Z, true );
@@ -157,8 +294,8 @@ namespace TTTClient
                 }
             }
 
-            if( IsControlJustPressed( 0, 243 ) ) { // Tilde
-                if( CanDisguise ) {             
+            if( IsControlJustPressed( 0, disguiseKey ) ) {
+                if( CanDisguise ) {
                     isDisguised = !isDisguised;
                     TriggerServerEvent( "salty:netUpdatePlayerDetail", "disguised", isDisguised );
                     if( isDisguised ) {

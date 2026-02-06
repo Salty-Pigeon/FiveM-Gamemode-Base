@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet build:*)",
+      "Bash(where:*)",
+      "Bash(\"C:/Program Files \\(x86\\)/Microsoft Visual Studio/2019/Community/MSBuild/Current/Bin/MSBuild.exe\" \"C:\\\\Users\\\\jason\\\\Documents\\\\Projects\\\\FiveM-Gamemode-Base\\\\GamemodeCity.sln\" /t:Build /p:Configuration=Debug /verbosity:minimal)",
+      "Bash(\"C:/Program Files \\(x86\\)/Microsoft Visual Studio/2019/Community/MSBuild/Current/Bin/MSBuild.exe\" \"C:\\\\Users\\\\jason\\\\Documents\\\\Projects\\\\FiveM-Gamemode-Base\\\\GamemodeCity.sln\" -t:Build -p:Configuration=Debug -verbosity:minimal)",
+      "Bash(\"C:/Program Files \\(x86\\)/Microsoft Visual Studio/2019/Community/MSBuild/Current/Bin/MSBuild.exe\" \"C:\\\\Users\\\\jason\\\\Documents\\\\Projects\\\\FiveM-Gamemode-Base\\\\GamemodeCity.sln\" -t:Rebuild -p:Configuration=Debug -verbosity:minimal)"
+    ]
+  }
+}

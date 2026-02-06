@@ -55,6 +55,7 @@
   <ItemGroup>
     <Compile Include="BaseGamemode.cs" />
     <Compile Include="BuyMenu.cs" />
+    <Compile Include="ControlConfig.cs" />
     <Compile Include="GameVote.cs" />
     <Compile Include="MapVote.cs" />
     <Compile Include="SaltyEntity.cs" />
