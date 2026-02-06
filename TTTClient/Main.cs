@@ -7,8 +7,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using GamemodeCityShared;
-using MenuAPI;
-
 namespace TTTClient
 {
     public enum Teams {
@@ -40,7 +38,6 @@ namespace TTTClient
         public static Dictionary<int, DeadBody> DeadBodies = new Dictionary<int, DeadBody>();
 
         public static BuyMenu BuyMenu;
-        ControlsMenu ControlsMenu;
 
         public static bool CanTeleport = false;
         public static Vector3 SavedTeleport;
@@ -69,8 +66,7 @@ namespace TTTClient
             EventHandlers["salty::UpdateDeadBody"] += new Action<int>( BodyDiscovered );
 
             RegisterCommand( "controls", new Action<int, List<object>, string>( ( source, args, raw ) => {
-                ControlsMenu = new ControlsMenu( "Control Menu", "TTT Controls" );
-                ControlsMenu.controlMenu.OpenMenu();
+                ControlsMenuNUI.OpenMenu( "ttt" );
             } ), false );
 
             // Solo testing bot commands

@@ -26,6 +26,9 @@ xcopy /Y /Q "%PROJECT%\ICMClient\bin\Debug\ICMClient.net.dll"                   
 xcopy /Y /Q "%PROJECT%\ICMServer\bin\Debug\ICMServer.net.dll"                   "%DEST%\"
 xcopy /Y /Q "%PROJECT%\MVBClient\bin\Debug\MVBClient.net.dll"                   "%DEST%\"
 xcopy /Y /Q "%PROJECT%\MVBServer\bin\Debug\MVBServer.net.dll"                   "%DEST%\"
+xcopy /Y /Q "%PROJECT%\fxmanifest.lua"                                          "%DEST%\"
+if not exist "%DEST%\html" mkdir "%DEST%\html"
+xcopy /Y /Q "%PROJECT%\GamemodeCityClient\html\controls.html"                  "%DEST%\html\"
 
 echo.
 echo ============================================

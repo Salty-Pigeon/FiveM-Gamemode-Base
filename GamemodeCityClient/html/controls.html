@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Controls</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+        font-family: 'Segoe UI', Arial, sans-serif;
+        background: transparent;
+        display: none;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        color: #e0e0e0;
+    }
+    body.visible { display: flex; }
+    .overlay {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0, 0, 0, 0.6);
+    }
+    .popup {
+        position: relative;
+        background: #1a1a2e;
+        border: 1px solid #3a3a5c;
+        border-radius: 8px;
+        padding: 24px;
+        min-width: 420px;
+        max-width: 500px;
+        max-height: 80vh;
+        overflow-y: auto;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        z-index: 10;
+    }
+    h1 {
+        text-align: center;
+        font-size: 22px;
+        margin-bottom: 6px;
+        color: #ffffff;
+    }
+    .subtitle {
+        text-align: center;
+        font-size: 13px;
+        color: #8888aa;
+        margin-bottom: 18px;
+    }
+    .row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 14px;
+        margin-bottom: 4px;
+        border-radius: 4px;
+        background: #16213e;
+        transition: background 0.15s;
+    }
+    .row:hover { background: #1a2744; }
+    .row .action-name {
+        font-size: 14px;
+        flex: 1;
+    }
+    .row .key-btn {
+        background: #0f3460;
+        border: 1px solid #3a5a8c;
+        border-radius: 4px;
+        color: #e0e0e0;
+        padding: 6px 16px;
+        font-size: 13px;
+        cursor: pointer;
+        min-width: 110px;
+        text-align: center;
+        transition: background 0.15s, border-color 0.15s;
+    }
+    .row .key-btn:hover { background: #1a4a7a; border-color: #5a8abb; }
+    .row .key-btn.listening {
+        background: #e94560;
+        border-color: #e94560;
+        color: #fff;
+        animation: pulse 1s infinite;
+    }
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+    }
+    .footer {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 16px;
+    }
+    .btn {
+        padding: 8px 20px;
+        border: 1px solid #3a3a5c;
+        border-radius: 4px;
+        background: #16213e;
+        color: #e0e0e0;
+        font-size: 13px;
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+    .btn:hover { background: #1a2744; }
+    .btn.reset { border-color: #e94560; color: #e94560; }
+    .btn.reset:hover { background: #2a1020; }
+    .btn.close { border-color: #5a8abb; color: #5a8abb; }
+    .btn.close:hover { background: #0f3460; }
+</style>
+</head>
+<body>
+<div class="overlay" id="overlay"></div>
+<div class="popup">
+    <h1>Controls</h1>
+    <div class="subtitle">Click a key to rebind, then press any bindable key</div>
+    <div id="bindings"></div>
+    <div class="footer">
+        <button class="btn reset" id="resetBtn">Reset to Defaults</button>
+        <button class="btn close" id="closeBtn">Close</button>
+    </div>
+</div>
+
+<script>
+    // Map JS key identifiers to FiveM control IDs
+    // Built from the bindable keys list
+    const keyToControlId = {
+        'm':          244,
+        '`':          243,
+        '~':          243,
+        'e':          38,
+        'f':          23,
+        'g':          47,
+        'h':          74,
+        'q':          44,
+        'z':          48,
+        'x':          73,
+        'Control':    36,
+        'Tab':        37,
+        'CapsLock':   171,
+        'Insert':     121,
+        'Home':       212,
+        'End':        213,
+        'Delete':     214,
+        'F2':         156,
+        'F5':         288,
+        'F6':         289,
+        'F1':         170,
+        'b':          29,
+        'n':          249,
+        'v':          0
+    };
+
+    // Reverse map: control ID to display name
+    const controlIdToName = {
+        244: 'M',
+        243: '~ (Tilde)',
+        38:  'E',
+        23:  'F',
+        47:  'G',
+        74:  'H',
+        44:  'Q',
+        48:  'Z',
+        73:  'X',
+        36:  'Ctrl',
+        37:  'Tab',
+        171: 'Caps Lock',
+        121: 'Insert',
+        212: 'Home',
+        213: 'End',
+        214: 'Delete',
+        156: 'F2',
+        288: 'F5',
+        289: 'F6',
+        170: 'F1',
+        29:  'B',
+        249: 'N',
+        0:   'V'
+    };
+
+    let bindings = {};       // action -> { controlId, actionName }
+    let listeningAction = null;
+    let rows = {};           // action -> { btn element }
+
+    function render() {
+        const container = document.getElementById('bindings');
+        container.innerHTML = '';
+        rows = {};
+
+        for (const action in bindings) {
+            const info = bindings[action];
+            const row = document.createElement('div');
+            row.className = 'row';
+
+            const name = document.createElement('span');
+            name.className = 'action-name';
+            name.textContent = info.actionName;
+
+            const btn = document.createElement('button');
+            btn.className = 'key-btn';
+            btn.textContent = controlIdToName[info.controlId] || ('Control ' + info.controlId);
+
+            btn.addEventListener('click', function() {
+                startListening(action);
+            });
+
+            row.appendChild(name);
+            row.appendChild(btn);
+            container.appendChild(row);
+            rows[action] = { btn: btn };
+        }
+    }
+
+    function startListening(action) {
+        // Cancel previous listening
+        if (listeningAction && rows[listeningAction]) {
+            const prev = rows[listeningAction].btn;
+            prev.classList.remove('listening');
+            prev.textContent = controlIdToName[bindings[listeningAction].controlId] || ('Control ' + bindings[listeningAction].controlId);
+        }
+
+        listeningAction = action;
+        rows[action].btn.classList.add('listening');
+        rows[action].btn.textContent = 'Press any key...';
+    }
+
+    function stopListening() {
+        if (listeningAction && rows[listeningAction]) {
+            const btn = rows[listeningAction].btn;
+            btn.classList.remove('listening');
+            btn.textContent = controlIdToName[bindings[listeningAction].controlId] || ('Control ' + bindings[listeningAction].controlId);
+        }
+        listeningAction = null;
+    }
+
+    document.addEventListener('keydown', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (e.key === 'Escape') {
+            if (listeningAction) {
+                stopListening();
+            } else {
+                closeMenu();
+            }
+            return;
+        }
+
+        if (!listeningAction) return;
+
+        // Normalize: use e.key for special keys, lowercase single chars
+        let key = e.key;
+        if (key.length === 1) key = key.toLowerCase();
+
+        const controlId = keyToControlId[key];
+        if (controlId === undefined) return; // Not a bindable key
+
+        // Update local state
+        bindings[listeningAction].controlId = controlId;
+
+        // Update button display
+        rows[listeningAction].btn.classList.remove('listening');
+        rows[listeningAction].btn.textContent = controlIdToName[controlId] || ('Control ' + controlId);
+
+        const action = listeningAction;
+        listeningAction = null;
+
+        // Send to C#
+        fetch('https://gamemodecity/setBind', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: action, controlId: controlId })
+        });
+    });
+
+    function closeMenu() {
+        stopListening();
+        document.body.classList.remove('visible');
+        fetch('https://gamemodecity/closeMenu', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+        });
+    }
+
+    document.getElementById('closeBtn').addEventListener('click', closeMenu);
+    document.getElementById('overlay').addEventListener('click', closeMenu);
+
+    document.getElementById('resetBtn').addEventListener('click', function() {
+        fetch('https://gamemodecity/resetDefaults', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+        });
+    });
+
+    // Listen for messages from C#
+    window.addEventListener('message', function(event) {
+        const data = event.data;
+
+        if (data.type === 'openControls') {
+            bindings = data.bindings;
+            render();
+            listeningAction = null;
+            document.body.classList.add('visible');
+        }
+        else if (data.type === 'updateControls') {
+            bindings = data.bindings;
+            render();
+            listeningAction = null;
+        }
+        else if (data.type === 'closeControls') {
+            stopListening();
+            document.body.classList.remove('visible');
+        }
+    });
+</script>
+</body>
+</html>

@@ -5,7 +5,11 @@
       "Bash(where:*)",
       "Bash(\"C:/Program Files \\(x86\\)/Microsoft Visual Studio/2019/Community/MSBuild/Current/Bin/MSBuild.exe\" \"C:\\\\Users\\\\jason\\\\Documents\\\\Projects\\\\FiveM-Gamemode-Base\\\\GamemodeCity.sln\" /t:Build /p:Configuration=Debug /verbosity:minimal)",
       "Bash(\"C:/Program Files \\(x86\\)/Microsoft Visual Studio/2019/Community/MSBuild/Current/Bin/MSBuild.exe\" \"C:\\\\Users\\\\jason\\\\Documents\\\\Projects\\\\FiveM-Gamemode-Base\\\\GamemodeCity.sln\" -t:Build -p:Configuration=Debug -verbosity:minimal)",
-      "Bash(\"C:/Program Files \\(x86\\)/Microsoft Visual Studio/2019/Community/MSBuild/Current/Bin/MSBuild.exe\" \"C:\\\\Users\\\\jason\\\\Documents\\\\Projects\\\\FiveM-Gamemode-Base\\\\GamemodeCity.sln\" -t:Rebuild -p:Configuration=Debug -verbosity:minimal)"
+      "Bash(\"C:/Program Files \\(x86\\)/Microsoft Visual Studio/2019/Community/MSBuild/Current/Bin/MSBuild.exe\" \"C:\\\\Users\\\\jason\\\\Documents\\\\Projects\\\\FiveM-Gamemode-Base\\\\GamemodeCity.sln\" -t:Rebuild -p:Configuration=Debug -verbosity:minimal)",
+      "Bash(dir:*)",
+      "Bash(findstr:*)",
+      "Bash(cmd.exe /c \"dir /b \"\"C:\\\\FiveM\\\\txData\\\\FiveMBasicServerCFXDefault_857960.base\\\\resources\\\\[gamemodes]\\\\gamemodecity\"\"\")",
+      "Bash(cmd.exe /c:*)"
     ]
   }
 }
