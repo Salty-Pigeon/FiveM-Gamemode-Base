@@ -25,20 +25,21 @@ namespace GamemodeCityServer {
             MapManager = new MapManager();
 
             EventHandlers["salty:netStartGame"] += new Action<string>( StartGame );
+            EventHandlers["salty:netEndGame"] += new Action( EndGame );
             EventHandlers["salty:netOpenMapGUI"] += new Action<Player>( OpenMapGUI );
 
             EventHandlers["salty:netBeginMapVote"] += new Action( BeginMapVote );
             EventHandlers["salty:netBeginGameVote"] += new Action( BeginGameVote );
 
-            EventHandlers["salty:netVote"] += new Action<dynamic>( MakeVote );
+            EventHandlers["salty:netVote"] += new Action<object>( MakeVote );
 
-            EventHandlers["salty:netUpdatePlayerDetail"] += new Action<Player, string, dynamic>( UpdateDetail );
+            EventHandlers["salty:netUpdatePlayerDetail"] += new Action<Player, string, object>( UpdateDetail );
 
             EventHandlers["saltyMap:netUpdate"] += new Action<Player, string>( MapManager.Update );
             EventHandlers["saltyMap:netDelete"] += new Action<Player, int>( MapManager.DeleteMap );
 
-            EventHandlers["baseevents:onPlayerKilled"] += new Action<Player, int, dynamic>( PlayerKilled );
-            EventHandlers["baseevents:onPlayerDied"] += new Action<Player, int, List<dynamic>>( PlayerDied );
+            EventHandlers["baseevents:onPlayerKilled"] += new Action<Player, int, object>( PlayerKilled );
+            EventHandlers["baseevents:onPlayerDied"] += new Action<Player, int, IList<object>>( PlayerDied );
 
             base.Tick += Tick;
         }
@@ -56,13 +57,13 @@ namespace GamemodeCityServer {
             }
         }
 
-        private void UpdateDetail( [FromSource] Player ply, string key, dynamic data ) {
+        private void UpdateDetail( [FromSource] Player ply, string key, object data ) {
             if( ServerGlobals.CurrentGame != null ) {
                 ServerGlobals.CurrentGame.SetPlayerDetail( ply, key, data );
             }
         }
 
-        private void MakeVote( dynamic ID ) {
+        private void MakeVote( object ID ) {
             CurrentVote.MakeVote( ID );
         }
 
@@ -71,7 +72,7 @@ namespace GamemodeCityServer {
             TriggerClientEvent( "salty:MapVote", MapManager.MapList() );
         }
 
-        public void EndMapVote( dynamic id ) {
+        public void EndMapVote( object id ) {
             int ID = Convert.ToInt32( id );
             ServerMap winner = MapManager.Maps.Where( x => x.ID == ID ).FirstOrDefault();
             if( winner != null ) {
@@ -84,17 +85,17 @@ namespace GamemodeCityServer {
             TriggerClientEvent( "salty:GameVote", ServerGlobals.GamemodeList() );
         }
 
-        public static void EndGameVote( dynamic id ) {
+        public static void EndGameVote( object id ) {
             string ID = id.ToString();
             BaseGamemode.WriteChat( "Game Vote", "Winner is " + ID, 200, 200, 0 );
             gameStartTimer = GetGameTimer() + (1 * 1000 * 10);
             gameStartID = ID;
         }
 
-        private void PlayerKilled( [FromSource] Player ply, int killerID, dynamic deathData ) {
+        private void PlayerKilled( [FromSource] Player ply, int killerID, object deathData ) {
             try {
                 int killerType = 0;
-                List<object> deathCoords = new List<object>();
+                IList<object> deathCoords = null;
                 uint weaponHash = 0;
 
                 var deathDict = deathData as IDictionary<string, object>;
@@ -102,7 +103,7 @@ namespace GamemodeCityServer {
                     if( deathDict.ContainsKey( "killertype" ) )
                         killerType = Convert.ToInt32( deathDict["killertype"] );
                     if( deathDict.ContainsKey( "killerpos" ) )
-                        deathCoords = deathDict["killerpos"] as List<object>;
+                        deathCoords = deathDict["killerpos"] as IList<object>;
                     if( deathDict.ContainsKey( "weaponhash" ) )
                         weaponHash = Convert.ToUInt32( deathDict["weaponhash"] );
                 }
@@ -124,7 +125,7 @@ namespace GamemodeCityServer {
             }
         }
 
-        private void PlayerDied( [FromSource] Player ply, int killerType, List<dynamic> deathcords ) {
+        private void PlayerDied( [FromSource] Player ply, int killerType, IList<object> deathcords ) {
             try {
                 Vector3 coords = new Vector3( Convert.ToSingle( deathcords[0] ), Convert.ToSingle( deathcords[1] ), Convert.ToSingle( deathcords[2] ) );
                 if( ServerGlobals.CurrentGame != null )
@@ -159,6 +160,12 @@ namespace GamemodeCityServer {
             ServerGlobals.CurrentGame.Map = map;
             ServerGlobals.CurrentGame.Start();
             BaseGamemode.WriteChat( ID.ToUpper(), "Playing map " + ServerGlobals.CurrentGame.Map.Name, 200, 30, 30 );
+        }
+
+        public static void EndGame() {
+            if( ServerGlobals.CurrentGame != null ) {
+                ServerGlobals.CurrentGame.End();
+            }
         }
     }
 }

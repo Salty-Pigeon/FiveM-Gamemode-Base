@@ -29,6 +29,8 @@ namespace TTTServer
 
         public Dictionary<int, bool> DeadBodies = new Dictionary<int, bool>();
 
+        // Solo testing mode - allows 1 player to test as traitor
+        public static bool SoloTestMode = false;
 
 
         public Main() : base( "TTT" ) {
@@ -39,6 +41,13 @@ namespace TTTServer
             Settings.PreGameTime = (1 * 1000 * 15);
 
             EventHandlers["salty::netBodyDiscovered"] += new Action<Player, int>( BodyDiscovered );
+            EventHandlers["salty:netStartSoloTTT"] += new Action( StartSoloMode );
+        }
+
+        private void StartSoloMode() {
+            SoloTestMode = true;
+            WriteChat( "TTT", "Solo test mode enabled - starting as Traitor", 200, 200, 0 );
+            GamemodeCityServer.Main.StartGame( "ttt" );
         }
 
         public override void Start() {
@@ -47,8 +56,18 @@ namespace TTTServer
 
             Map.SpawnGuns();
 
-
             List<Player> playerList = new PlayerList().ToList();
+
+            // Solo test mode - single player becomes traitor, no win conditions
+            if( SoloTestMode && playerList.Count == 1 ) {
+                var player = playerList[0];
+                Traitors.Add( player );
+                SetTeam( player, (int)Teams.Traitor );
+                SetPlayerDetail( player, "coins", 5 ); // Give extra coins for testing
+                WriteChat( "TTT", "Solo mode: You are a Traitor. Use /endttt to end.", 200, 200, 0 );
+                SpawnPlayers( 0 );
+                return;
+            }
 
             for( var i = 0; i < Math.Ceiling(playerList.Count / traitorsPerPlayers); i++ ) {
                 var player = playerList.OrderBy( x => Guid.NewGuid() ).First();
@@ -95,7 +114,13 @@ namespace TTTServer
 
         public override void OnPlayerDied( Player victim, int killerType, Vector3 deathCoords ) {
 
-            Teams team = (Teams)GetPlayerDetail( victim, "team" );
+            // Skip win conditions in solo mode
+            if( SoloTestMode ) {
+                base.OnPlayerDied( victim, killerType, deathCoords );
+                return;
+            }
+
+            object teamObj = GetPlayerDetail( victim, "team" );
             if( Traitors.Contains( victim ) ) {
                 Traitors.Remove( victim );
                 if( Traitors.Count == 0 ) {
@@ -128,11 +153,11 @@ namespace TTTServer
             base.OnPlayerDied( victim, killerType, deathCoords );
         }
 
-        public override void OnDetailUpdate( Player ply, string key, dynamic oldValue, dynamic newValue ) {
+        public override void OnDetailUpdate( Player ply, string key, object oldValue, object newValue ) {
             if( key == "disguise" ) {
 
             }
-            base.OnDetailUpdate( ply, key, (object)oldValue, (object)newValue );
+            base.OnDetailUpdate( ply, key, oldValue, newValue );
         }
 
         public void BodyDiscovered( [FromSource] Player ply, int body ) {
@@ -142,9 +167,10 @@ namespace TTTServer
 
 
         public override void End( ) {
-            if( GameTime < GetGameTimer() ) {
+            if( !SoloTestMode && GameTime < GetGameTimer() ) {
                 WriteChat( "TTT", "Time over! Innocents win", 200, 20, 20 );
             }
+            SoloTestMode = false; // Reset solo mode
             base.End();
         }
 

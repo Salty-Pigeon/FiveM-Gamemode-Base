@@ -12,16 +12,16 @@ namespace GamemodeCityServer {
         int initPlayerCount;
         int votes = 0;
 
-        Action<dynamic> winner;
+        Action<object> winner;
 
-        Dictionary<dynamic, int> Votes = new Dictionary<dynamic, int>();
+        Dictionary<object, int> Votes = new Dictionary<object, int>();
 
-        public Vote( Action<dynamic> win ) {
+        public Vote( Action<object> win ) {
             initPlayerCount = new PlayerList().Count();
             winner = win;
         }
 
-        public void MakeVote( dynamic ID ) {
+        public void MakeVote( object ID ) {
             if( !Votes.ContainsKey( ID ) )
                 Votes.Add( ID, 1 );
             Votes[ID]++;
@@ -32,7 +32,7 @@ namespace GamemodeCityServer {
             }
         }
 
-        public dynamic GetWinner() {
+        public object GetWinner() {
             return Votes.Aggregate( ( l, r ) => l.Value > r.Value ? l : r ).Key;
         }
 

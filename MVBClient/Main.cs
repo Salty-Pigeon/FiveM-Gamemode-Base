@@ -131,7 +131,8 @@ namespace MVBClient
 
             if( Team == (int)Teams.Trucker ) {
                 foreach( var ply in new PlayerList() ) {
-                    if( GetPlayerDetail( ply.ServerId, "team" ) == (int)Teams.Bikie ) {
+                    object teamObj = GetPlayerDetail( ply.ServerId, "team" );
+                    if( teamObj != null && Convert.ToInt32( teamObj ) == (int)Teams.Bikie ) {
                         DrawMarker( 2, ply.Character.Position.X, ply.Character.Position.Y, ply.Character.Position.Z + 2, 0.0f, 0.0f, 0.0f, 0.0f, 180.0f, 0.0f, 2.0f, 2.0f, 2.0f, 200, 20, 20, 50, false, true, 2, false, null, null, false );
                     }
                 }

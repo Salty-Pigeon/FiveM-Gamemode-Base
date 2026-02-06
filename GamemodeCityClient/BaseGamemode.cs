@@ -28,10 +28,10 @@ namespace GamemodeCityClient {
 
         public static int Team = 0;
 
-        public Dictionary<int, Dictionary<string, dynamic>> PlayerDetails = new Dictionary<int, Dictionary<string, dynamic>>();
+        public Dictionary<int, Dictionary<string, object>> PlayerDetails = new Dictionary<int, Dictionary<string, object>>();
 
 
-        public virtual void OnDetailUpdate( int ply, string key, dynamic oldValue, dynamic newValue ) {
+        public virtual void OnDetailUpdate( int ply, string key, object oldValue, object newValue ) {
 
         }
 
@@ -66,9 +66,9 @@ namespace GamemodeCityClient {
             Dispose( false );
         }
 
-        public void SetPlayerDetail( int ply, string detail, dynamic data ) {
+        public void SetPlayerDetail( int ply, string detail, object data ) {
             if( !PlayerDetails.ContainsKey( ply ) ) {
-                PlayerDetails.Add( ply, new Dictionary<string, dynamic>() );
+                PlayerDetails.Add( ply, new Dictionary<string, object>() );
             }
             if( !PlayerDetails[ply].ContainsKey( detail ) ) {
                 PlayerDetails[ply].Add( detail, data );
@@ -77,9 +77,9 @@ namespace GamemodeCityClient {
             PlayerDetails[ply][detail] = data;
         }
 
-        public dynamic GetPlayerDetail( int ply, string detail ) {
+        public object GetPlayerDetail( int ply, string detail ) {
             if( !PlayerDetails.ContainsKey( ply ) ) {
-                PlayerDetails.Add( ply, new Dictionary<string, dynamic>() );
+                PlayerDetails.Add( ply, new Dictionary<string, object>() );
             }
             else if( PlayerDetails[ply].ContainsKey( detail ) ) {
                 return PlayerDetails[ply][detail];
@@ -89,10 +89,10 @@ namespace GamemodeCityClient {
 
 
         public bool BuyItem( int cost ) {
-            dynamic gameCoins = GetPlayerDetail( LocalPlayer.ServerId, "coins" );
-            if( gameCoins == null ) { gameCoins = 0; };
+            object gameCoinsObj = GetPlayerDetail( LocalPlayer.ServerId, "coins" );
+            int gameCoins = gameCoinsObj != null ? Convert.ToInt32( gameCoinsObj ) : 0;
             if( gameCoins >= cost ) {
-                TriggerServerEvent( "salty:netUpdatePlayerDetail", "coins", (int)gameCoins - 1 );
+                TriggerServerEvent( "salty:netUpdatePlayerDetail", "coins", gameCoins - 1 );
                 BaseGamemode.WriteChat( "Store", "Item bought.", 20, 200, 20 );
                 return true;
             }

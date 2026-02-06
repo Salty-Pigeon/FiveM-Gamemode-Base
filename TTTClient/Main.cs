@@ -171,8 +171,8 @@ namespace TTTClient
 
         }
 
-        public override void OnDetailUpdate( int ply, string key, dynamic oldValue, dynamic newValue ) {
-            base.OnDetailUpdate( ply, key, (object)oldValue, (object)newValue );
+        public override void OnDetailUpdate( int ply, string key, object oldValue, object newValue ) {
+            base.OnDetailUpdate( ply, key, oldValue, newValue );
         }
 
         public override void PlayerSpawn() {

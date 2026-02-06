@@ -18,7 +18,7 @@ namespace GamemodeCityClient {
             EventHandlers["onClientResourceStart"] += new Action<string>( OnClientResourceStart );
             EventHandlers["playerSpawned"] += new Action<object>( PlayerSpawn );
 
-            EventHandlers["salty:StartGame"] += new Action<string, float, dynamic, Vector3, Vector3>( StartGame );
+            EventHandlers["salty:StartGame"] += new Action<string, float, object, Vector3, Vector3>( StartGame );
             EventHandlers["salty:EndGame"] += new Action( EndGame );
             EventHandlers["salty:CacheMap"] += new Action<string>( CacheMap );
             EventHandlers["salty:OpenMapGUI"] += new Action( OpenMapGUI );
@@ -27,12 +27,12 @@ namespace GamemodeCityClient {
             EventHandlers["salty:MapVote"] += new Action<IDictionary<string, object>>( VoteMap );
             EventHandlers["salty:GameVote"] += new Action<IDictionary<string, object>>( VoteGame );
             EventHandlers["salty:UpdateTime"] += new Action<float>( UpdateTime );
-            EventHandlers["salty:updatePlayerDetail"] += new Action<int, string, dynamic>( UpdateDetail );
+            EventHandlers["salty:updatePlayerDetail"] += new Action<int, string, object>( UpdateDetail );
 
             base.Tick += Tick;
         }
 
-        private void UpdateDetail( int ply, string key, dynamic data ) {
+        private void UpdateDetail( int ply, string key, object data ) {
             if( ClientGlobals.CurrentGame != null ) {
                 ClientGlobals.CurrentGame.SetPlayerDetail( ply, key, data );
             }
@@ -113,6 +113,16 @@ namespace GamemodeCityClient {
                 TriggerServerEvent( "salty:netStartGame", "ttt" );
             } ), false );
 
+            // Solo TTT mode for testing alone
+            RegisterCommand( "solottt", new Action<int, List<object>, string>( ( source, args, raw ) => {
+                TriggerServerEvent( "salty:netStartSoloTTT" );
+            } ), false );
+
+            // End current TTT game (useful for solo testing)
+            RegisterCommand( "endttt", new Action<int, List<object>, string>( ( source, args, raw ) => {
+                TriggerServerEvent( "salty:netEndGame" );
+            } ), false );
+
             RegisterCommand( "mvb", new Action<int, List<object>, string>( ( source, args, raw ) => {
                 TriggerServerEvent( "salty:netStartGame", "mvb" );
             } ), false );
@@ -181,21 +191,23 @@ namespace GamemodeCityClient {
             } ), false );
         }
 
-        public void StartGame( string ID, float gameLength, dynamic gameWeps, Vector3 mapPos, Vector3 mapSize ) {
-            List<dynamic> weps = gameWeps as List<dynamic>;
-            if( weps != null ) {
-                foreach( var wep in weps ) {
-                    if( ClientGlobals.CurrentGame != null && !ClientGlobals.CurrentGame.GameWeapons.Contains( wep ) )
-                        ClientGlobals.CurrentGame.GameWeapons.Add( wep );
-                }
-            }
-
+        public void StartGame( string ID, float gameLength, object gameWeps, Vector3 mapPos, Vector3 mapSize ) {
             if( ClientGlobals.CurrentGame != null ) {
                 ClientGlobals.CurrentGame.Map.ClearObjects();
             }
 
             ClientGlobals.CurrentGame = (BaseGamemode)Activator.CreateInstance( ClientGlobals.Gamemodes[ID.ToLower()].GetType() );
             ClientGlobals.CurrentGame.Map = new ClientMap( -1, ID, new List<string>(), mapPos, mapSize, false );
+
+            // Convert weapons from network format to List<uint>
+            if( gameWeps is IList<object> wepList ) {
+                foreach( var wep in wepList ) {
+                    uint wepHash = Convert.ToUInt32( wep );
+                    if( !ClientGlobals.CurrentGame.GameWeapons.Contains( wepHash ) )
+                        ClientGlobals.CurrentGame.GameWeapons.Add( wepHash );
+                }
+            }
+
             ClientGlobals.CurrentGame.Start( gameLength );
         }
 
