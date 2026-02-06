@@ -1,14 +1,10 @@
-﻿using CitizenFX.Core;
+using CitizenFX.Core;
 using static CitizenFX.Core.Native.API;
 using CitizenFX.Core.Native;
 using GamemodeCityShared;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Dynamic;
-
 namespace GamemodeCityClient {
     public class ClientGlobals : BaseScript {
 
@@ -24,9 +20,9 @@ namespace GamemodeCityClient {
 
         public static Vector3 LastSpawn;
 
+        public static bool IsEditingMap = false;
 
         public static void Init() {
-
         }
 
         public static bool BuyItem( int cost ) {
@@ -34,42 +30,26 @@ namespace GamemodeCityClient {
                 Globals.GameCoins -= cost;
                 BaseGamemode.WriteChat( "Store", "Item bought.", 20, 200, 20 );
                 return true;
-            }
-            else {
+            } else {
                 BaseGamemode.WriteChat( "Store", "Out of coins.", 200, 20, 20 );
                 return false;
             }
         }
 
-
-
         public static void SetSpectator( bool spectate ) {
             if( !spectate )
-                SetNoClip( false );        
+                SetNoClip( false );
             BaseGamemode.Team = spectate ? -1 : 0;
-
         }
 
         public static void SendMap( ClientMap map ) {
-
-            string gamemode = "";
-            if( map.Gamemodes != null ) {
-                gamemode = string.Join( ",", map.Gamemodes );
-            }
-
-            var spawns = map.SpawnsAsSendable();
-
-            TriggerServerEvent( "saltyMap:netUpdate", new Dictionary<string, dynamic> {
-                { "id", map.ID },
-                { "name", map.Name },
-                { "gamemode", gamemode },
-                { "position", map.Position },
-                { "size", map.Size },
-                { "spawns", spawns },
-                { "create", map.JustCreated }
-            } );
+            string json = map.ToJson();
+            TriggerServerEvent( "saltyMap:netUpdate", json );
         }
 
+        public static void DeleteMap( int mapId ) {
+            TriggerServerEvent( "saltyMap:netDelete", mapId );
+        }
 
         public static void SetNoClip( bool toggle ) {
             isNoclip = toggle;
@@ -80,16 +60,11 @@ namespace GamemodeCityClient {
             SetEveryoneIgnorePlayer( PlayerPedId(), isNoclip );
         }
 
-        public static void SendNUIMessage( string name, string message ) {
-            API.SendNuiMessage( "{\"type\":\"salty\",\"name\":\"" + name + "\",\"data\":\"" + message + "\"}" );
-        }
-
         public static List<Player> GetInGamePlayers() {
             return new PlayerList().Where( x => !x.IsInvincible ).ToList();
         }
 
         public static void NoClipUpdate() {
-
             Vector3 heading = GetGameplayCamRot( 0 );
             SetEntityRotation( PlayerPedId(), heading.X, heading.Y, -heading.Z, 0, true );
             SetEntityHeading( PlayerPedId(), heading.Z );
@@ -128,7 +103,6 @@ namespace GamemodeCityClient {
 
             var noclipPos = GetOffsetFromEntityInWorldCoords( PlayerPedId(), offset.X, offset.Y, offset.Z );
             SetEntityCoordsNoOffset( PlayerPedId(), noclipPos.X, noclipPos.Y, noclipPos.Z, false, false, false );
-
         }
 
         public static void FirstPersonForAlive() {
@@ -136,7 +110,5 @@ namespace GamemodeCityClient {
             if( GetFollowPedCamViewMode() != 4 )
                 SetFollowPedCamViewMode( 4 );
         }
-
     }
- 
 }

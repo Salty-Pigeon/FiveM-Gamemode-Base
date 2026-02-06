@@ -1,23 +1,40 @@
-﻿using CitizenFX.Core;
+using CitizenFX.Core;
 using static CitizenFX.Core.Native.API;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using GamemodeCityShared;
 
 namespace GamemodeCityServer {
     public class ServerMap : Map {
 
-        
-        public ServerMap( int id, string name, List<string> gamemode, Vector3 position, Vector3 size ) : base ( id, name, gamemode, position, size ) {
-            
+        public ServerMap( int id, string name, List<string> gamemode, Vector3 position, Vector3 size ) : base( id, name, gamemode, position, size ) {
+        }
+
+        public static ServerMap FromMapData( MapData data ) {
+            var map = new ServerMap(
+                data.Id,
+                data.Name,
+                new List<string>( data.Gamemodes ),
+                new Vector3( data.PosX, data.PosY, data.PosZ ),
+                new Vector3( data.SizeX, data.SizeY, data.SizeZ )
+            );
+            map.Author = data.Author;
+            map.Description = data.Description;
+            map.Enabled = data.Enabled;
+            map.MinPlayers = data.MinPlayers;
+            map.MaxPlayers = data.MaxPlayers;
+
+            map.Spawns = new List<Spawn>();
+            foreach( var spawnData in data.Spawns ) {
+                map.Spawns.Add( Spawn.FromSpawnData( spawnData ) );
+            }
+
+            return map;
         }
 
         public void SpawnGuns() {
-
-            foreach( var spawn in GetSpawns(SpawnType.WEAPON) ) {
+            foreach( var spawn in GetSpawns( SpawnType.WEAPON ) ) {
                 ServerGlobals.CurrentGame.SpawnWeapon( spawn.Position, GrabWeapon( false ) );
             }
         }
@@ -29,6 +46,5 @@ namespace GamemodeCityServer {
             }
             return wep;
         }
-
     }
 }

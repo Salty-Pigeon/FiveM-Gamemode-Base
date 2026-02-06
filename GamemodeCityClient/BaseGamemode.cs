@@ -147,7 +147,7 @@ namespace GamemodeCityClient {
 
             if( Map != null ) {
 
-                Map.DrawBoundarys();
+                Map.DrawBoundaries();
 
                 if( Map.IsInZone( LocalPlayer.Character.Position ) ) {
                     deathTimer = 0;

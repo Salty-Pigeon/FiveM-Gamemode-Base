@@ -1,14 +1,10 @@
-﻿using CitizenFX.Core;
+using CitizenFX.Core;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace GamemodeCityShared {
     public class Spawn : BaseScript {
 
-        
         public Vector3 Position;
         public SpawnType SpawnType;
         public string Entity;
@@ -37,14 +33,21 @@ namespace GamemodeCityShared {
             }
         }
 
-        public Dictionary<string,dynamic> SpawnAsSendable() {
-            return new Dictionary<string, dynamic> { { "id", ID }, { "position", Position }, { "spawntype", (int)SpawnType }, { "entity", Entity }, { "team", Team } };
+        public SpawnData ToSpawnData() {
+            return new SpawnData {
+                Id = ID,
+                PosX = Position.X,
+                PosY = Position.Y,
+                PosZ = Position.Z,
+                SpawnType = (int)SpawnType,
+                Entity = Entity,
+                Team = Team
+            };
         }
 
-        public static Spawn SpawnRecieved( IDictionary<string, dynamic> spawn ) {
-            return new Spawn( spawn["id"], spawn["position"], spawn["spawntype"], spawn["entity"], spawn["team"] );
+        public static Spawn FromSpawnData( SpawnData data ) {
+            return new Spawn( data.Id, new Vector3( data.PosX, data.PosY, data.PosZ ), (SpawnType)data.SpawnType, data.Entity, data.Team );
         }
-
     }
 
     public enum SpawnType {
