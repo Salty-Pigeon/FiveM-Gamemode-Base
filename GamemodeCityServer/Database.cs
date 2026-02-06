@@ -16,10 +16,10 @@ namespace GamemodeCityServer {
 
         public Database( MapManager mapManager ) {
             MySqlConnectionStringBuilder conn_string = new MySqlConnectionStringBuilder();
-            conn_string.Server = "mysql-mariadb-dal01-9-101.zap-hosting.com";
-            conn_string.UserID = "zap429233-1";
-            conn_string.Password = "LHFhKsMUh0T2GJpX";
-            conn_string.Database = "zap429233-1";
+            conn_string.Server = "localhost";       // or 127.0.0.1
+            conn_string.UserID = "root";            // your MySQL user
+            conn_string.Password = "Soccerjjno2";   // your MySQL password
+            conn_string.Database = "gamemodecity";    // matches the CREATE DATABASE above
 
             Connection = new MySqlConnection( conn_string.ToString() );
             Connection.Open();

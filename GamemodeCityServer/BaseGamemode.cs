@@ -1,4 +1,5 @@
 ﻿using CitizenFX.Core;
+using CitizenFX.Core.Native;
 using static CitizenFX.Core.Native.API;
 using System;
 using System.Collections.Generic;
@@ -8,6 +9,7 @@ using System.Threading.Tasks;
 using GamemodeCityShared;
 
 namespace GamemodeCityServer {
+
     public class BaseGamemode : BaseScript, IDisposable {
 
         public string Gamemode;
@@ -63,7 +65,7 @@ namespace GamemodeCityServer {
         }
 
         public virtual void Start( ) {
-           
+
             TriggerClientEvent( "salty:StartGame", Gamemode, Settings.GameLength, Settings.Weapons, Map.Position, Map.Size );
         }
 
@@ -101,7 +103,7 @@ namespace GamemodeCityServer {
         }
 
         public virtual void OnPlayerKilled( Player victim, Player attacker, Vector3 deathcords , uint weaponHash) {
-            
+
         }
 
         public virtual void OnPlayerDied( Player victim, int killerType, Vector3 deathCoords ) {
@@ -115,7 +117,7 @@ namespace GamemodeCityServer {
             } );
         }
 
-        
+
 
         public static void WriteChat( Player ply, string prefix, string str, int r, int g, int b ) {
             ply.TriggerEvent( "chat:addMessage", new {
@@ -180,7 +182,7 @@ namespace GamemodeCityServer {
 
 
         public virtual void OnDetailUpdate( Player ply, string key, dynamic oldValue, dynamic newValue ) {
-            
+
             TriggerClientEvent( "salty:updatePlayerDetail", Convert.ToInt32( ply.Handle ), key, newValue );
         }
 

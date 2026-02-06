@@ -55,7 +55,7 @@ namespace GamemodeCityClient {
                 wep.Destroy();
             }
             ClearAreaOfObjects(Position.X, Position.Y, Position.Z, Size.X + Size.Y + Size.Z, 0);
-            ClearAreaOfProjectiles(Position.X, Position.Y, Position.Z, Size.X + Size.Y + Size.Z, true);
+            ClearAreaOfProjectiles(Position.X, Position.Y, Position.Z, Size.X + Size.Y + Size.Z, 0);
             
         }
 

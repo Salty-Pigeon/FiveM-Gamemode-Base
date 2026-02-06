@@ -108,9 +108,12 @@ namespace GamemodeCityClient
         private void OnClientResourceStart( string resourceName ) {
             if( GetCurrentResourceName() != resourceName ) return;
 
+            Debug.WriteLine( "[GamemodeCity] onClientResourceStart fired for " + resourceName );
+
             SetNuiFocus( false, false );
 
             ClientGlobals.Init();
+            Debug.WriteLine( "[GamemodeCity] ClientGlobals initialized" );
 
             RegisterCommand( "icm", new Action<int, List<object>, string>( ( source, args, raw ) => {
                 if( LocalPlayer.Name == "Salty Pigeon" )

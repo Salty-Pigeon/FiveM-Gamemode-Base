@@ -120,7 +120,7 @@ namespace GamemodeCityServer
 
             if( killerID > -1 ) {
                 if( ServerGlobals.CurrentGame != null )
-                    ServerGlobals.CurrentGame.OnPlayerKilled( ply, ServerGlobals.CurrentGame.GetPlayer( GetPlayerFromIndex( killerID ) ), DeathCoords, weaponHash );
+                    ServerGlobals.CurrentGame.OnPlayerKilled( ply, ServerGlobals.CurrentGame.GetPlayer( killerID.ToString() ), DeathCoords, weaponHash );
             } else {
                 ServerGlobals.CurrentGame.OnPlayerKilled( ply, null, DeathCoords, weaponHash );
             }
