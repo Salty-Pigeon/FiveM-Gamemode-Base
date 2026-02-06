@@ -147,8 +147,10 @@ namespace TTTClient {
 
         public virtual void ShowNames() {
             ShowDeadName();
-            Vector3 position = Game.PlayerPed.ForwardVector;
-            RaycastResult result = Raycast( Game.PlayerPed.Position, position, 75, IntersectOptions.Peds1, null );
+            Vector3 camPos = GetGameplayCamCoords();
+            Vector3 camRot = GetGameplayCamRot( 2 );
+            Vector3 camDir = RotationToDirection( camRot );
+            RaycastResult result = Raycast( camPos, camDir, 75, IntersectOptions.Peds1, Game.PlayerPed );
             if( result.DitHitEntity ) {
                 if( result.HitEntity != Game.PlayerPed ) {
                     int ent = result.HitEntity.Handle;
@@ -178,6 +180,13 @@ namespace TTTClient {
                 }
 
             }
+        }
+
+        public static Vector3 RotationToDirection( Vector3 rotation ) {
+            float radX = rotation.X * (float)Math.PI / 180f;
+            float radZ = rotation.Z * (float)Math.PI / 180f;
+            float absX = (float)Math.Abs( Math.Cos( radX ) );
+            return new Vector3( (float)(-Math.Sin( radZ )) * absX, (float)(Math.Cos( radZ )) * absX, (float)Math.Sin( radX ) );
         }
 
         public static RaycastResult Raycast( Vector3 source, Vector3 direction, float maxDistance, IntersectOptions options, Entity ignoreEntity = null ) {
