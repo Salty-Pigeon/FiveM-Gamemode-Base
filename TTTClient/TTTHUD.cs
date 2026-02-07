@@ -19,10 +19,12 @@ namespace TTTClient {
 
         public float RadarTime = 0f;
         public float RadarScanTime = 30 * 1000;
+        public float RadarLastScanAt = 0f;
 
         public float DNATime = 0f;
         public float DNAScanTime = 10 * 1000;
         public Vector3 DNALastPos;
+        public float DNALastScanAt = 0f;
 
         public override void Draw() {
 
@@ -38,6 +40,12 @@ namespace TTTClient {
 
             if( isRadarActive )
                 ShowRadar();
+
+            if( DetectiveTracing != -1 )
+                ShowDNA();
+
+            if( Main.CanTeleport )
+                ShowTeleport();
 
             ShowTalking();
 
@@ -109,7 +117,23 @@ namespace TTTClient {
 
             if( RadarTime < GetGameTimer() ) {
                 RadarTime += RadarScanTime;
+                RadarLastScanAt = GetGameTimer();
                 UpdateRadar();
+            }
+
+            float elapsed = GetGameTimer() - RadarLastScanAt;
+            float remaining = RadarTime - GetGameTimer();
+            float freshness = 1f - Math.Min( elapsed / RadarScanTime, 1f );
+
+            // Scan flash — large burst that fades over 400ms after each scan
+            if( elapsed < 400f ) {
+                float flashAlpha = (1f - elapsed / 400f);
+                foreach( var pos in RadarPositions ) {
+                    float fx = 0, fy = 0;
+                    var off = Get_2dCoordFrom_3dCoord( pos.X, pos.Y, pos.Z - 0.08f, ref fx, ref fy );
+                    if( !off )
+                        DrawRect( fx, fy, 0.040f, 0.024f, 34, 197, 94, (int)(flashAlpha * 100) );
+                }
             }
 
             foreach( var pos in RadarPositions ) {
@@ -117,16 +141,49 @@ namespace TTTClient {
                 Vector3 camPos = GetGameplayCamCoords();
                 float dist = GetDistanceBetweenCoords( pos.X, pos.Y, pos.Z, camPos.X, camPos.Y, camPos.Z, true );
 
-                DrawText3D( pos, Math.Round( dist ) + "m", 0.3f, 255, 255, 255, 255, 999999 );
-
                 float x = 0, y = 0;
                 var offscreen = Get_2dCoordFrom_3dCoord( pos.X, pos.Y, pos.Z - 0.08f, ref x, ref y );
-                if( !offscreen )
-                    DrawRect( x, y, 0.02f, 0.02f, 0, 200, 0, 255 );
+                if( offscreen )
+                    continue;
 
+                // Outer glow — pulsing alpha based on freshness
+                int glowAlpha = 20 + (int)(freshness * 60);
+                DrawRect( x, y, 0.020f, 0.012f, 34, 197, 94, glowAlpha );
+
+                // Inner dot — always bright
+                DrawRect( x, y, 0.007f, 0.004f, 34, 197, 94, 220 );
+
+                // Crosshair lines
+                DrawRect( x, y, 0.028f, 0.0015f, 34, 197, 94, 60 );
+                DrawRect( x, y, 0.0015f, 0.024f, 34, 197, 94, 60 );
+
+                // Distance label background pill
+                float labelY = y + 0.018f;
+                DrawRect( x, labelY, 0.038f, 0.016f, 0, 0, 0, 160 );
+
+                // Distance text
+                DrawText2D( x - 0.013f, labelY - 0.007f, Math.Round( dist ) + "m", 0.28f, 255, 255, 255, 220, false );
             }
 
-            DrawText2D( 0.025f, 0.97f, "Radar update in " + (Math.Floor( (RadarTime - GetGameTimer()) / 1000 )).ToString(), 0.3f, 255, 255, 255, 255, false );
+            // Status bar — bottom-left above HUD bars
+            float barX = 0.025f;
+            float barY = 0.835f;
+            float barW = 0.12f;
+            float barH = 0.022f;
+
+            // Dark background
+            DrawRectangle( barX, barY, barW, barH, 0, 0, 0, 180 );
+
+            // Progress fill — depletes as timer counts down
+            float progress = Math.Max( remaining / RadarScanTime, 0f );
+            DrawRectangle( barX, barY, progress * barW, barH, 34, 197, 94, 80 );
+
+            // Accent edge
+            DrawRectangle( barX, barY, 0.004f, barH, 34, 197, 94, 200 );
+
+            // Label + countdown
+            float secs = (float)Math.Ceiling( remaining / 1000 );
+            DrawText2D( barX + 0.007f, barY + 0.002f, "RADAR  " + secs + "s", 0.27f, 255, 255, 255, 220, false );
 
         }
 
@@ -226,22 +283,63 @@ namespace TTTClient {
 
             if( DNATime < GetGameTimer() ) {
                 DNATime += DNAScanTime;
+                DNALastScanAt = GetGameTimer();
                 UpdateDNA();
             }
+
+            float elapsed = GetGameTimer() - DNALastScanAt;
+            float remaining = DNATime - GetGameTimer();
+            float freshness = 1f - Math.Min( elapsed / DNAScanTime, 1f );
 
             if( DNALastPos != Vector3.Zero ) {
                 Vector3 camPos = GetGameplayCamCoords();
                 float dist = GetDistanceBetweenCoords( DNALastPos.X, DNALastPos.Y, DNALastPos.Z, camPos.X, camPos.Y, camPos.Z, true );
 
-                DrawText3D( DNALastPos, Math.Round( dist, 1 ) + "m", 0.3f, 255, 255, 255, 255, 999999 );
-
                 float x = 0, y = 0;
                 var offscreen = Get_2dCoordFrom_3dCoord( DNALastPos.X, DNALastPos.Y, DNALastPos.Z - 0.08f, ref x, ref y );
-                if( !offscreen )
-                    DrawRect( x, y, 0.02f, 0.02f, 0, 0, 230, 255 );
+                if( !offscreen ) {
+
+                    // Scan flash — burst that fades over 400ms
+                    if( elapsed < 400f ) {
+                        float flashAlpha = (1f - elapsed / 400f);
+                        DrawRect( x, y, 0.040f, 0.024f, 59, 130, 246, (int)(flashAlpha * 100) );
+                    }
+
+                    // Outer glow — pulsing alpha
+                    int glowAlpha = 20 + (int)(freshness * 60);
+                    DrawRect( x, y, 0.020f, 0.012f, 59, 130, 246, glowAlpha );
+
+                    // Inner dot — always bright
+                    DrawRect( x, y, 0.007f, 0.004f, 59, 130, 246, 220 );
+
+                    // Distance label background pill
+                    float labelY = y + 0.018f;
+                    DrawRect( x, labelY, 0.038f, 0.016f, 0, 0, 0, 160 );
+
+                    // Distance text
+                    DrawText2D( x - 0.013f, labelY - 0.007f, Math.Round( dist, 1 ) + "m", 0.28f, 255, 255, 255, 220, false );
+                }
             }
 
-            DrawText2D( 0.025f, 0.835f, "DNA update in " + (Math.Round( (RadarTime - GetGameTimer()) / 1000 )).ToString(), 0.3f, 255, 255, 255, 255, false );
+            // Status bar — positioned below radar bar if both active, otherwise same spot
+            float barX = 0.025f;
+            float barY = isRadarActive ? 0.860f : 0.835f;
+            float barW = 0.12f;
+            float barH = 0.022f;
+
+            // Dark background
+            DrawRectangle( barX, barY, barW, barH, 0, 0, 0, 180 );
+
+            // Progress fill
+            float progress = Math.Max( remaining / DNAScanTime, 0f );
+            DrawRectangle( barX, barY, progress * barW, barH, 59, 130, 246, 80 );
+
+            // Accent edge
+            DrawRectangle( barX, barY, 0.004f, barH, 59, 130, 246, 200 );
+
+            // Label + countdown
+            float secs = (float)Math.Ceiling( remaining / 1000 );
+            DrawText2D( barX + 0.007f, barY + 0.002f, "DNA TRACE  " + secs + "s", 0.27f, 255, 255, 255, 220, false );
 
         }
 
@@ -250,6 +348,76 @@ namespace TTTClient {
             Vector3 newCoord = GetEntityCoords( DetectiveTracing, true );
             if( newCoord != Vector3.Zero ) {
                 DNALastPos = newCoord;
+            }
+        }
+
+        public void ShowTeleport() {
+            bool isTraitor = Main.Team == (int)Teams.Traitor;
+            int tcR, tcG, tcB;
+            if( isTraitor ) { tcR = 239; tcG = 68; tcB = 68; }
+            else { tcR = 59; tcG = 130; tcB = 246; }
+
+            float gameTime = GetGameTimer();
+
+            // 3D destination marker
+            if( Main.SavedTeleport != Vector3.Zero ) {
+                float sx = 0, sy = 0;
+                var offscreen = Get_2dCoordFrom_3dCoord( Main.SavedTeleport.X, Main.SavedTeleport.Y, Main.SavedTeleport.Z, ref sx, ref sy );
+                if( !offscreen ) {
+                    // Outer glow — pulsing alpha via sine wave
+                    float pulse = (float)Math.Sin( gameTime / 400.0 );
+                    int glowAlpha = 40 + (int)(20 * pulse); // 20–60
+                    DrawRect( sx, sy, 0.016f, 0.010f, tcR, tcG, tcB, glowAlpha );
+
+                    // Inner dot
+                    DrawRect( sx, sy, 0.006f, 0.0035f, tcR, tcG, tcB, 180 );
+
+                    // Distance label
+                    Vector3 camPos = GetGameplayCamCoords();
+                    float dist = GetDistanceBetweenCoords( Main.SavedTeleport.X, Main.SavedTeleport.Y, Main.SavedTeleport.Z, camPos.X, camPos.Y, camPos.Z, true );
+                    float labelY = sy + 0.018f;
+                    DrawRect( sx, labelY, 0.038f, 0.016f, 0, 0, 0, 160 );
+                    DrawText2D( sx - 0.013f, labelY - 0.007f, Math.Round( dist ) + "m", 0.28f, 255, 255, 255, 220, false );
+                }
+            }
+
+            // Status bar — stacks above radar and DNA bars
+            float barX = 0.025f;
+            float barY = 0.835f;
+            if( isRadarActive ) barY -= 0.025f;
+            if( DetectiveTracing != -1 ) barY -= 0.025f;
+            float barW = 0.12f;
+            float barH = 0.022f;
+
+            // Dark background
+            DrawRectangle( barX, barY, barW, barH, 0, 0, 0, 180 );
+
+            // Accent edge
+            DrawRectangle( barX, barY, 0.004f, barH, tcR, tcG, tcB, 200 );
+
+            if( Main.isTeleporting ) {
+                // Teleporting — progress bar fills over the duration
+                float remaining = Main.teleportTime - gameTime;
+                float progress = 1f - Math.Max( remaining / Main.teleportLength, 0f );
+                DrawRectangle( barX, barY, progress * barW, barH, tcR, tcG, tcB, 80 );
+                DrawText2D( barX + 0.007f, barY + 0.002f, "TELEPORT", 0.27f, 255, 255, 255, 220, false );
+            } else if( Main.teleportWait > gameTime ) {
+                // Cooldown — depleting bar
+                float remaining = Main.teleportWait - gameTime;
+                float progress = Math.Max( remaining / Main.teleportDelay, 0f );
+                DrawRectangle( barX, barY, progress * barW, barH, tcR, tcG, tcB, 80 );
+                float secs = (float)Math.Ceiling( remaining / 1000 );
+                DrawText2D( barX + 0.007f, barY + 0.002f, "COOLDOWN  " + secs + "s", 0.27f, 255, 255, 255, 220, false );
+            } else if( Main.teleportStatus != "" && gameTime - Main.teleportStatusTime < 2000f ) {
+                // Status text — fades out over 2s
+                float elapsed = gameTime - Main.teleportStatusTime;
+                int textAlpha = (int)(220 * (1f - elapsed / 2000f));
+                int bgAlpha = (int)(80 * (1f - elapsed / 2000f));
+                DrawRectangle( barX, barY, barW, barH, tcR, tcG, tcB, bgAlpha );
+                DrawText2D( barX + 0.007f, barY + 0.002f, Main.teleportStatus, 0.27f, 255, 255, 255, textAlpha, false );
+            } else {
+                // Idle — just show "TELEPORT" label
+                DrawText2D( barX + 0.007f, barY + 0.002f, "TELEPORT", 0.27f, 255, 255, 255, 120, false );
             }
         }
 

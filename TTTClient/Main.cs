@@ -41,12 +41,14 @@ namespace TTTClient
 
         public static bool CanTeleport = false;
         public static Vector3 SavedTeleport;
-        float teleportLength;
-        float teleportTime = 0;
-        bool hasTeleported = false;
-        bool isTeleporting = false;
-        float teleportWait = 0;
-        float teleportDelay = 5 * 1000;
+        public static float teleportLength;
+        public static float teleportTime = 0;
+        public static bool hasTeleported = false;
+        public static bool isTeleporting = false;
+        public static float teleportWait = 0;
+        public static float teleportDelay = 5 * 1000;
+        public static string teleportStatus = "";
+        public static float teleportStatusTime = 0f;
 
         public static bool CanDisguise = false;
         public bool isDisguised = false;
@@ -441,7 +443,8 @@ namespace TTTClient
 
             if( IsControlJustPressed( 0, setTeleportKey ) ) {
                 if( CanTeleport ) {
-                    WriteChat( "TTT", "Position set", 200, 200, 0 );
+                    teleportStatus = "POSITION SET";
+                    teleportStatusTime = GetGameTimer();
                     SavedTeleport = Game.PlayerPed.Position;
                 }
             }
@@ -519,14 +522,16 @@ namespace TTTClient
             }
             if( teleportWait > GetGameTimer() ) {
                 TimeSpan timer = TimeSpan.FromMilliseconds( teleportWait - GetGameTimer() );
-                WriteChat( "TTT", "Cooldown " + timer.Seconds + "s", 200, 20, 20 );
+                teleportStatus = "COOLDOWN " + timer.Seconds + "s";
+                teleportStatusTime = GetGameTimer();
                 return;
             }
             if( Game.PlayerPed.IsShooting || Game.PlayerPed.IsJumping || Game.PlayerPed.IsInAir || Game.PlayerPed.IsReloading || Game.PlayerPed.IsClimbing || Game.PlayerPed.IsGoingIntoCover || Game.PlayerPed.IsRagdoll || Game.PlayerPed.IsGettingUp )
                 return;
 
             if( SavedTeleport == Vector3.Zero ) {
-                WriteChat( "TTT", "No destination set", 0, 0, 200 );
+                teleportStatus = "NO DESTINATION";
+                teleportStatusTime = GetGameTimer();
                 return;
             }
             teleportLength = time;
@@ -544,8 +549,12 @@ namespace TTTClient
                 DisableControlAction( 0, 22, true );
                 DisableControlAction( 0, 21, true );
 
-                int alpha = (int)Math.Round( 255 * ((teleportTime - gameTime) / (teleportLength / 2)) );
-                if( teleportTime - gameTime <= (teleportLength / 2) ) {
+                float remaining = teleportTime - gameTime;
+                float half = teleportLength / 2;
+                float progress = remaining / teleportLength; // 1.0 → 0.0
+
+                int alpha = (int)Math.Round( 255 * (remaining / half) );
+                if( remaining <= half ) {
                     if( !hasTeleported ) {
                         hasTeleported = true;
                         Game.PlayerPed.Position = SavedTeleport;
@@ -553,7 +562,35 @@ namespace TTTClient
                     alpha = 255 - alpha;
                 }
                 Game.PlayerPed.Opacity = alpha;
-                //SetEntityAlpha( PlayerPedId(), alpha, 0 );
+
+                // Screen overlay — dark fade that peaks at midpoint
+                int overlayAlpha;
+                if( remaining > half ) {
+                    // First half: ramp 0 → 200
+                    overlayAlpha = (int)(200 * (1f - (remaining - half) / half));
+                } else {
+                    // Second half: ramp 200 → 0
+                    overlayAlpha = (int)(200 * (remaining / half));
+                }
+                DrawRect( 0.5f, 0.5f, 1.0f, 1.0f, 0, 0, 0, overlayAlpha );
+
+                // White flash at midpoint — fades over ~300ms into second half
+                if( remaining <= half ) {
+                    float timeSinceMid = half - remaining;
+                    if( timeSinceMid < 300f ) {
+                        int flashAlpha = (int)(180 * (1f - timeSinceMid / 300f));
+                        DrawRect( 0.5f, 0.5f, 1.0f, 1.0f, 255, 255, 255, flashAlpha );
+                    }
+                }
+
+                // Team-colored vignette tint
+                float distFromMid = Math.Abs( remaining - half ) / half; // 1 at edges, 0 at midpoint
+                int vignetteAlpha = (int)(40 * (1f - distFromMid));
+                if( Team == (int)Teams.Traitor ) {
+                    DrawRect( 0.5f, 0.5f, 1.0f, 1.0f, 200, 30, 30, vignetteAlpha );
+                } else if( Team == (int)Teams.Detective ) {
+                    DrawRect( 0.5f, 0.5f, 1.0f, 1.0f, 30, 30, 200, vignetteAlpha );
+                }
             }
             else if( teleportTime < gameTime ) {
                 isTeleporting = false;
