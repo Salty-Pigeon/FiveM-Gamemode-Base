@@ -338,22 +338,7 @@ namespace TTTClient
             ClearTestBots();
             DeadBodies.Clear();
 
-            // Freeze player immediately
-            FreezeEntityPosition( PlayerPedId(), true );
-
-            // Wait for role reveal to finish
-            await Delay( 3200 );
-
-            HubNUI.ShowCountdown( 3 );
-            await Delay( 1000 );
-            HubNUI.ShowCountdown( 2 );
-            await Delay( 1000 );
-            HubNUI.ShowCountdown( 1 );
-            await Delay( 1000 );
-            HubNUI.ShowCountdown( 0 ); // "GO"
-
-            // Unfreeze player
-            FreezeEntityPosition( PlayerPedId(), false );
+            await RunCountdown();
         }
 
         public override void Update() {

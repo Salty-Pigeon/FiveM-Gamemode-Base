@@ -52,21 +52,8 @@ namespace ICMClient
 
         public override async void Start( float gameTime ) {
             base.Start( gameTime );
-            HUD.SetGameTimePosition( 0, 0, false );
 
-            FreezeEntityPosition( PlayerPedId(), true );
-
-            await Delay( 3200 );
-
-            HubNUI.ShowCountdown( 3 );
-            await Delay( 1000 );
-            HubNUI.ShowCountdown( 2 );
-            await Delay( 1000 );
-            HubNUI.ShowCountdown( 1 );
-            await Delay( 1000 );
-            HubNUI.ShowCountdown( 0 );
-
-            FreezeEntityPosition( PlayerPedId(), false );
+            await RunCountdown();
         }
 
         public override void End() {

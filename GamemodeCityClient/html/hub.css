@@ -985,12 +985,9 @@ h1 {
 }
 
 .game-timer-inner {
-    background: rgba(0, 0, 0, 0.55);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 8px;
+    background: transparent;
+    border: none;
     padding: 8px 28px;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
 }
 
 .game-timer-text {
@@ -1003,8 +1000,7 @@ h1 {
 }
 
 .game-timer.urgent .game-timer-inner {
-    border-color: rgba(239, 68, 68, 0.3);
-    background: rgba(40, 0, 0, 0.6);
+    background: transparent;
 }
 
 .game-timer.urgent .game-timer-text {

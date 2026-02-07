@@ -254,9 +254,10 @@ namespace GamemodeCityClient {
                 SetEntityHeading( PlayerPedId(), heading );
                 NewLoadSceneStop();
 
-                // Small delay then unfreeze
+                // Small delay then unfreeze (unless a countdown is handling the unfreeze)
                 await Delay( 100 );
-                FreezeEntityPosition( PlayerPedId(), false );
+                if( ClientGlobals.CurrentGame == null || !ClientGlobals.CurrentGame.CountdownActive )
+                    FreezeEntityPosition( PlayerPedId(), false );
 
                 PlayerSpawn( null );
             } else if( type == SpawnType.WEAPON ) {

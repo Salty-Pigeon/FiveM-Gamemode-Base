@@ -25,6 +25,7 @@ namespace GamemodeCityClient {
         uint lastWep = 0;
 
         public int SPECTATOR = -1;
+        public bool CountdownActive = false;
 
         public static int Team = 0;
 
@@ -113,6 +114,30 @@ namespace GamemodeCityClient {
             Game.PlayerPed.Opacity = 255;
         }
 
+        protected async Task RunCountdown() {
+            CountdownActive = true;
+
+            // Wait for role reveal to finish
+            await Delay( 3200 );
+
+            HubNUI.ShowCountdown( 3 );
+            await Delay( 1000 );
+            HubNUI.ShowCountdown( 2 );
+            await Delay( 1000 );
+            HubNUI.ShowCountdown( 1 );
+            await Delay( 1000 );
+            HubNUI.ShowCountdown( 0 ); // "GO"
+
+            CountdownActive = false;
+
+            // Unfreeze player ped
+            FreezeEntityPosition( PlayerPedId(), false );
+
+            // Unfreeze vehicle if player is in one
+            if( Game.PlayerPed.IsInVehicle() && Game.PlayerPed.CurrentVehicle != null )
+                FreezeEntityPosition( Game.PlayerPed.CurrentVehicle.Handle, false );
+        }
+
         public virtual void Start( float gameTime ) {
             SetMaxWantedLevel( 0 );
             ClientGlobals.SetSpectator( false );
@@ -149,6 +174,14 @@ namespace GamemodeCityClient {
             if( HUD != null ) {
                 HUD.Draw();
             }
+
+            // Freeze player and their vehicle during countdown
+            if( CountdownActive ) {
+                FreezeEntityPosition( PlayerPedId(), true );
+                if( Game.PlayerPed.IsInVehicle() && Game.PlayerPed.CurrentVehicle != null )
+                    FreezeEntityPosition( Game.PlayerPed.CurrentVehicle.Handle, true );
+            }
+
             foreach( var wep in Map.Weapons.ToList() ) {
                 wep.Update();
             }
