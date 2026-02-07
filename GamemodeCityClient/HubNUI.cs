@@ -109,10 +109,22 @@ namespace GamemodeCityClient {
                 }
             }
 
-            // Draw map boundaries/spawns while editing
+            // Draw map boundaries/spawns and player coords while editing
             if( ClientGlobals.IsEditingMap && ClientGlobals.LastSelectedMap != null ) {
                 ClientGlobals.LastSelectedMap.DrawBoundaries();
                 ClientGlobals.LastSelectedMap.DrawSpawns();
+
+                // Draw player position on screen
+                Vector3 pos = Game.PlayerPed.Position;
+                string coordText = "X: " + F( pos.X ) + "  Y: " + F( pos.Y ) + "  Z: " + F( pos.Z );
+                SetTextFont( 4 );
+                SetTextScale( 0.0f, 0.4f );
+                SetTextColour( 255, 255, 255, 230 );
+                SetTextDropshadow( 2, 0, 0, 0, 255 );
+                SetTextOutline();
+                BeginTextCommandDisplayText( "STRING" );
+                AddTextComponentSubstringPlayerName( coordText );
+                EndTextCommandDisplayText( 0.5f, 0.02f );
             }
 
             await Task.FromResult( 0 );
@@ -467,7 +479,11 @@ namespace GamemodeCityClient {
 
         private void OnGetPlayerPosition( IDictionary<string, object> data, CallbackDelegate cb ) {
             Vector3 pos = Game.PlayerPed.Position;
-            cb( "{\"x\":" + F( pos.X ) + ",\"y\":" + F( pos.Y ) + ",\"z\":" + F( pos.Z ) + "}" );
+            string context = data.ContainsKey( "context" ) ? data["context"].ToString() : "";
+            int spawnIndex = data.ContainsKey( "spawnIndex" ) ? Convert.ToInt32( data["spawnIndex"] ) : -1;
+            cb( "{\"status\":\"ok\"}" );
+            SendNuiMessage( "{\"type\":\"playerPosition\",\"x\":" + F( pos.X ) + ",\"y\":" + F( pos.Y ) + ",\"z\":" + F( pos.Z )
+                + ",\"context\":\"" + EscapeJson( context ) + "\",\"spawnIndex\":" + spawnIndex + "}" );
         }
 
         private void OnSelectMapForEdit( IDictionary<string, object> data, CallbackDelegate cb ) {

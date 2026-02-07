@@ -785,12 +785,7 @@ function renderSpawnList() {
                 fetch('https://gamemodecity/getPlayerPosition', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({})
-                }).then(function(r) { return r.json(); }).then(function(pos) {
-                    map.spawns[idx].posX = round2(pos.x);
-                    map.spawns[idx].posY = round2(pos.y);
-                    map.spawns[idx].posZ = round2(pos.z);
-                    renderSpawnList();
+                    body: JSON.stringify({ context: 'moveSpawn', spawnIndex: idx })
                 });
             });
         })(index);
@@ -828,11 +823,7 @@ document.getElementById('mapUseMyPos').addEventListener('click', function() {
     fetch('https://gamemodecity/getPlayerPosition', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({})
-    }).then(function(r) { return r.json(); }).then(function(pos) {
-        document.getElementById('mapPosX').value = round2(pos.x);
-        document.getElementById('mapPosY').value = round2(pos.y);
-        document.getElementById('mapPosZ').value = round2(pos.z);
+        body: JSON.stringify({ context: 'useMyPos' })
     });
 });
 
@@ -844,18 +835,7 @@ document.getElementById('mapAddSpawn').addEventListener('click', function() {
     fetch('https://gamemodecity/getPlayerPosition', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({})
-    }).then(function(r) { return r.json(); }).then(function(pos) {
-        map.spawns.push({
-            id: -1,
-            posX: round2(pos.x),
-            posY: round2(pos.y),
-            posZ: round2(pos.z),
-            spawnType: 0,
-            entity: 'player',
-            team: 0
-        });
-        renderSpawnList();
+        body: JSON.stringify({ context: 'addSpawn' })
     });
 });
 
@@ -1164,6 +1144,35 @@ window.addEventListener('message', function(event) {
                 selectedMapId = null;
                 document.getElementById('mapForm').classList.add('hidden');
                 document.getElementById('mapNoSelection').classList.remove('hidden');
+            }
+        }
+    }
+    else if (data.type === 'playerPosition') {
+        var px = round2(data.x);
+        var py = round2(data.y);
+        var pz = round2(data.z);
+        if (data.context === 'useMyPos') {
+            document.getElementById('mapPosX').value = px;
+            document.getElementById('mapPosY').value = py;
+            document.getElementById('mapPosZ').value = pz;
+        } else if (data.context === 'addSpawn') {
+            var m = getSelectedMap();
+            if (m) {
+                if (!m.spawns) m.spawns = [];
+                m.spawns.push({
+                    id: -1,
+                    posX: px, posY: py, posZ: pz,
+                    spawnType: 0, entity: 'player', team: 0
+                });
+                renderSpawnList();
+            }
+        } else if (data.context === 'moveSpawn') {
+            var m2 = getSelectedMap();
+            if (m2 && m2.spawns && data.spawnIndex >= 0 && data.spawnIndex < m2.spawns.length) {
+                m2.spawns[data.spawnIndex].posX = px;
+                m2.spawns[data.spawnIndex].posY = py;
+                m2.spawns[data.spawnIndex].posZ = pz;
+                renderSpawnList();
             }
         }
     }
