@@ -19,6 +19,7 @@ namespace GamemodeCityClient {
         public static BaseGamemode CurrentGame;
 
         public static Vector3 LastSpawn;
+        public static float LastSpawnHeading;
 
         public static bool IsEditingMap = false;
 

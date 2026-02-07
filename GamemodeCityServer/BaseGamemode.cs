@@ -66,7 +66,7 @@ namespace GamemodeCityServer {
 
         public virtual void Start( ) {
 
-            TriggerClientEvent( "salty:StartGame", Gamemode, Settings.GameLength, Settings.Weapons, Map.Position, Map.Size );
+            TriggerClientEvent( "salty:StartGame", Gamemode, Settings.GameLength, Settings.Weapons, Map.Position, Map.Size, Map.Rotation );
         }
 
         public virtual void OnTimerEnd() {
@@ -127,7 +127,8 @@ namespace GamemodeCityServer {
         }
 
         public void SpawnPlayer( Player player, int team ) {
-            player.TriggerEvent( "salty:Spawn", (int)SpawnType.PLAYER, Map.GetSpawn( SpawnType.PLAYER, team ).Position, 0 );
+            var spawn = Map.GetSpawn( SpawnType.PLAYER, team );
+            player.TriggerEvent( "salty:Spawn", (int)SpawnType.PLAYER, spawn.Position, (uint)0, spawn.Heading );
         }
 
         public void SpawnPlayers() {
@@ -145,14 +146,15 @@ namespace GamemodeCityServer {
         public void SpawnPlayer( Player player ) {
             object team = GetPlayerDetail( player, "team" );
             if( team != null ) {
-                player.TriggerEvent( "salty:Spawn", (int)SpawnType.PLAYER, Map.GetSpawn( SpawnType.PLAYER, Convert.ToInt32( team ) ).Position, 0 );
+                var spawn = Map.GetSpawn( SpawnType.PLAYER, Convert.ToInt32( team ) );
+                player.TriggerEvent( "salty:Spawn", (int)SpawnType.PLAYER, spawn.Position, (uint)0, spawn.Heading );
             } else {
                 SpawnPlayer( player, 0 );
             }
         }
 
         public void SpawnWeapon( Vector3 pos, uint hash ) {
-            TriggerClientEvent( "salty:Spawn", (int)SpawnType.WEAPON, pos, hash );
+            TriggerClientEvent( "salty:Spawn", (int)SpawnType.WEAPON, pos, hash, 0f );
         }
 
         public void AddScore( Player ply, float amount ) {

@@ -21,6 +21,7 @@ namespace GamemodeCityShared {
             sb.Append( JsonPair( "SizeX", map.SizeX ) ).Append( "," );
             sb.Append( JsonPair( "SizeY", map.SizeY ) ).Append( "," );
             sb.Append( JsonPair( "SizeZ", map.SizeZ ) ).Append( "," );
+            sb.Append( JsonPair( "Rotation", map.Rotation ) ).Append( "," );
             sb.Append( JsonPair( "MinPlayers", map.MinPlayers ) ).Append( "," );
             sb.Append( JsonPair( "MaxPlayers", map.MaxPlayers ) ).Append( "," );
 
@@ -51,6 +52,7 @@ namespace GamemodeCityShared {
             sb.Append( JsonPair( "PosX", spawn.PosX ) ).Append( "," );
             sb.Append( JsonPair( "PosY", spawn.PosY ) ).Append( "," );
             sb.Append( JsonPair( "PosZ", spawn.PosZ ) ).Append( "," );
+            sb.Append( JsonPair( "Heading", spawn.Heading ) ).Append( "," );
             sb.Append( JsonPair( "SpawnType", spawn.SpawnType ) ).Append( "," );
             sb.Append( JsonPair( "Entity", spawn.Entity ) ).Append( "," );
             sb.Append( JsonPair( "Team", spawn.Team ) );
@@ -73,6 +75,7 @@ namespace GamemodeCityShared {
             if( dict.ContainsKey( "SizeX" ) ) data.SizeX = ToFloat( dict["SizeX"] );
             if( dict.ContainsKey( "SizeY" ) ) data.SizeY = ToFloat( dict["SizeY"] );
             if( dict.ContainsKey( "SizeZ" ) ) data.SizeZ = ToFloat( dict["SizeZ"] );
+            if( dict.ContainsKey( "Rotation" ) ) data.Rotation = ToFloat( dict["Rotation"] );
             if( dict.ContainsKey( "MinPlayers" ) ) data.MinPlayers = ToInt( dict["MinPlayers"] );
             if( dict.ContainsKey( "MaxPlayers" ) ) data.MaxPlayers = ToInt( dict["MaxPlayers"] );
 
@@ -99,6 +102,7 @@ namespace GamemodeCityShared {
                 if( sDict.ContainsKey( "PosX" ) ) spawn.PosX = ToFloat( sDict["PosX"] );
                 if( sDict.ContainsKey( "PosY" ) ) spawn.PosY = ToFloat( sDict["PosY"] );
                 if( sDict.ContainsKey( "PosZ" ) ) spawn.PosZ = ToFloat( sDict["PosZ"] );
+                if( sDict.ContainsKey( "Heading" ) ) spawn.Heading = ToFloat( sDict["Heading"] );
                 if( sDict.ContainsKey( "SpawnType" ) ) spawn.SpawnType = ToInt( sDict["SpawnType"] );
                 if( sDict.ContainsKey( "Entity" ) ) spawn.Entity = Unquote( sDict["Entity"] );
                 if( sDict.ContainsKey( "Team" ) ) spawn.Team = ToInt( sDict["Team"] );

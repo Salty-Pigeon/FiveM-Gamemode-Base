@@ -27,6 +27,7 @@ namespace GamemodeCityClient {
         public float GoalTextTime = 0;
 
         public float latestAmmo = 0f;
+        private string lastTimerSent = "";
 
 
         public virtual void Start() {
@@ -213,17 +214,19 @@ namespace GamemodeCityClient {
 
             TimeSpan time = TimeSpan.FromMilliseconds( ClientGlobals.CurrentGame.GameTimerEnd - GetGameTimer() );
 
-            if( time.Seconds < 0 ) {
-                GameTimeText.Caption = string.Format( "{0:00}:{1:00}", Math.Ceiling( time.TotalMinutes - 1 ), time.Seconds );
-                GameTimeText.Colour = System.Drawing.Color.FromArgb( 200, 20, 20 );
-            }
-            else {
-                GameTimeText.Caption = string.Format( "{0:00}:{1:00}", Math.Ceiling( time.TotalMinutes - 1 ), time.Seconds );
-                GameTimeText.Colour = System.Drawing.Color.FromArgb( 255, 255, 255 );
-            }
+            bool urgent = time.TotalSeconds <= 30;
+            string caption = string.Format( "{0:00}:{1:00}", Math.Ceiling( time.TotalMinutes - 1 ), time.Seconds );
 
+            if( caption != lastTimerSent ) {
+                lastTimerSent = caption;
+                string urgentStr = urgent ? "true" : "false";
+                SendNuiMessage( "{\"type\":\"updateGameTimer\",\"time\":\"" + caption + "\",\"urgent\":" + urgentStr + "}" );
+            }
+        }
 
-            GameTimeText.Draw();
+        public void HideGameTimer() {
+            lastTimerSent = "";
+            SendNuiMessage( "{\"type\":\"hideGameTimer\"}" );
         }
 
         public void DrawSpriteOrigin( Vector3 pos, string texture, float width, float height, float rotation, bool throughWalls ) {

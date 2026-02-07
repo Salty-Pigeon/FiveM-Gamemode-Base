@@ -6,6 +6,7 @@ namespace GamemodeCityShared {
     public class Spawn : BaseScript {
 
         public Vector3 Position;
+        public float Heading = 0f;
         public SpawnType SpawnType;
         public string Entity;
         public int Team;
@@ -14,9 +15,10 @@ namespace GamemodeCityShared {
         public int G = 0;
         public int B = 0;
 
-        public Spawn( int id, Vector3 position, SpawnType type, string entName, int team ) {
+        public Spawn( int id, Vector3 position, SpawnType type, string entName, int team, float heading = 0f ) {
             ID = id;
             Position = position;
+            Heading = heading;
             SpawnType = type;
             Entity = entName;
             Team = team;
@@ -39,6 +41,7 @@ namespace GamemodeCityShared {
                 PosX = Position.X,
                 PosY = Position.Y,
                 PosZ = Position.Z,
+                Heading = Heading,
                 SpawnType = (int)SpawnType,
                 Entity = Entity,
                 Team = Team
@@ -46,7 +49,7 @@ namespace GamemodeCityShared {
         }
 
         public static Spawn FromSpawnData( SpawnData data ) {
-            return new Spawn( data.Id, new Vector3( data.PosX, data.PosY, data.PosZ ), (SpawnType)data.SpawnType, data.Entity, data.Team );
+            return new Spawn( data.Id, new Vector3( data.PosX, data.PosY, data.PosZ ), (SpawnType)data.SpawnType, data.Entity, data.Team, data.Heading );
         }
     }
 

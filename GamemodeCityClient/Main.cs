@@ -17,11 +17,11 @@ namespace GamemodeCityClient {
             EventHandlers["onClientResourceStart"] += new Action<string>( OnClientResourceStart );
             EventHandlers["playerSpawned"] += new Action<object>( PlayerSpawn );
 
-            EventHandlers["salty:StartGame"] += new Action<string, float, object, Vector3, Vector3>( StartGame );
+            EventHandlers["salty:StartGame"] += new Action<string, float, object, Vector3, Vector3, float>( StartGame );
             EventHandlers["salty:EndGame"] += new Action( EndGame );
             EventHandlers["salty:CacheMap"] += new Action<string>( CacheMap );
             EventHandlers["salty:OpenMapGUI"] += new Action( OpenMapGUI );
-            EventHandlers["salty:Spawn"] += new Action<int, Vector3, uint>( Spawn );
+            EventHandlers["salty:Spawn"] += new Action<int, Vector3, uint, float>( Spawn );
             EventHandlers["salty:SetTeam"] += new Action<int>( SetTeam );
             EventHandlers["salty:MapVote"] += new Action<IDictionary<string, object>>( VoteMap );
             EventHandlers["salty:GameVote"] += new Action<IDictionary<string, object>>( VoteGame );
@@ -193,13 +193,14 @@ namespace GamemodeCityClient {
             } ), false );
         }
 
-        public void StartGame( string ID, float gameLength, object gameWeps, Vector3 mapPos, Vector3 mapSize ) {
+        public void StartGame( string ID, float gameLength, object gameWeps, Vector3 mapPos, Vector3 mapSize, float mapRotation ) {
             if( ClientGlobals.CurrentGame != null ) {
                 ClientGlobals.CurrentGame.Map.ClearObjects();
             }
 
             ClientGlobals.CurrentGame = (BaseGamemode)Activator.CreateInstance( ClientGlobals.Gamemodes[ID.ToLower()].GetType() );
             ClientGlobals.CurrentGame.Map = new ClientMap( -1, ID, new List<string>(), mapPos, mapSize, false );
+            ClientGlobals.CurrentGame.Map.Rotation = mapRotation;
 
             // Convert weapons from network format to List<uint>
             if( gameWeps is IList<object> wepList ) {
@@ -229,8 +230,9 @@ namespace GamemodeCityClient {
                 ClientGlobals.NoClipUpdate();
         }
 
-        public async void Spawn( int typ, Vector3 spawn, uint hash ) {
+        public async void Spawn( int typ, Vector3 spawn, uint hash, float heading ) {
             ClientGlobals.LastSpawn = spawn;
+            ClientGlobals.LastSpawnHeading = heading;
             SpawnType type = (SpawnType)typ;
             if( type == SpawnType.PLAYER ) {
                 // Freeze player while we load the area
@@ -249,6 +251,7 @@ namespace GamemodeCityClient {
 
                 // Teleport the player
                 SetEntityCoordsNoOffset( PlayerPedId(), spawn.X, spawn.Y, spawn.Z, false, false, false );
+                SetEntityHeading( PlayerPedId(), heading );
                 NewLoadSceneStop();
 
                 // Small delay then unfreeze

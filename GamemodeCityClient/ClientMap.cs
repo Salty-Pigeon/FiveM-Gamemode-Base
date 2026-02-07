@@ -28,6 +28,7 @@ namespace GamemodeCityClient {
             map.Author = data.Author;
             map.Description = data.Description;
             map.Enabled = data.Enabled;
+            map.Rotation = data.Rotation;
             map.MinPlayers = data.MinPlayers;
             map.MaxPlayers = data.MaxPlayers;
 
@@ -39,6 +40,32 @@ namespace GamemodeCityClient {
             return map;
         }
 
+        /// <summary>
+        /// Rotates a local offset (dx, dy) around the center by the map's Rotation (degrees).
+        /// </summary>
+        private Vector3 RotatePoint( float dx, float dy, float z ) {
+            float rad = Rotation * ((float)System.Math.PI / 180f);
+            float cos = (float)System.Math.Cos( rad );
+            float sin = (float)System.Math.Sin( rad );
+            return new Vector3(
+                Position.X + dx * cos - dy * sin,
+                Position.Y + dx * sin + dy * cos,
+                z
+            );
+        }
+
+        /// <summary>
+        /// Draws a filled wall quad (two-sided) between two bottom and two top corners using DrawPoly.
+        /// </summary>
+        private void DrawWall( float x1, float y1, float x2, float y2, float zBot, float zTop, int r, int g, int b, int a ) {
+            // Front side (two triangles)
+            DrawPoly( x1, y1, zBot, x2, y2, zBot, x2, y2, zTop, r, g, b, a );
+            DrawPoly( x1, y1, zBot, x2, y2, zTop, x1, y1, zTop, r, g, b, a );
+            // Back side (reversed winding)
+            DrawPoly( x2, y2, zBot, x1, y1, zBot, x1, y1, zTop, r, g, b, a );
+            DrawPoly( x2, y2, zTop, x2, y2, zBot, x1, y1, zTop, r, g, b, a );
+        }
+
         public void DrawBoundaries() {
             bool playerInside = IsInZone( Game.PlayerPed.Position );
             int r = playerInside ? 30 : 255;
@@ -46,51 +73,42 @@ namespace GamemodeCityClient {
             int b = 30;
             int a = 50;
 
-            // Boundary walls
-            // North wall
-            DrawBox( Position.X - (Size.X / 2), Position.Y - (Size.Y / 2), Position.Z - 50,
-                     Position.X + (Size.X / 2), Position.Y - (Size.Y / 2) - 0.1f, Position.Z + 200,
-                     r, g, b, a );
-            // South wall
-            DrawBox( Position.X - (Size.X / 2), Position.Y + (Size.Y / 2), Position.Z - 50,
-                     Position.X + (Size.X / 2), Position.Y + (Size.Y / 2) + 0.1f, Position.Z + 200,
-                     r, g, b, a );
-            // West wall
-            DrawBox( Position.X - (Size.X / 2), Position.Y - (Size.Y / 2), Position.Z - 50,
-                     Position.X - (Size.X / 2) - 0.1f, Position.Y + (Size.Y / 2), Position.Z + 200,
-                     r, g, b, a );
-            // East wall
-            DrawBox( Position.X + (Size.X / 2), Position.Y - (Size.Y / 2), Position.Z - 50,
-                     Position.X + (Size.X / 2) + 0.1f, Position.Y + (Size.Y / 2), Position.Z + 200,
-                     r, g, b, a );
+            float hx = Size.X / 2;
+            float hy = Size.Y / 2;
+            float zBot = Position.Z - 50f;
+            float zTop = Position.Z + 200f;
+
+            // Four corners in local space, rotated to world
+            Vector3 nw = RotatePoint( -hx, -hy, 0 );
+            Vector3 ne = RotatePoint(  hx, -hy, 0 );
+            Vector3 se = RotatePoint(  hx,  hy, 0 );
+            Vector3 sw = RotatePoint( -hx,  hy, 0 );
+
+            // Filled boundary walls (4 walls)
+            DrawWall( nw.X, nw.Y, ne.X, ne.Y, zBot, zTop, r, g, b, a ); // North
+            DrawWall( ne.X, ne.Y, se.X, se.Y, zBot, zTop, r, g, b, a ); // East
+            DrawWall( se.X, se.Y, sw.X, sw.Y, zBot, zTop, r, g, b, a ); // South
+            DrawWall( sw.X, sw.Y, nw.X, nw.Y, zBot, zTop, r, g, b, a ); // West
 
             // Corner posts (tall vertical markers)
             float postSize = 0.3f;
-            float postHeight = 40f;
+            float postBot = Position.Z;
+            float postTop = Position.Z + 40f;
             int pr = 255; int pg = 255; int pb = 0; int pa = 120;
 
-            // NW corner
-            DrawBox( Position.X - (Size.X / 2) - postSize, Position.Y - (Size.Y / 2) - postSize, Position.Z,
-                     Position.X - (Size.X / 2) + postSize, Position.Y - (Size.Y / 2) + postSize, Position.Z + postHeight,
-                     pr, pg, pb, pa );
-            // NE corner
-            DrawBox( Position.X + (Size.X / 2) - postSize, Position.Y - (Size.Y / 2) - postSize, Position.Z,
-                     Position.X + (Size.X / 2) + postSize, Position.Y - (Size.Y / 2) + postSize, Position.Z + postHeight,
-                     pr, pg, pb, pa );
-            // SW corner
-            DrawBox( Position.X - (Size.X / 2) - postSize, Position.Y + (Size.Y / 2) - postSize, Position.Z,
-                     Position.X - (Size.X / 2) + postSize, Position.Y + (Size.Y / 2) + postSize, Position.Z + postHeight,
-                     pr, pg, pb, pa );
-            // SE corner
-            DrawBox( Position.X + (Size.X / 2) - postSize, Position.Y + (Size.Y / 2) - postSize, Position.Z,
-                     Position.X + (Size.X / 2) + postSize, Position.Y + (Size.Y / 2) + postSize, Position.Z + postHeight,
-                     pr, pg, pb, pa );
+            DrawBox( nw.X - postSize, nw.Y - postSize, postBot, nw.X + postSize, nw.Y + postSize, postTop, pr, pg, pb, pa );
+            DrawBox( ne.X - postSize, ne.Y - postSize, postBot, ne.X + postSize, ne.Y + postSize, postTop, pr, pg, pb, pa );
+            DrawBox( se.X - postSize, se.Y - postSize, postBot, se.X + postSize, se.Y + postSize, postTop, pr, pg, pb, pa );
+            DrawBox( sw.X - postSize, sw.Y - postSize, postBot, sw.X + postSize, sw.Y + postSize, postTop, pr, pg, pb, pa );
 
             // Height ceiling visualization
             if( Size.Z > 0 ) {
-                DrawBox( Position.X - (Size.X / 2), Position.Y - (Size.Y / 2), Position.Z + (Size.Z / 2),
-                         Position.X + (Size.X / 2), Position.Y + (Size.Y / 2), Position.Z + (Size.Z / 2) + 0.1f,
-                         100, 100, 255, 30 );
+                float zCeil = Position.Z + (Size.Z / 2);
+                // Ceiling as filled quad (two-sided)
+                DrawPoly( nw.X, nw.Y, zCeil, ne.X, ne.Y, zCeil, se.X, se.Y, zCeil, 100, 100, 255, 30 );
+                DrawPoly( nw.X, nw.Y, zCeil, se.X, se.Y, zCeil, sw.X, sw.Y, zCeil, 100, 100, 255, 30 );
+                DrawPoly( se.X, se.Y, zCeil, ne.X, ne.Y, zCeil, nw.X, nw.Y, zCeil, 100, 100, 255, 30 );
+                DrawPoly( sw.X, sw.Y, zCeil, se.X, se.Y, zCeil, nw.X, nw.Y, zCeil, 100, 100, 255, 30 );
             }
         }
 
@@ -116,10 +134,20 @@ namespace GamemodeCityClient {
                     2.0f, 2.0f, 2.0f, mr, mg, mb, 80,
                     false, true, 2, false, null, null, false );
 
+                // Heading direction line
+                if( spawn.SpawnType == SpawnType.PLAYER ) {
+                    float hRad = spawn.Heading * ((float)System.Math.PI / 180f);
+                    float dirX = spawn.Position.X - (float)System.Math.Sin( hRad ) * 2.5f;
+                    float dirY = spawn.Position.Y + (float)System.Math.Cos( hRad ) * 2.5f;
+                    DrawLine( spawn.Position.X, spawn.Position.Y, spawn.Position.Z + 0.5f,
+                              dirX, dirY, spawn.Position.Z + 0.5f,
+                              255, 255, 255, 255 );
+                }
+
                 // 3D text label above spawn
                 string label = spawn.SpawnType.ToString();
                 if( spawn.SpawnType == SpawnType.PLAYER ) {
-                    label = "Team " + spawn.Team;
+                    label = "T" + spawn.Team + " H:" + spawn.Heading.ToString( "0" );
                 }
 
                 float dist = World.GetDistance( Game.PlayerPed.Position, spawn.Position );

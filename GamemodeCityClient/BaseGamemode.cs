@@ -132,6 +132,8 @@ namespace GamemodeCityClient {
 
         public virtual void End() {
             WriteChat( Gamemode.ToUpper(), "Game finished!", 255, 0, 0 );
+            if( HUD != null )
+                HUD.HideGameTimer();
             Map.ClearObjects();
             ClientGlobals.SetSpectator( true );
             ClientGlobals.CurrentGame = null;

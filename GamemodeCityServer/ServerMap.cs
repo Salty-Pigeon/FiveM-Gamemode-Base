@@ -22,6 +22,7 @@ namespace GamemodeCityServer {
             map.Author = data.Author;
             map.Description = data.Description;
             map.Enabled = data.Enabled;
+            map.Rotation = data.Rotation;
             map.MinPlayers = data.MinPlayers;
             map.MaxPlayers = data.MaxPlayers;
 

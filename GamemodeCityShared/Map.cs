@@ -8,6 +8,7 @@ namespace GamemodeCityShared {
 
         public Vector3 Position;
         public Vector3 Size;
+        public float Rotation = 0f; // degrees around Z axis
         public string Name;
         public int ID;
         public string Author = "";
@@ -28,10 +29,17 @@ namespace GamemodeCityShared {
         }
 
         public bool IsInZone( Vector3 pos ) {
-            bool inXY = pos.X > Position.X - (Size.X / 2) &&
-                        pos.X < Position.X + (Size.X / 2) &&
-                        pos.Y > Position.Y - (Size.Y / 2) &&
-                        pos.Y < Position.Y + (Size.Y / 2);
+            // Rotate the point into local (unrotated) space around the center
+            float rad = -Rotation * ((float)Math.PI / 180f);
+            float cos = (float)Math.Cos( rad );
+            float sin = (float)Math.Sin( rad );
+            float dx = pos.X - Position.X;
+            float dy = pos.Y - Position.Y;
+            float localX = dx * cos - dy * sin;
+            float localY = dx * sin + dy * cos;
+
+            bool inXY = localX > -(Size.X / 2) && localX < (Size.X / 2) &&
+                        localY > -(Size.Y / 2) && localY < (Size.Y / 2);
 
             if( Size.Z > 0 ) {
                 return inXY &&
@@ -76,6 +84,7 @@ namespace GamemodeCityShared {
                 SizeX = Size.X,
                 SizeY = Size.Y,
                 SizeZ = Size.Z,
+                Rotation = Rotation,
                 Gamemodes = new List<string>( Gamemodes ),
                 MinPlayers = MinPlayers,
                 MaxPlayers = MaxPlayers,
@@ -97,6 +106,7 @@ namespace GamemodeCityShared {
             Enabled = data.Enabled;
             Position = new Vector3( data.PosX, data.PosY, data.PosZ );
             Size = new Vector3( data.SizeX, data.SizeY, data.SizeZ );
+            Rotation = data.Rotation;
             Gamemodes = new List<string>( data.Gamemodes );
             MinPlayers = data.MinPlayers;
             MaxPlayers = data.MaxPlayers;

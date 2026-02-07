@@ -633,6 +633,7 @@ function selectMap(id) {
     document.getElementById('mapSizeX').value = round2(map.sizeX);
     document.getElementById('mapSizeY').value = round2(map.sizeY);
     document.getElementById('mapSizeZ').value = round2(map.sizeZ);
+    document.getElementById('mapRotation').value = round2(map.rotation || 0);
 
     // Gamemodes checkboxes
     var gmCheckboxes = document.querySelectorAll('#mapGamemodes input[type="checkbox"]');
@@ -678,6 +679,7 @@ function readFormIntoMap(map) {
     map.sizeX = parseFloat(document.getElementById('mapSizeX').value) || 0;
     map.sizeY = parseFloat(document.getElementById('mapSizeY').value) || 0;
     map.sizeZ = parseFloat(document.getElementById('mapSizeZ').value) || 0;
+    map.rotation = parseFloat(document.getElementById('mapRotation').value) || 0;
 
     var gms = [];
     document.querySelectorAll('#mapGamemodes input[type="checkbox"]').forEach(function(cb) {
@@ -753,6 +755,24 @@ function renderSpawnList() {
             coordDiv.appendChild(inp);
         });
         row.appendChild(coordDiv);
+
+        // Heading
+        var headDiv = document.createElement('div');
+        headDiv.className = 'map-spawn-heading';
+        var headInput = document.createElement('input');
+        headInput.type = 'number';
+        headInput.min = 0;
+        headInput.max = 360;
+        headInput.step = 5;
+        headInput.value = round2(spawn.heading || 0);
+        headInput.title = 'Heading (0-360)';
+        (function(idx) {
+            headInput.addEventListener('change', function() {
+                map.spawns[idx].heading = parseFloat(headInput.value) || 0;
+            });
+        })(index);
+        headDiv.appendChild(headInput);
+        row.appendChild(headDiv);
 
         // Actions
         var actDiv = document.createElement('div');
@@ -867,7 +887,7 @@ document.getElementById('mapBoundaries').addEventListener('click', function() {
     fetch('https://gamemodecity/toggleBoundaries', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mapId: map.id, show: true, posX: map.posX, posY: map.posY, posZ: map.posZ, sizeX: map.sizeX, sizeY: map.sizeY, sizeZ: map.sizeZ })
+        body: JSON.stringify({ mapId: map.id, show: true, posX: map.posX, posY: map.posY, posZ: map.posZ, sizeX: map.sizeX, sizeY: map.sizeY, sizeZ: map.sizeZ, rotation: map.rotation || 0 })
     });
     minimizeHub();
 });
@@ -1162,6 +1182,7 @@ window.addEventListener('message', function(event) {
                 m.spawns.push({
                     id: -1,
                     posX: px, posY: py, posZ: pz,
+                    heading: round2(data.heading || 0),
                     spawnType: 0, entity: 'player', team: 0
                 });
                 renderSpawnList();
@@ -1204,6 +1225,23 @@ window.addEventListener('message', function(event) {
             selectMap(data.map.id);
         }
     }
+    // Game Timer
+    else if (data.type === 'updateGameTimer') {
+        var timerEl = document.getElementById('game-timer');
+        var textEl = document.getElementById('gameTimerText');
+        textEl.textContent = data.time;
+        timerEl.classList.add('active');
+        if (data.urgent) {
+            timerEl.classList.add('urgent');
+        } else {
+            timerEl.classList.remove('urgent');
+        }
+    }
+    else if (data.type === 'hideGameTimer') {
+        var timerEl = document.getElementById('game-timer');
+        timerEl.classList.remove('active');
+        timerEl.classList.remove('urgent');
+    }
     // TTT Overlays
     else if (data.type === 'tttRoleReveal') {
         document.getElementById('tttRoleName').textContent = data.team;
@@ -1214,9 +1252,19 @@ window.addEventListener('message', function(event) {
     }
     else if (data.type === 'tttCountdown') {
         var numEl = document.getElementById('tttCountdownNumber');
-        numEl.textContent = data.count === 0 ? 'GO' : data.count;
-        // Remove and re-add active to retrigger animation
         var overlay = document.getElementById('ttt-countdown');
+        var isGo = data.count === 0;
+
+        numEl.textContent = isGo ? 'GO' : data.count;
+
+        // Toggle go state for green styling + flash
+        overlay.classList.remove('countdown-go');
+        if (isGo) {
+            void overlay.offsetWidth;
+            overlay.classList.add('countdown-go');
+        }
+
+        // Remove and re-add active to retrigger all animations (number, pulse, vignette)
         overlay.classList.remove('active');
         overlay.classList.remove('fade-out');
         void overlay.offsetWidth; // Force reflow
@@ -1224,6 +1272,7 @@ window.addEventListener('message', function(event) {
         clearTimeout(tttTimers['ttt-countdown']);
         tttTimers['ttt-countdown'] = setTimeout(function() {
             hideTTTOverlay('ttt-countdown');
+            overlay.classList.remove('countdown-go');
         }, 900);
     }
     else if (data.type === 'tttRoundEnd') {

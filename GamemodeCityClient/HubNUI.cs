@@ -165,6 +165,7 @@ namespace GamemodeCityClient {
                     + ",\"posX\":" + F( spawn.Position.X )
                     + ",\"posY\":" + F( spawn.Position.Y )
                     + ",\"posZ\":" + F( spawn.Position.Z )
+                    + ",\"heading\":" + F( spawn.Heading )
                     + ",\"spawnType\":" + (int)spawn.SpawnType
                     + ",\"entity\":\"" + EscapeJson( spawn.Entity ) + "\""
                     + ",\"team\":" + spawn.Team + "}" );
@@ -181,6 +182,7 @@ namespace GamemodeCityClient {
                 + ",\"description\":\"" + EscapeJson( map.Description ) + "\""
                 + ",\"enabled\":" + ( map.Enabled ? "true" : "false" )
                 + ",\"gamemodes\":[" + string.Join( ",", gms ) + "]"
+                + ",\"rotation\":" + F( map.Rotation )
                 + ",\"minPlayers\":" + map.MinPlayers
                 + ",\"maxPlayers\":" + map.MaxPlayers
                 + ",\"posX\":" + F( map.Position.X )
@@ -347,6 +349,7 @@ namespace GamemodeCityClient {
                     mapData.ContainsKey( "sizeY" ) ? Convert.ToSingle( mapData["sizeY"] ) : map.Size.Y,
                     mapData.ContainsKey( "sizeZ" ) ? Convert.ToSingle( mapData["sizeZ"] ) : map.Size.Z
                 );
+                map.Rotation = mapData.ContainsKey( "rotation" ) ? Convert.ToSingle( mapData["rotation"] ) : map.Rotation;
 
                 // Gamemodes
                 if( mapData.ContainsKey( "gamemodes" ) && mapData["gamemodes"] is IList<object> gmList ) {
@@ -370,7 +373,8 @@ namespace GamemodeCityClient {
                                 ),
                                 (SpawnType)( s.ContainsKey( "spawnType" ) ? Convert.ToInt32( s["spawnType"] ) : 0 ),
                                 s.ContainsKey( "entity" ) ? s["entity"].ToString() : "player",
-                                s.ContainsKey( "team" ) ? Convert.ToInt32( s["team"] ) : 0
+                                s.ContainsKey( "team" ) ? Convert.ToInt32( s["team"] ) : 0,
+                                s.ContainsKey( "heading" ) ? Convert.ToSingle( s["heading"] ) : 0f
                             );
                             map.Spawns.Add( spawn );
                         }
@@ -463,6 +467,7 @@ namespace GamemodeCityClient {
                     Convert.ToSingle( data["sizeY"] ),
                     Convert.ToSingle( data["sizeZ"] )
                 );
+                map.Rotation = data.ContainsKey( "rotation" ) ? Convert.ToSingle( data["rotation"] ) : map.Rotation;
                 map.Draw = true;
                 map.CreateBlip();
             }
@@ -479,10 +484,12 @@ namespace GamemodeCityClient {
 
         private void OnGetPlayerPosition( IDictionary<string, object> data, CallbackDelegate cb ) {
             Vector3 pos = Game.PlayerPed.Position;
+            float heading = Game.PlayerPed.Heading;
             string context = data.ContainsKey( "context" ) ? data["context"].ToString() : "";
             int spawnIndex = data.ContainsKey( "spawnIndex" ) ? Convert.ToInt32( data["spawnIndex"] ) : -1;
             cb( "{\"status\":\"ok\"}" );
             SendNuiMessage( "{\"type\":\"playerPosition\",\"x\":" + F( pos.X ) + ",\"y\":" + F( pos.Y ) + ",\"z\":" + F( pos.Z )
+                + ",\"heading\":" + F( heading )
                 + ",\"context\":\"" + EscapeJson( context ) + "\",\"spawnIndex\":" + spawnIndex + "}" );
         }
 

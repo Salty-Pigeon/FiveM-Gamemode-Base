@@ -32,6 +32,7 @@ namespace ICMClient
             HUD = new HUD();
             rand = new Random( GetGameTimer() );
             EventHandlers["salty:icmDriverKillable"] += new Action( Killable );
+            EventHandlers["salty::ICMRoundResult"] += new Action<string, string, string>( OnRoundResult );
 
             var gmInfo = GamemodeRegistry.Register( "icm", "Ice Cream Man",
                 "One player drives the ice cream truck while others try to survive the chaos.", "#50c878" );
@@ -49,10 +50,23 @@ namespace ICMClient
             }
         }
 
-        public override void Start( float gameTime ) {
+        public override async void Start( float gameTime ) {
             base.Start( gameTime );
             HUD.SetGameTimePosition( 0, 0, false );
 
+            FreezeEntityPosition( PlayerPedId(), true );
+
+            await Delay( 3200 );
+
+            HubNUI.ShowCountdown( 3 );
+            await Delay( 1000 );
+            HubNUI.ShowCountdown( 2 );
+            await Delay( 1000 );
+            HubNUI.ShowCountdown( 1 );
+            await Delay( 1000 );
+            HubNUI.ShowCountdown( 0 );
+
+            FreezeEntityPosition( PlayerPedId(), false );
         }
 
         public override void End() {
@@ -84,7 +98,7 @@ namespace ICMClient
                 if( !Game.PlayerPed.IsInVehicle() && Truck != null ) {
                     Game.PlayerPed.SetIntoVehicle( Truck, VehicleSeat.Driver );
                 }
-                
+
                 uint streetName = 0;
                 uint crossingName = 0;
                 GetStreetNameAtCoord( Game.PlayerPed.Position.X, Game.PlayerPed.Position.Y, Game.PlayerPed.Position.Z, ref streetName, ref crossingName );
@@ -92,11 +106,22 @@ namespace ICMClient
                     var velocity = Truck.Velocity;
                     var speed = Truck.Speed;
                     Truck.Position = ClientGlobals.LastSpawn;
-                    Truck.Heading = 67.7f;
+                    Truck.Heading = ClientGlobals.LastSpawnHeading;
                     Truck.Velocity = velocity * 2;
                     Truck.Speed = speed * 1.5f;
                     SetGameplayCamRelativeHeading( 0 );
                     //AddScore( 1 );
+                }
+
+                // Reset truck to spawn when hitting map boundary
+                if( Map != null && Truck != null && !Map.IsInZone( Game.PlayerPed.Position ) ) {
+                    var velocity = Truck.Velocity;
+                    var speed = Truck.Speed;
+                    Truck.Position = ClientGlobals.LastSpawn;
+                    Truck.Heading = ClientGlobals.LastSpawnHeading;
+                    Truck.Velocity = velocity;
+                    Truck.Speed = speed;
+                    SetGameplayCamRelativeHeading( 0 );
                 }
             }
             if( Team == 1 && !CanKill ) {
@@ -113,7 +138,7 @@ namespace ICMClient
                         Bike.MaxSpeed = 500;
                         Bike.EnginePowerMultiplier = 500;
                         Bike.Position = ClientGlobals.LastSpawn;
-                        Bike.Heading = 266.6f;
+                        Bike.Heading = ClientGlobals.LastSpawnHeading;
                         Bike.Velocity = Bike.ForwardVector * 5f;
                         Bike.Speed *= 15f;
                         SetGameplayCamRelativeHeading( 0 );
@@ -141,7 +166,7 @@ namespace ICMClient
             if( Bike != null )
                 Bike.Delete();
             Game.PlayerPed.Position = ClientGlobals.LastSpawn;
-            Bike = await World.CreateVehicle( Bikes[rand.Next( 0, Bikes.Count )], Game.PlayerPed.Position, 266.6f );
+            Bike = await World.CreateVehicle( Bikes[rand.Next( 0, Bikes.Count )], Game.PlayerPed.Position, ClientGlobals.LastSpawnHeading );
             Bike.MaxSpeed = 60;
             Bike.EnginePowerMultiplier = 60;
             Game.PlayerPed.SetIntoVehicle( Bike, VehicleSeat.Driver );
@@ -149,11 +174,31 @@ namespace ICMClient
 
         }
 
+        public override void SetTeam( int team ) {
+            base.SetTeam( team );
+            switch( team ) {
+                case 0:
+                    HUD.TeamText.Caption = "Ice Cream Man";
+                    HubNUI.ShowRoleReveal( "Ice Cream Man", "#f59e0b" );
+                    HUD.SetGoal( "Splatter all the kids on Ice Cream Lane!", 245, 158, 11, 255, 10 );
+                    break;
+                case 1:
+                    HUD.TeamText.Caption = "Kid";
+                    HubNUI.ShowRoleReveal( "Kid", "#06b6d4" );
+                    HUD.SetGoal( "Survive and reach the end of Ice Cream Lane!", 6, 182, 212, 255, 10 );
+                    break;
+            }
+        }
+
+        public void OnRoundResult( string winner, string color, string reason ) {
+            HubNUI.ShowRoundEnd( winner, color, reason );
+        }
+
         public async Task SpawnTruck() {
             if( Truck != null )
                 Truck.Delete();
             Game.PlayerPed.Position = ClientGlobals.LastSpawn;
-            Truck = await World.CreateVehicle( "cutter", Game.PlayerPed.Position, 67.7f );
+            Truck = await World.CreateVehicle( "cutter", Game.PlayerPed.Position, ClientGlobals.LastSpawnHeading );
             Truck.CanBeVisiblyDamaged = false;
             Truck.CanEngineDegrade = false;
             Truck.CanTiresBurst = false;

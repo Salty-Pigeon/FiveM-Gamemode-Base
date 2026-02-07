@@ -141,6 +141,10 @@
                                     <label>Height (Z)</label>
                                     <input type="number" class="map-input" id="mapSizeZ" step="1" title="0 = no height limit">
                                 </div>
+                                <div>
+                                    <label>Rotation</label>
+                                    <input type="number" class="map-input" id="mapRotation" step="5" title="Degrees (0-360)">
+                                </div>
                             </div>
                         </div>
                         <div class="map-section full-width">
@@ -167,6 +171,13 @@
     </div>
 </div>
 
+<!-- Game Timer -->
+<div class="game-timer" id="game-timer">
+    <div class="game-timer-inner">
+        <span class="game-timer-text" id="gameTimerText">00:00</span>
+    </div>
+</div>
+
 <!-- TTT Overlays -->
 <div class="ttt-overlay" id="ttt-role-reveal">
     <div class="ttt-role-bg"></div>
@@ -178,6 +189,9 @@
 </div>
 
 <div class="ttt-overlay ttt-countdown-overlay" id="ttt-countdown">
+    <div class="countdown-vignette"></div>
+    <div class="countdown-flash"></div>
+    <div class="countdown-pulse"></div>
     <div class="ttt-countdown-number" id="tttCountdownNumber"></div>
 </div>
 

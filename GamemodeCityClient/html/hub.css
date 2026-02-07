@@ -845,6 +845,25 @@ h1 {
     border-color: #5a8abb;
 }
 
+.map-spawn-heading {
+    width: 55px;
+}
+
+.map-spawn-heading input {
+    width: 100%;
+    padding: 4px 6px;
+    background: #16213e;
+    border: 1px solid #2a3a5c;
+    border-radius: 4px;
+    color: #e0e0e0;
+    font-size: 12px;
+    text-align: center;
+}
+
+.map-spawn-heading input:focus {
+    border-color: #5a8abb;
+}
+
 .map-spawn-actions {
     display: flex;
     gap: 4px;
@@ -942,6 +961,63 @@ h1 {
     color: #8888aa !important;
 }
 
+/* ==================== Game Timer ==================== */
+
+.game-timer {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 900;
+    pointer-events: none;
+    display: none;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+
+.game-timer.active {
+    display: block;
+    opacity: 1;
+}
+
+.game-timer.fade-out {
+    opacity: 0;
+}
+
+.game-timer-inner {
+    background: rgba(0, 0, 0, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 8px 28px;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.game-timer-text {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 28px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.9);
+    letter-spacing: 4px;
+    text-shadow: 0 0 12px rgba(255, 255, 255, 0.15);
+}
+
+.game-timer.urgent .game-timer-inner {
+    border-color: rgba(239, 68, 68, 0.3);
+    background: rgba(40, 0, 0, 0.6);
+}
+
+.game-timer.urgent .game-timer-text {
+    color: #ef4444;
+    text-shadow: 0 0 20px rgba(239, 68, 68, 0.4), 0 0 40px rgba(239, 68, 68, 0.15);
+    animation: timerPulse 1s ease-in-out infinite;
+}
+
+@keyframes timerPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
 /* ==================== TTT Overlays ==================== */
 
 .ttt-overlay {
@@ -1027,22 +1103,83 @@ h1 {
     background: transparent;
 }
 
+.countdown-vignette {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(circle, transparent 30%, rgba(0, 0, 0, 0.5) 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.ttt-countdown-overlay.active .countdown-vignette {
+    opacity: 1;
+}
+
+.countdown-pulse {
+    position: absolute;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 3px solid rgba(255, 255, 255, 0.5);
+    opacity: 0;
+}
+
+.ttt-countdown-overlay.active .countdown-pulse {
+    animation: pulseBurst 0.8s ease-out forwards;
+}
+
+@keyframes pulseBurst {
+    0% { opacity: 0.7; transform: scale(1); border-width: 3px; }
+    100% { opacity: 0; transform: scale(8); border-width: 1px; }
+}
+
+.countdown-flash {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: transparent;
+    pointer-events: none;
+}
+
+.ttt-countdown-overlay.countdown-go .countdown-flash {
+    animation: goFlash 0.5s ease-out forwards;
+}
+
+@keyframes goFlash {
+    0% { background: rgba(34, 197, 94, 0.25); }
+    100% { background: transparent; }
+}
+
+.ttt-countdown-overlay.countdown-go .countdown-pulse {
+    border-color: rgba(34, 197, 94, 0.5);
+}
+
 .ttt-countdown-number {
-    font-size: 140px;
+    font-size: 160px;
     font-weight: 700;
     color: #ffffff;
     opacity: 0;
-    text-shadow: 0 0 40px rgba(255, 255, 255, 0.4);
+    text-shadow: 0 0 60px rgba(255, 255, 255, 0.4), 0 0 120px rgba(255, 255, 255, 0.15);
+    position: relative;
+    z-index: 2;
 }
 
 .ttt-countdown-overlay.active .ttt-countdown-number {
-    animation: countPop 0.9s ease forwards;
+    animation: countPop 0.9s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
 @keyframes countPop {
-    0% { opacity: 0; transform: scale(2); }
-    20% { opacity: 1; transform: scale(1); }
-    100% { opacity: 0.3; transform: scale(1); }
+    0% { opacity: 0; transform: scale(2.5); filter: blur(8px); }
+    25% { opacity: 1; transform: scale(0.92); filter: blur(0); }
+    40% { transform: scale(1.04); }
+    55% { transform: scale(0.98); }
+    70% { opacity: 1; transform: scale(1); }
+    100% { opacity: 0.25; transform: scale(0.95); }
+}
+
+.ttt-countdown-overlay.countdown-go .ttt-countdown-number {
+    color: #22c55e;
+    text-shadow: 0 0 60px rgba(34, 197, 94, 0.6), 0 0 120px rgba(34, 197, 94, 0.3);
+    font-size: 180px;
 }
 
 /* --- Round End --- */

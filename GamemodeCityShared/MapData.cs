@@ -15,6 +15,7 @@ namespace GamemodeCityShared {
         public float SizeX { get; set; }
         public float SizeY { get; set; }
         public float SizeZ { get; set; }
+        public float Rotation { get; set; }
         public List<string> Gamemodes { get; set; }
         public int MinPlayers { get; set; }
         public int MaxPlayers { get; set; }
@@ -37,6 +38,7 @@ namespace GamemodeCityShared {
         public float PosX { get; set; }
         public float PosY { get; set; }
         public float PosZ { get; set; }
+        public float Heading { get; set; }
         public int SpawnType { get; set; }
         public string Entity { get; set; }
         public int Team { get; set; }
