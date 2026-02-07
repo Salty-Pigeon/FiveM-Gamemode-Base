@@ -178,5 +178,25 @@ namespace GamemodeCityClient {
             CloseHub();
             cb( "{\"status\":\"ok\"}" );
         }
+
+        public static void ShowRoleReveal( string team, string color ) {
+            string payload = "{\"type\":\"tttRoleReveal\",\"team\":\"" + EscapeJson( team ) + "\",\"color\":\"" + EscapeJson( color ) + "\"}";
+            SendNuiMessage( payload );
+        }
+
+        public static void ShowCountdown( int count ) {
+            string payload = "{\"type\":\"tttCountdown\",\"count\":" + count + "}";
+            SendNuiMessage( payload );
+        }
+
+        public static void ShowRoundEnd( string winner, string color, string reason ) {
+            string payload = "{\"type\":\"tttRoundEnd\",\"winner\":\"" + EscapeJson( winner ) + "\",\"color\":\"" + EscapeJson( color ) + "\",\"reason\":\"" + EscapeJson( reason ) + "\"}";
+            SendNuiMessage( payload );
+        }
+
+        public static void ShowBodyInspect( string name, string team, string teamColor, string weapon, string deathTime ) {
+            string payload = "{\"type\":\"tttBodyInspect\",\"name\":\"" + EscapeJson( name ) + "\",\"team\":\"" + EscapeJson( team ) + "\",\"teamColor\":\"" + EscapeJson( teamColor ) + "\",\"weapon\":\"" + EscapeJson( weapon ) + "\",\"deathTime\":\"" + EscapeJson( deathTime ) + "\"}";
+            SendNuiMessage( payload );
+        }
     }
 }

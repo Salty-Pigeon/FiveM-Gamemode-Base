@@ -171,6 +171,7 @@ namespace TTTServer
             if( Traitors.Contains( victim ) ) {
                 Traitors.Remove( victim );
                 if( Traitors.Count == 0 ) {
+                    TriggerClientEvent( "salty::TTTRoundResult", "Innocents", "#22c55e", "All traitors eliminated" );
                     WriteChat( "TTT", "Innocents win", 20, 200, 20 );
                     End();
                     return;
@@ -192,6 +193,7 @@ namespace TTTServer
             }
 
             if( Innocents.Count + Detectives.Count == 0 ) {
+                TriggerClientEvent( "salty::TTTRoundResult", "Traitors", "#ef4444", "All innocents eliminated" );
                 WriteChat( "TTT", "Traitors win", 200, 20, 20 );
                 End();
                 return;
@@ -215,6 +217,7 @@ namespace TTTServer
 
         public override void End( ) {
             if( !SoloTestMode && GameTime < GetGameTimer() ) {
+                TriggerClientEvent( "salty::TTTRoundResult", "Innocents", "#22c55e", "Time expired" );
                 WriteChat( "TTT", "Time over! Innocents win", 200, 20, 20 );
             }
             SoloTestMode = false; // Reset solo mode

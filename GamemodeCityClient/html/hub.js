@@ -441,6 +441,31 @@ document.addEventListener('keydown', function(e) {
     });
 });
 
+// TTT Overlay utilities
+var tttTimers = {};
+
+function showTTTOverlay(id, duration) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    clearTimeout(tttTimers[id]);
+    el.classList.remove('fade-out');
+    el.classList.add('active');
+    tttTimers[id] = setTimeout(function() {
+        hideTTTOverlay(id);
+    }, duration);
+}
+
+function hideTTTOverlay(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    clearTimeout(tttTimers[id]);
+    el.classList.add('fade-out');
+    setTimeout(function() {
+        el.classList.remove('active');
+        el.classList.remove('fade-out');
+    }, 500);
+}
+
 // Listen for messages from C#
 window.addEventListener('message', function(event) {
     var data = event.data;
@@ -502,5 +527,45 @@ window.addEventListener('message', function(event) {
         }
         renderDebugEntities();
         updateTargetActionStates();
+    }
+    // TTT Overlays
+    else if (data.type === 'tttRoleReveal') {
+        document.getElementById('tttRoleName').textContent = data.team;
+        document.getElementById('tttRoleName').style.color = data.color;
+        document.getElementById('tttRoleName').style.textShadow = '0 0 40px ' + data.color + ', 0 0 80px ' + data.color;
+        document.getElementById('tttRoleLine').style.background = data.color;
+        showTTTOverlay('ttt-role-reveal', 3000);
+    }
+    else if (data.type === 'tttCountdown') {
+        var numEl = document.getElementById('tttCountdownNumber');
+        numEl.textContent = data.count === 0 ? 'GO' : data.count;
+        // Remove and re-add active to retrigger animation
+        var overlay = document.getElementById('ttt-countdown');
+        overlay.classList.remove('active');
+        overlay.classList.remove('fade-out');
+        void overlay.offsetWidth; // Force reflow
+        overlay.classList.add('active');
+        clearTimeout(tttTimers['ttt-countdown']);
+        tttTimers['ttt-countdown'] = setTimeout(function() {
+            hideTTTOverlay('ttt-countdown');
+        }, 900);
+    }
+    else if (data.type === 'tttRoundEnd') {
+        var winnerEl = document.getElementById('tttRoundEndWinner');
+        winnerEl.textContent = data.winner;
+        winnerEl.style.color = data.color;
+        winnerEl.style.textShadow = '0 0 40px ' + data.color + ', 0 0 80px ' + data.color;
+        document.getElementById('tttRoundEndReason').textContent = data.reason;
+        showTTTOverlay('ttt-round-end', 8000);
+    }
+    else if (data.type === 'tttBodyInspect') {
+        document.getElementById('tttBodyName').textContent = data.name;
+        var teamEl = document.getElementById('tttBodyTeam');
+        teamEl.textContent = data.team;
+        teamEl.style.color = data.teamColor;
+        var unknownText = 'Unknown - requires Detective';
+        document.getElementById('tttBodyWeapon').textContent = data.weapon || unknownText;
+        document.getElementById('tttBodyDeathTime').textContent = data.deathTime || unknownText;
+        showTTTOverlay('ttt-body-inspect', 5000);
     }
 });

@@ -64,6 +64,7 @@ namespace TTTClient
             CanDisguise = false;
             EventHandlers["salty::SpawnDeadBody"] += new Action<Vector3, int, int, uint>( SpawnDeadBody );
             EventHandlers["salty::UpdateDeadBody"] += new Action<int>( BodyDiscovered );
+            EventHandlers["salty::TTTRoundResult"] += new Action<string, string, string>( OnRoundResult );
 
             GamemodeRegistry.Register( "ttt", "Trouble in Terrorist Town",
                 "Discover who among you is a traitor before it's too late.", "#e94560" );
@@ -319,7 +320,7 @@ namespace TTTClient
             HubNUI.SendDebugEntityUpdate( "ttt" );
         }
 
-        public override void Start( float gameTime ) {
+        public override async void Start( float gameTime ) {
             base.Start( gameTime );
 
             Globals.GameCoins = 1;
@@ -327,6 +328,23 @@ namespace TTTClient
             // Clear any leftover bots from previous games
             ClearTestBots();
             DeadBodies.Clear();
+
+            // Wait for role reveal to finish
+            await Delay( 3200 );
+
+            // Freeze player during countdown
+            FreezeEntityPosition( PlayerPedId(), true );
+
+            HubNUI.ShowCountdown( 3 );
+            await Delay( 1000 );
+            HubNUI.ShowCountdown( 2 );
+            await Delay( 1000 );
+            HubNUI.ShowCountdown( 1 );
+            await Delay( 1000 );
+            HubNUI.ShowCountdown( 0 ); // "GO"
+
+            // Unfreeze player
+            FreezeEntityPosition( PlayerPedId(), false );
         }
 
         public override void Update() {
@@ -442,6 +460,7 @@ namespace TTTClient
                         if( Team == (int)Teams.Detective ) {
                             WriteChat( "TTT", "Scanning DNA", 0, 0, 230 );
                             ((TTTHUD)HUD).DetectiveTracing = body.Value.KillerPed;
+                            body.Value.isDetectiveScanned = true;
                         }
                     }
                     else {
@@ -451,7 +470,22 @@ namespace TTTClient
                         } else {
                             TriggerServerEvent( "salty::netBodyDiscovered", body.Key );
                         }
+                        if( Team == (int)Teams.Detective ) {
+                            body.Value.isDetectiveScanned = true;
+                        }
                     }
+                    // Show body inspect overlay
+                    string bodyTeam = body.Value.Team ?? "Unknown";
+                    string bodyTeamColor = "#8888aa";
+                    switch( bodyTeam ) {
+                        case "Innocent": bodyTeamColor = "#22c55e"; break;
+                        case "Traitor": bodyTeamColor = "#ef4444"; break;
+                        case "Detective": bodyTeamColor = "#3b82f6"; break;
+                    }
+                    string weaponClue = body.Value.isDetectiveScanned ? body.Value.GetWeaponGroupClue() : "";
+                    string deathTimeClue = body.Value.isDetectiveScanned ? body.Value.GetDeathTimeAgo() : "";
+                    HubNUI.ShowBodyInspect( body.Value.Name, bodyTeam, bodyTeamColor,
+                        weaponClue, deathTimeClue );
                 }
             }
 
@@ -538,7 +572,22 @@ namespace TTTClient
         public void SpawnDeadBody( Vector3 position, int ply, int killer, uint weaponHash ) {
             int player = GetPlayerFromServerId( ply );
             int kill = GetPlayerFromServerId( killer );
-            DeadBodies.Add( ply, new DeadBody( position, player, kill, weaponHash ) );
+            var body = new DeadBody( position, player, kill, weaponHash );
+
+            // Look up team from PlayerDetails
+            if( ClientGlobals.CurrentGame != null ) {
+                object teamVal = ClientGlobals.CurrentGame.GetPlayerDetail( ply, "team" );
+                if( teamVal != null ) {
+                    int teamInt = Convert.ToInt32( teamVal );
+                    switch( teamInt ) {
+                        case 0: body.Team = "Innocent"; break;
+                        case 1: body.Team = "Traitor"; break;
+                        case 2: body.Team = "Detective"; break;
+                    }
+                }
+            }
+
+            DeadBodies.Add( ply, body );
         }
 
         public override void SetTeam( int team ) {
@@ -546,20 +595,24 @@ namespace TTTClient
             switch( team ) {
                 case 0:
                     HUD.TeamText.Caption = "Innocent";
-                    HUD.SetGoal( "Defeat the traitors", 20, 200, 20, 200, 5 );
+                    HubNUI.ShowRoleReveal( "Innocent", "#22c55e" );
                     break;
                 case 1:
                     HUD.TeamText.Caption = "Traitor";
-                    HUD.SetGoal( "You are a Traitor", 200, 20, 20, 200, 5 );
+                    HubNUI.ShowRoleReveal( "Traitor", "#ef4444" );
                     break;
                 case 2:
                     HUD.TeamText.Caption = "Detective";
-                    HUD.SetGoal( "Help the innocents find the traitors", 20, 20, 200, 200, 5 );
+                    HubNUI.ShowRoleReveal( "Detective", "#3b82f6" );
                     break;
                 default:
                     HUD.TeamText.Caption = "Spectator";
                     break;
             }
+        }
+
+        public void OnRoundResult( string winner, string color, string reason ) {
+            HubNUI.ShowRoundEnd( winner, color, reason );
         }
     }
 }
