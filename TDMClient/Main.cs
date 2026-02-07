@@ -15,6 +15,9 @@ namespace TDMClient
         
         public Main( ) : base ( "TDM" ) {
             HUD = new HUD();
+
+            GamemodeRegistry.Register( "tdm", "Team Deathmatch",
+                "Two teams battle it out. Eliminate the opposing team to win.", "#4a90d9" );
         }
 
         public override void Start( float gameTime ) {

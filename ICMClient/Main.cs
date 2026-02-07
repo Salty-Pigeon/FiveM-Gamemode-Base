@@ -32,6 +32,9 @@ namespace ICMClient
             HUD = new HUD();
             rand = new Random( GetGameTimer() );
             EventHandlers["salty:icmDriverKillable"] += new Action( Killable );
+
+            GamemodeRegistry.Register( "icm", "Ice Cream Man",
+                "One player drives the ice cream truck while others try to survive the chaos.", "#50c878" );
         }
 
         private void Killable() {

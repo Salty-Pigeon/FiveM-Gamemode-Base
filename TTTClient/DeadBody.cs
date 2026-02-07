@@ -13,7 +13,7 @@ namespace TTTClient {
     public class DeadBody : BaseScript {
 
         public int ServerID;
-        public int ID = -1; 
+        public int ID = -1;
         public uint Model;
         public int PlayerPed;
         public int PlayerID;
@@ -22,6 +22,8 @@ namespace TTTClient {
         public Vector3 Position;
         public string Name;
         public uint WeaponHash;
+
+        public string Team;
 
         public bool isDiscovered = false;
         public string Caption = "Unidentified body [E]";
@@ -36,7 +38,20 @@ namespace TTTClient {
             Position = position;
             WeaponHash = weaponHash;
             ID = CreatePed( 4, Model, Game.PlayerPed.Position.X, Game.PlayerPed.Position.Y, Game.PlayerPed.Position.Z + 1, 0.0f, true, true );
-            
+
+        }
+
+        public DeadBody( Vector3 position, uint model, string name, string team ) {
+            Model = model;
+            Name = name;
+            Team = team;
+            Position = position;
+            PlayerID = -1;
+            KillerID = -1;
+            PlayerPed = -1;
+            KillerPed = -1;
+            WeaponHash = 0;
+            ID = CreatePed( 4, Model, position.X, position.Y, position.Z + 1, 0.0f, true, true );
         }
 
         public void Detective() {
@@ -45,7 +60,12 @@ namespace TTTClient {
 
         public void Discovered() {
             isDiscovered = true;
-            Caption = Name + "'s dead body killed with " + Globals.Weapons[WeaponHash]["Name"];
+            string teamText = !string.IsNullOrEmpty( Team ) ? " (" + Team + ")" : "";
+            if( Globals.Weapons.ContainsKey( WeaponHash ) ) {
+                Caption = Name + teamText + " killed with " + Globals.Weapons[WeaponHash]["Name"];
+            } else {
+                Caption = Name + teamText;
+            }
         }
 
         public void View() {

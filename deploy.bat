@@ -28,7 +28,9 @@ xcopy /Y /Q "%PROJECT%\MVBClient\bin\Debug\MVBClient.net.dll"                   
 xcopy /Y /Q "%PROJECT%\MVBServer\bin\Debug\MVBServer.net.dll"                   "%DEST%\"
 xcopy /Y /Q "%PROJECT%\fxmanifest.lua"                                          "%DEST%\"
 if not exist "%DEST%\html" mkdir "%DEST%\html"
-xcopy /Y /Q "%PROJECT%\GamemodeCityClient\html\controls.html"                  "%DEST%\html\"
+xcopy /Y /Q "%PROJECT%\GamemodeCityClient\html\hub.html"   "%DEST%\html\"
+xcopy /Y /Q "%PROJECT%\GamemodeCityClient\html\hub.css"    "%DEST%\html\"
+xcopy /Y /Q "%PROJECT%\GamemodeCityClient\html\hub.js"     "%DEST%\html\"
 
 echo.
 echo ============================================

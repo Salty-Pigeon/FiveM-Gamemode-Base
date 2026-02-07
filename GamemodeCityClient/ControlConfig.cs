@@ -10,28 +10,10 @@ namespace GamemodeCityClient {
 
         // Default controls per gamemode
         // Key: gamemode ID, Value: dictionary of action name → control ID
-        private static Dictionary<string, Dictionary<string, int>> Defaults = new Dictionary<string, Dictionary<string, int>>() {
-            { "ttt", new Dictionary<string, int>() {
-                { "BuyMenu", 244 },          // M - Interaction Menu
-                { "SetTeleport", 121 },       // Insert
-                { "UseTeleport", 212 },       // Home
-                { "Interact", 38 },           // E
-                { "Disguise", 243 },          // Tilde ~
-                { "DropWeapon", 23 },         // F - Enter
-            }},
-        };
+        private static Dictionary<string, Dictionary<string, int>> Defaults = new Dictionary<string, Dictionary<string, int>>();
 
         // Friendly display names for actions
-        private static Dictionary<string, Dictionary<string, string>> ActionNames = new Dictionary<string, Dictionary<string, string>>() {
-            { "ttt", new Dictionary<string, string>() {
-                { "BuyMenu", "Buy Menu" },
-                { "SetTeleport", "Set Teleport" },
-                { "UseTeleport", "Use Teleport" },
-                { "Interact", "Interact / Scan Body" },
-                { "Disguise", "Toggle Disguise" },
-                { "DropWeapon", "Drop Weapon" },
-            }},
-        };
+        private static Dictionary<string, Dictionary<string, string>> ActionNames = new Dictionary<string, Dictionary<string, string>>();
 
         /// <summary>
         /// Get the control ID for a gamemode action. Checks saved KVP first, falls back to defaults.

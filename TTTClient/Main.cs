@@ -65,13 +65,50 @@ namespace TTTClient
             EventHandlers["salty::SpawnDeadBody"] += new Action<Vector3, int, int, uint>( SpawnDeadBody );
             EventHandlers["salty::UpdateDeadBody"] += new Action<int>( BodyDiscovered );
 
-            RegisterCommand( "controls", new Action<int, List<object>, string>( ( source, args, raw ) => {
-                ControlsMenuNUI.OpenMenu( "ttt" );
-            } ), false );
+            GamemodeRegistry.Register( "ttt", "Trouble in Terrorist Town",
+                "Discover who among you is a traitor before it's too late.", "#e94560" );
+
+            ControlConfig.RegisterDefaults( "ttt",
+                new Dictionary<string, int>() {
+                    { "BuyMenu", 244 },
+                    { "SetTeleport", 121 },
+                    { "UseTeleport", 212 },
+                    { "Interact", 38 },
+                    { "Disguise", 243 },
+                    { "DropWeapon", 23 },
+                },
+                new Dictionary<string, string>() {
+                    { "BuyMenu", "Buy Menu" },
+                    { "SetTeleport", "Set Teleport" },
+                    { "UseTeleport", "Use Teleport" },
+                    { "Interact", "Interact / Scan Body" },
+                    { "Disguise", "Toggle Disguise" },
+                    { "DropWeapon", "Drop Weapon" },
+                }
+            );
+
+            // Entity provider
+            DebugRegistry.RegisterEntityProvider( "ttt", () => BuildEntityListJson() );
+
+            // Self actions (non-targeted)
+            DebugRegistry.Register( "ttt", "ttt_give_1_coin", "Give 1 Coin", "Self", () => DebugGiveCoins( 1 ) );
+            DebugRegistry.Register( "ttt", "ttt_give_5_coins", "Give 5 Coins", "Self", () => DebugGiveCoins( 5 ) );
+
+            // Target actions
+            DebugRegistry.RegisterTargetAction( "ttt", "ttt_set_innocent", "Set Team: Innocent", "Target Actions", ( id ) => DebugSetEntityTeam( id, Teams.Innocent ) );
+            DebugRegistry.RegisterTargetAction( "ttt", "ttt_set_traitor", "Set Team: Traitor", "Target Actions", ( id ) => DebugSetEntityTeam( id, Teams.Traitor ) );
+            DebugRegistry.RegisterTargetAction( "ttt", "ttt_set_detective", "Set Team: Detective", "Target Actions", ( id ) => DebugSetEntityTeam( id, Teams.Detective ) );
+            DebugRegistry.RegisterTargetAction( "ttt", "ttt_toggle_disguise", "Toggle Disguise", "Target Actions", ( id ) => DebugToggleEntityDisguise( id ) );
+            DebugRegistry.RegisterTargetAction( "ttt", "ttt_kill_spawn_body", "Kill → Spawn Body", "Target Actions", ( id ) => DebugKillEntity( id ) );
+
+            // Bot actions (non-targeted)
+            DebugRegistry.Register( "ttt", "ttt_spawn_bot", "Spawn Bot", "Bots", async () => { await SpawnTestBot(); SendDebugEntityUpdate(); } );
+            DebugRegistry.Register( "ttt", "ttt_clear_bots", "Clear All Bots", "Bots", () => { ClearTestBots(); SendDebugEntityUpdate(); } );
 
             // Solo testing bot commands
             RegisterCommand( "spawnbot", new Action<int, List<object>, string>( async ( source, args, raw ) => {
                 await SpawnTestBot();
+                SendDebugEntityUpdate();
             } ), false );
 
             RegisterCommand( "botdisguise", new Action<int, List<object>, string>( ( source, args, raw ) => {
@@ -80,6 +117,7 @@ namespace TTTClient
 
             RegisterCommand( "clearbots", new Action<int, List<object>, string>( ( source, args, raw ) => {
                 ClearTestBots();
+                SendDebugEntityUpdate();
             } ), false );
         }
 
@@ -156,6 +194,129 @@ namespace TTTClient
             }
             TestBots.Clear();
             WriteChat( "TTT", "All test bots cleared.", 200, 200, 30 );
+        }
+
+        public void DebugGiveCoins( int amount ) {
+            int current = 0;
+            if( ClientGlobals.CurrentGame != null ) {
+                object val = ClientGlobals.CurrentGame.GetPlayerDetail( LocalPlayer.ServerId, "coins" );
+                if( val != null ) current = Convert.ToInt32( val );
+            }
+            int total = current + amount;
+            if( ClientGlobals.CurrentGame != null ) {
+                ClientGlobals.CurrentGame.SetPlayerDetail( LocalPlayer.ServerId, "coins", total );
+            }
+            TriggerServerEvent( "salty:netUpdatePlayerDetail", "coins", total );
+            WriteChat( "Debug", "Gave " + amount + " coin(s). Total: " + total, 30, 200, 30 );
+        }
+
+        public void DebugSetEntityTeam( int entityId, Teams team ) {
+            if( entityId == LocalPlayer.ServerId ) {
+                SetTeam( (int)team );
+                TriggerServerEvent( "salty:netUpdatePlayerDetail", "team", (int)team );
+                WriteChat( "Debug", "Your team set to: " + team.ToString(), 30, 200, 30 );
+            } else {
+                TestBot bot = TestBots.FirstOrDefault( b => b.FakeServerId == entityId );
+                if( bot == null ) {
+                    WriteChat( "Debug", "Entity not found.", 200, 30, 30 );
+                    return;
+                }
+                bot.Team = team;
+                if( ClientGlobals.CurrentGame != null ) {
+                    ClientGlobals.CurrentGame.SetPlayerDetail( bot.FakeServerId, "team", (int)team );
+                }
+                WriteChat( "Debug", bot.Name + " team set to: " + team.ToString(), 30, 200, 30 );
+            }
+            SendDebugEntityUpdate();
+        }
+
+        public void DebugToggleEntityDisguise( int entityId ) {
+            if( entityId == LocalPlayer.ServerId ) {
+                isDisguised = !isDisguised;
+                TriggerServerEvent( "salty:netUpdatePlayerDetail", "disguised", isDisguised );
+                string status = isDisguised ? "ON (name hidden)" : "OFF (name visible)";
+                WriteChat( "Debug", "Your disguise: " + status, 30, 200, 30 );
+            } else {
+                TestBot bot = TestBots.FirstOrDefault( b => b.FakeServerId == entityId );
+                if( bot == null ) {
+                    WriteChat( "Debug", "Entity not found.", 200, 30, 30 );
+                    return;
+                }
+                bot.IsDisguised = !bot.IsDisguised;
+                if( ClientGlobals.CurrentGame != null ) {
+                    ClientGlobals.CurrentGame.SetPlayerDetail( bot.FakeServerId, "disguised", bot.IsDisguised );
+                }
+                string status = bot.IsDisguised ? "ON (name hidden)" : "OFF (name visible)";
+                WriteChat( "Debug", bot.Name + " disguise: " + status, 30, 200, 30 );
+            }
+            SendDebugEntityUpdate();
+        }
+
+        public void DebugKillEntity( int entityId ) {
+            TestBot bot = TestBots.FirstOrDefault( b => b.FakeServerId == entityId );
+            if( bot == null ) {
+                WriteChat( "Debug", "Can only kill bots.", 200, 30, 30 );
+                return;
+            }
+            if( !DoesEntityExist( bot.Handle ) ) {
+                WriteChat( "Debug", "Bot entity no longer exists.", 200, 30, 30 );
+                TestBots.Remove( bot );
+                SendDebugEntityUpdate();
+                return;
+            }
+
+            Vector3 pos = GetEntityCoords( bot.Handle, true );
+            uint model = (uint)GetEntityModel( bot.Handle );
+            string name = bot.Name;
+
+            int handle = bot.Handle;
+            SetEntityAsMissionEntity( handle, false, true );
+            DeletePed( ref handle );
+            TestBots.Remove( bot );
+
+            int bodyKey = bot.FakeServerId;
+            DeadBodies[bodyKey] = new DeadBody( pos, model, name, bot.Team.ToString() );
+            WriteChat( "Debug", name + " killed. Dead body spawned.", 30, 200, 30 );
+            SendDebugEntityUpdate();
+        }
+
+        private static string EscapeJsonString( string s ) {
+            return s.Replace( "\\", "\\\\" ).Replace( "\"", "\\\"" );
+        }
+
+        public string BuildEntityListJson() {
+            var entries = new List<string>();
+
+            // Local player
+            string playerTeam = "";
+            if( ClientGlobals.CurrentGame != null ) {
+                object teamVal = ClientGlobals.CurrentGame.GetPlayerDetail( LocalPlayer.ServerId, "team" );
+                if( teamVal != null ) playerTeam = ((Teams)Convert.ToInt32( teamVal )).ToString();
+            }
+            entries.Add( "{\"id\":" + LocalPlayer.ServerId + ",\"name\":\"" + EscapeJsonString( LocalPlayer.Name ) + " (You)\",\"type\":\"player\",\"team\":\"" + EscapeJsonString( playerTeam ) + "\"}" );
+
+            // Other players
+            foreach( var player in Players ) {
+                if( player.ServerId == LocalPlayer.ServerId ) continue;
+                string pTeam = "";
+                if( ClientGlobals.CurrentGame != null ) {
+                    object teamVal = ClientGlobals.CurrentGame.GetPlayerDetail( player.ServerId, "team" );
+                    if( teamVal != null ) pTeam = ((Teams)Convert.ToInt32( teamVal )).ToString();
+                }
+                entries.Add( "{\"id\":" + player.ServerId + ",\"name\":\"" + EscapeJsonString( player.Name ) + "\",\"type\":\"player\",\"team\":\"" + EscapeJsonString( pTeam ) + "\"}" );
+            }
+
+            // Test bots
+            foreach( var bot in TestBots ) {
+                string botDisguised = bot.IsDisguised ? "true" : "false";
+                entries.Add( "{\"id\":" + bot.FakeServerId + ",\"name\":\"" + EscapeJsonString( bot.Name ) + "\",\"type\":\"bot\",\"team\":\"" + EscapeJsonString( bot.Team.ToString() ) + "\",\"disguised\":" + botDisguised + "}" );
+            }
+
+            return "[" + string.Join( ",", entries ) + "]";
+        }
+
+        public void SendDebugEntityUpdate() {
+            HubNUI.SendDebugEntityUpdate( "ttt" );
         }
 
         public override void Start( float gameTime ) {
@@ -285,7 +446,11 @@ namespace TTTClient
                     }
                     else {
                         body.Value.View();
-                        TriggerServerEvent( "salty::netBodyDiscovered", body.Key );
+                        if( body.Key >= 9000 ) {
+                            BodyDiscovered( body.Key );
+                        } else {
+                            TriggerServerEvent( "salty::netBodyDiscovered", body.Key );
+                        }
                     }
                 }
             }

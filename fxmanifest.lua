@@ -4,10 +4,12 @@ game 'gta5'
 name 'gamemodecity'
 description 'GamemodeCity - Multi-gamemode FiveM resource'
 
-ui_page 'html/controls.html'
+ui_page 'html/hub.html'
 
 files {
-    'html/controls.html',
+    'html/hub.html',
+    'html/hub.css',
+    'html/hub.js',
     'MenuAPI.dll',
 }
 

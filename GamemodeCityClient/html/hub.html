@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Player Hub</title>
+<link rel="stylesheet" href="hub.css">
+</head>
+<body>
+<div class="hub" id="hub">
+    <div class="sidebar">
+        <div class="logo">GAMEMODE CITY</div>
+        <nav class="nav">
+            <button class="nav-btn active" data-tab="home">Home</button>
+            <button class="nav-btn" data-tab="controls">Controls</button>
+            <button class="nav-btn" data-tab="debug">Debug</button>
+            <button class="nav-btn" data-tab="shop">Shop</button>
+        </nav>
+        <button class="nav-btn close-btn" id="closeBtn">Close</button>
+    </div>
+    <div class="content">
+        <div class="tab" id="tab-home">
+            <h1>Welcome to Gamemode City</h1>
+            <p class="tab-subtitle">Choose a gamemode to get started</p>
+            <div class="gamemode-grid" id="gamemodeGrid"></div>
+        </div>
+        <div class="tab hidden" id="tab-controls">
+            <h1>Controls</h1>
+            <p class="tab-subtitle">Select a gamemode to configure its controls</p>
+            <div class="controls-gamemode-list" id="controlsGamemodeList"></div>
+            <div class="controls-panel hidden" id="controlsPanel">
+                <div id="bindingsContainer"></div>
+                <div class="controls-footer">
+                    <button class="btn reset" id="resetBtn">Reset to Defaults</button>
+                </div>
+            </div>
+        </div>
+        <div class="tab hidden" id="tab-debug">
+            <h1>Debug</h1>
+            <p class="tab-subtitle">Select a gamemode to view debug actions</p>
+            <div class="debug-gamemode-list" id="debugGamemodeList"></div>
+            <div class="debug-panel hidden" id="debugPanel">
+                <div id="debugActionsContainer"></div>
+            </div>
+        </div>
+        <div class="tab hidden" id="tab-shop">
+            <div class="coming-soon">
+                <h2>Shop</h2>
+                <p>Coming Soon</p>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="hub.js"></script>
+</body>
+</html>

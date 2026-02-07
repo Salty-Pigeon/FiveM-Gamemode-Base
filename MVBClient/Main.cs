@@ -48,7 +48,9 @@ namespace MVBClient
             playerList = new PlayerList().ToList();
             playerList.Remove( LocalPlayer );
             HUD.SetGameTimePosition( 0, 0, false );
-            
+
+            GamemodeRegistry.Register( "mvb", "Monster Trucks vs Motorbikes",
+                "Monster trucks try to crush motorbike riders in an arena showdown.", "#ff8c00" );
         }
 
         public override void Start( float gameTime ) {
