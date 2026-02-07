@@ -8,6 +8,14 @@ using System.Threading.Tasks;
 using GamemodeCityShared;
 
 namespace GamemodeCityClient {
+
+    public class WinBarrierData {
+        public Vector3 Position;
+        public float SizeX;
+        public float SizeY;
+        public float Rotation;
+    }
+
     public class BaseGamemode : BaseScript, IDisposable {
 
         string Gamemode;
@@ -26,6 +34,8 @@ namespace GamemodeCityClient {
 
         public int SPECTATOR = -1;
         public bool CountdownActive = false;
+
+        public List<WinBarrierData> WinBarriers = new List<WinBarrierData>();
 
         public static int Team = 0;
 
@@ -210,8 +220,33 @@ namespace GamemodeCityClient {
 
             }
 
+            foreach( var barrier in WinBarriers ) {
+                if( IsInsideBarrier( Game.PlayerPed.Position, barrier ) ) {
+                    OnWinBarrierReached( barrier.Position );
+                    break;
+                }
+            }
+
             Events();
             Controls();
+        }
+
+        public virtual void OnWinBarrierReached( Vector3 pos ) {
+        }
+
+        public static bool IsInsideBarrier( Vector3 pos, WinBarrierData barrier ) {
+            float halfX = barrier.SizeX / 2f;
+            float halfY = barrier.SizeY / 2f;
+            if( halfX <= 0 ) halfX = 2.5f;
+            if( halfY <= 0 ) halfY = 2.5f;
+            float rad = -barrier.Rotation * ((float)Math.PI / 180f);
+            float cos = (float)Math.Cos( rad );
+            float sin = (float)Math.Sin( rad );
+            float dx = pos.X - barrier.Position.X;
+            float dy = pos.Y - barrier.Position.Y;
+            float localX = dx * cos - dy * sin;
+            float localY = dx * sin + dy * cos;
+            return localX > -halfX && localX < halfX && localY > -halfY && localY < halfY;
         }
 
         public static void WriteChat( string prefix, string str, int r, int g, int b ) {

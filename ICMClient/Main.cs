@@ -10,6 +10,13 @@ using System.Threading.Tasks;
 
 namespace ICMClient
 {
+    public class ICMBot {
+        public int PedHandle;
+        public int VehicleHandle;
+        public int FakeServerId;
+        public int Team;
+    }
+
     public class Main : BaseGamemode
     {
 
@@ -17,6 +24,8 @@ namespace ICMClient
         Vehicle Bike;
         Random rand;
 
+        public static List<ICMBot> Bots = new List<ICMBot>();
+        static int nextBotId = 9000;
 
         bool CanKill = false;
 
@@ -41,6 +50,48 @@ namespace ICMClient
             gmInfo.Tags = new string[] { "Asymmetric", "Vehicle" };
             gmInfo.Teams = new string[] { "Driver", "Survivors" };
             gmInfo.Features = new string[] { "Ice Cream Truck", "Bike Chase", "Trigger Zones" };
+
+            RegisterCommand( "spawnbot", new Action<int, List<object>, string>( async ( source, args, raw ) => {
+                if( Team == 0 ) {
+                    await SpawnKidBot();
+                } else {
+                    await SpawnICMBot();
+                }
+            } ), false );
+
+            RegisterCommand( "clearbots", new Action<int, List<object>, string>( ( source, args, raw ) => {
+                ClearBots();
+            } ), false );
+
+            // Debug menu
+            DebugRegistry.RegisterEntityProvider( "icm", () => BuildEntityListJson() );
+
+            DebugRegistry.Register( "icm", "icm_set_team_icm", "Set Team: Ice Cream Man", "Teams", () => {
+                SetTeam( 0 );
+                TriggerServerEvent( "salty:netUpdatePlayerDetail", "team", 0 );
+                PlayerSpawn();
+                WriteChat( "Debug", "You are now the Ice Cream Man", 30, 200, 30 );
+                SendDebugEntityUpdate();
+            } );
+            DebugRegistry.Register( "icm", "icm_set_team_kid", "Set Team: Kid", "Teams", () => {
+                SetTeam( 1 );
+                TriggerServerEvent( "salty:netUpdatePlayerDetail", "team", 1 );
+                PlayerSpawn();
+                WriteChat( "Debug", "You are now a Kid", 30, 200, 30 );
+                SendDebugEntityUpdate();
+            } );
+            DebugRegistry.Register( "icm", "icm_respawn", "Respawn", "Self", () => {
+                PlayerSpawn();
+                WriteChat( "Debug", "Respawned", 30, 200, 30 );
+            } );
+            DebugRegistry.Register( "icm", "icm_spawn_bot", "Spawn Bot", "Bots", async () => {
+                if( Team == 0 ) { await SpawnKidBot(); } else { await SpawnICMBot(); }
+                SendDebugEntityUpdate();
+            } );
+            DebugRegistry.Register( "icm", "icm_clear_bots", "Clear All Bots", "Bots", () => {
+                ClearBots();
+                SendDebugEntityUpdate();
+            } );
         }
 
         private void Killable() {
@@ -57,6 +108,7 @@ namespace ICMClient
         }
 
         public override void End() {
+            ClearBots();
             SetWeaponDamageModifier( (uint)GetHashKey( "WEAPON_MICROSMG" ), 1 );
 
             if( Truck != null )
@@ -179,6 +231,195 @@ namespace ICMClient
 
         public void OnRoundResult( string winner, string color, string reason ) {
             HubNUI.ShowRoundEnd( winner, color, reason );
+        }
+
+        private static string EscapeJsonString( string s ) {
+            return s.Replace( "\\", "\\\\" ).Replace( "\"", "\\\"" );
+        }
+
+        public string BuildEntityListJson() {
+            var entries = new List<string>();
+
+            string playerTeam = Team == 0 ? "Ice Cream Man" : "Kid";
+            entries.Add( "{\"id\":" + LocalPlayer.ServerId + ",\"name\":\"" + EscapeJsonString( LocalPlayer.Name ) + " (You)\",\"type\":\"player\",\"team\":\"" + EscapeJsonString( playerTeam ) + "\"}" );
+
+            foreach( var player in Players ) {
+                if( player.ServerId == LocalPlayer.ServerId ) continue;
+                entries.Add( "{\"id\":" + player.ServerId + ",\"name\":\"" + EscapeJsonString( player.Name ) + "\",\"type\":\"player\",\"team\":\"\"}" );
+            }
+
+            foreach( var bot in Bots ) {
+                string botTeam = bot.Team == 0 ? "Ice Cream Man" : "Kid";
+                entries.Add( "{\"id\":" + bot.FakeServerId + ",\"name\":\"Bot_" + bot.FakeServerId + "\",\"type\":\"bot\",\"team\":\"" + EscapeJsonString( botTeam ) + "\"}" );
+            }
+
+            return "[" + string.Join( ",", entries ) + "]";
+        }
+
+        public void SendDebugEntityUpdate() {
+            HubNUI.SendDebugEntityUpdate( "icm" );
+        }
+
+        public override void OnWinBarrierReached( Vector3 pos ) {
+            if( Team == 1 ) {
+                TriggerServerEvent( "salty:netICMKidWin" );
+                HubNUI.ShowRoundEnd( "Kids", "#06b6d4", "A kid reached the finish line!" );
+            }
+        }
+
+        public async Task SpawnKidBot() {
+            Vector3 spawnPos = ClientGlobals.LastSpawn;
+
+            // Try to find kid (team 1) spawn from cached maps
+            foreach( var kvp in ClientGlobals.Maps ) {
+                var mapSpawns = kvp.Value.Spawns.Where( s => s.SpawnType == SpawnType.PLAYER && s.Team == 1 ).ToList();
+                if( mapSpawns.Count > 0 ) {
+                    spawnPos = mapSpawns[rand.Next( mapSpawns.Count )].Position;
+                    break;
+                }
+            }
+
+            string[] pedModels = { "a_m_y_hipster_01", "a_f_y_hipster_02", "a_m_y_skater_01", "a_f_y_skater_01", "a_m_y_runner_01" };
+            string pedModelName = pedModels[rand.Next( pedModels.Length )];
+            string bikeModel = Bikes[rand.Next( Bikes.Count )];
+
+            uint pedHash = (uint)GetHashKey( pedModelName );
+            uint vehHash = (uint)GetHashKey( bikeModel );
+            RequestModel( pedHash );
+            RequestModel( vehHash );
+
+            int timeout = 0;
+            while( (!HasModelLoaded( pedHash ) || !HasModelLoaded( vehHash )) && timeout < 100 ) {
+                await Delay( 10 );
+                timeout++;
+            }
+
+            if( !HasModelLoaded( pedHash ) || !HasModelLoaded( vehHash ) ) {
+                WriteChat( "ICM", "Failed to load bot models", 200, 30, 30 );
+                return;
+            }
+
+            int vehicle = CreateVehicle( vehHash, spawnPos.X, spawnPos.Y, spawnPos.Z, 0f, true, false );
+            int ped = CreatePed( 4, pedHash, spawnPos.X, spawnPos.Y, spawnPos.Z, 0f, true, false );
+            SetEntityAsMissionEntity( ped, true, true );
+            SetEntityAsMissionEntity( vehicle, true, true );
+            SetPedIntoVehicle( ped, vehicle, -1 );
+            SetBlockingOfNonTemporaryEvents( ped, true );
+            SetPedFleeAttributes( ped, 0, false );
+
+            SetModelAsNoLongerNeeded( pedHash );
+            SetModelAsNoLongerNeeded( vehHash );
+
+            // Target: win barrier if available, else team 0 spawn
+            Vector3 target = ClientGlobals.LastSpawn;
+            if( WinBarriers.Count > 0 ) {
+                target = WinBarriers[0].Position;
+            } else {
+                foreach( var kvp in ClientGlobals.Maps ) {
+                    var icmSpawns = kvp.Value.Spawns.Where( s => s.SpawnType == SpawnType.PLAYER && s.Team == 0 ).ToList();
+                    if( icmSpawns.Count > 0 ) {
+                        target = icmSpawns[0].Position;
+                        break;
+                    }
+                }
+            }
+
+            TaskVehicleDriveToCoordLongrange( ped, vehicle, target.X, target.Y, target.Z, 30f, 786468, 5f );
+
+            int botId = nextBotId++;
+            Bots.Add( new ICMBot { PedHandle = ped, VehicleHandle = vehicle, FakeServerId = botId, Team = 1 } );
+            WriteChat( "ICM", "Spawned kid bot on " + bikeModel, 30, 200, 30 );
+        }
+
+        public async Task SpawnICMBot() {
+            Vector3 spawnPos = ClientGlobals.LastSpawn;
+
+            // Try to find ICM (team 0) spawn from cached maps
+            foreach( var kvp in ClientGlobals.Maps ) {
+                var mapSpawns = kvp.Value.Spawns.Where( s => s.SpawnType == SpawnType.PLAYER && s.Team == 0 ).ToList();
+                if( mapSpawns.Count > 0 ) {
+                    spawnPos = mapSpawns[rand.Next( mapSpawns.Count )].Position;
+                    break;
+                }
+            }
+
+            uint pedHash = (uint)GetHashKey( "a_m_m_business_01" );
+            uint vehHash = (uint)GetHashKey( "cutter" );
+            RequestModel( pedHash );
+            RequestModel( vehHash );
+
+            int timeout = 0;
+            while( (!HasModelLoaded( pedHash ) || !HasModelLoaded( vehHash )) && timeout < 100 ) {
+                await Delay( 10 );
+                timeout++;
+            }
+
+            if( !HasModelLoaded( pedHash ) || !HasModelLoaded( vehHash ) ) {
+                WriteChat( "ICM", "Failed to load bot models", 200, 30, 30 );
+                return;
+            }
+
+            int vehicle = CreateVehicle( vehHash, spawnPos.X, spawnPos.Y, spawnPos.Z, 0f, true, false );
+            int ped = CreatePed( 4, pedHash, spawnPos.X, spawnPos.Y, spawnPos.Z, 0f, true, false );
+            SetEntityAsMissionEntity( ped, true, true );
+            SetEntityAsMissionEntity( vehicle, true, true );
+            SetPedIntoVehicle( ped, vehicle, -1 );
+            SetBlockingOfNonTemporaryEvents( ped, true );
+            SetPedFleeAttributes( ped, 0, false );
+
+            // Apply truck handling
+            SetVehicleHandlingFloat( vehicle, "CHandlingData", "fCamberStiffnesss", 0.1f );
+            SetVehicleHandlingFloat( vehicle, "CHandlingData", "fMass", 10000f );
+            SetVehicleHandlingFloat( vehicle, "CHandlingData", "FTRACTIONSPRINGDELTAMAX", 100f );
+            SetVehicleHandlingFloat( vehicle, "CHandlingData", "fSteeringLock", 40f );
+            SetVehicleHandlingFloat( vehicle, "CHandlingData", "fDriveInertia", 1f );
+            SetVehicleHandlingFloat( vehicle, "CHandlingData", "fDriveBiasFront", 0.5f );
+            SetVehicleHandlingFloat( vehicle, "CHandlingData", "fTractionCurveLateral", 25f );
+            SetVehicleHandlingFloat( vehicle, "CHandlingData", "fTractionCurveMax", 5f );
+            SetVehicleHandlingFloat( vehicle, "CHandlingData", "fTractionCurveMin", 5f );
+            SetVehicleHandlingFloat( vehicle, "CHandlingData", "fTractionBiasFront", 0.5f );
+            SetVehicleHandlingFloat( vehicle, "CHandlingData", "fTractionLossMult", 0.1f );
+            SetVehicleHandlingFloat( vehicle, "CHandlingData", "fSuspensionReboundDamp", 2f );
+            SetVehicleHandlingFloat( vehicle, "CHandlingData", "fSuspensionCompDamp", 2f );
+            SetVehicleHandlingFloat( vehicle, "CHandlingData", "fSuspensionForce", 3f );
+            SetVehicleHasStrongAxles( vehicle, true );
+            SetVehicleHighGear( vehicle, 1 );
+
+            SetModelAsNoLongerNeeded( pedHash );
+            SetModelAsNoLongerNeeded( vehHash );
+
+            // Target: team 1 (kid) spawn
+            Vector3 target = ClientGlobals.LastSpawn;
+            foreach( var kvp in ClientGlobals.Maps ) {
+                var kidSpawns = kvp.Value.Spawns.Where( s => s.SpawnType == SpawnType.PLAYER && s.Team == 1 ).ToList();
+                if( kidSpawns.Count > 0 ) {
+                    target = kidSpawns[0].Position;
+                    break;
+                }
+            }
+
+            TaskVehicleDriveToCoordLongrange( ped, vehicle, target.X, target.Y, target.Z, 50f, 786468, 5f );
+
+            int botId = nextBotId++;
+            Bots.Add( new ICMBot { PedHandle = ped, VehicleHandle = vehicle, FakeServerId = botId, Team = 0 } );
+            WriteChat( "ICM", "Spawned ICM bot in cutter truck", 30, 200, 30 );
+        }
+
+        public void ClearBots() {
+            foreach( var bot in Bots ) {
+                if( DoesEntityExist( bot.PedHandle ) ) {
+                    int ped = bot.PedHandle;
+                    SetEntityAsMissionEntity( ped, false, true );
+                    DeletePed( ref ped );
+                }
+                if( DoesEntityExist( bot.VehicleHandle ) ) {
+                    int veh = bot.VehicleHandle;
+                    SetEntityAsMissionEntity( veh, false, true );
+                    DeleteVehicle( ref veh );
+                }
+            }
+            Bots.Clear();
+            WriteChat( "ICM", "All bots cleared.", 200, 200, 30 );
         }
 
         public async Task SpawnTruck() {

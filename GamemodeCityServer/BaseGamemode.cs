@@ -67,6 +67,11 @@ namespace GamemodeCityServer {
         public virtual void Start( ) {
 
             TriggerClientEvent( "salty:StartGame", Gamemode, Settings.GameLength, Settings.Weapons, Map.Position, Map.Size, Map.Rotation );
+
+            foreach( var barrier in Map.GetWinBarriers() ) {
+                uint packedSize = (uint)(((int)(barrier.SizeX * 10f)) << 16 | ((int)(barrier.SizeY * 10f)));
+                TriggerClientEvent( "salty:Spawn", (int)SpawnType.WIN_BARRIER, barrier.Position, packedSize, barrier.Heading );
+            }
         }
 
         public virtual void OnTimerEnd() {

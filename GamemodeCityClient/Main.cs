@@ -120,6 +120,11 @@ namespace GamemodeCityClient {
                 TriggerServerEvent( "salty:netStartSoloTTT" );
             } ), false );
 
+            // Solo ICM mode for testing alone
+            RegisterCommand( "soloicm", new Action<int, List<object>, string>( ( source, args, raw ) => {
+                TriggerServerEvent( "salty:netStartSoloICM" );
+            } ), false );
+
             // End current TTT game (useful for solo testing)
             RegisterCommand( "endttt", new Action<int, List<object>, string>( ( source, args, raw ) => {
                 TriggerServerEvent( "salty:netEndGame" );
@@ -260,6 +265,14 @@ namespace GamemodeCityClient {
                     FreezeEntityPosition( PlayerPedId(), false );
 
                 PlayerSpawn( null );
+            } else if( type == SpawnType.WIN_BARRIER ) {
+                if( ClientGlobals.CurrentGame != null )
+                    ClientGlobals.CurrentGame.WinBarriers.Add( new WinBarrierData {
+                        Position = spawn,
+                        SizeX = (hash >> 16) / 10f,
+                        SizeY = (hash & 0xFFFF) / 10f,
+                        Rotation = heading
+                    } );
             } else if( type == SpawnType.WEAPON ) {
                 if( ClientGlobals.CurrentGame != null ) {
                     if( ClientGlobals.CurrentGame.Map == null ) {

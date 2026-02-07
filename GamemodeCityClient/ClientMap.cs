@@ -119,6 +119,10 @@ namespace GamemodeCityClient {
                 int mg = spawn.G;
                 int mb = spawn.B;
 
+                if( spawn.SpawnType == SpawnType.WIN_BARRIER ) {
+                    mr = 255; mg = 200; mb = 0;
+                }
+
                 // Add team distinction for player spawns
                 if( spawn.SpawnType == SpawnType.PLAYER ) {
                     switch( spawn.Team ) {
@@ -129,10 +133,48 @@ namespace GamemodeCityClient {
                     }
                 }
 
-                DrawMarker( 2, spawn.Position.X, spawn.Position.Y, spawn.Position.Z + 1,
-                    0.0f, 0.0f, 0.0f, 0.0f, 180.0f, 0.0f,
-                    2.0f, 2.0f, 2.0f, mr, mg, mb, 80,
-                    false, true, 2, false, null, null, false );
+                if( spawn.SpawnType == SpawnType.WIN_BARRIER ) {
+                    // Draw rotated box outline on ground
+                    float hx = spawn.SizeX > 0 ? spawn.SizeX / 2f : 2.5f;
+                    float hy = spawn.SizeY > 0 ? spawn.SizeY / 2f : 2.5f;
+                    float rad = spawn.Heading * ((float)System.Math.PI / 180f);
+                    float cos = (float)System.Math.Cos( rad );
+                    float sin = (float)System.Math.Sin( rad );
+                    float z = spawn.Position.Z + 0.3f;
+
+                    // Four corners rotated around center
+                    float nwX = spawn.Position.X + (-hx) * cos - (-hy) * sin;
+                    float nwY = spawn.Position.Y + (-hx) * sin + (-hy) * cos;
+                    float neX = spawn.Position.X + ( hx) * cos - (-hy) * sin;
+                    float neY = spawn.Position.Y + ( hx) * sin + (-hy) * cos;
+                    float seX = spawn.Position.X + ( hx) * cos - ( hy) * sin;
+                    float seY = spawn.Position.Y + ( hx) * sin + ( hy) * cos;
+                    float swX = spawn.Position.X + (-hx) * cos - ( hy) * sin;
+                    float swY = spawn.Position.Y + (-hx) * sin + ( hy) * cos;
+
+                    // Box outline
+                    DrawLine( nwX, nwY, z, neX, neY, z, mr, mg, mb, 255 );
+                    DrawLine( neX, neY, z, seX, seY, z, mr, mg, mb, 255 );
+                    DrawLine( seX, seY, z, swX, swY, z, mr, mg, mb, 255 );
+                    DrawLine( swX, swY, z, nwX, nwY, z, mr, mg, mb, 255 );
+
+                    // Fill with semi-transparent polys
+                    DrawPoly( nwX, nwY, z, neX, neY, z, seX, seY, z, mr, mg, mb, 40 );
+                    DrawPoly( nwX, nwY, z, seX, seY, z, swX, swY, z, mr, mg, mb, 40 );
+                    DrawPoly( seX, seY, z, neX, neY, z, nwX, nwY, z, mr, mg, mb, 40 );
+                    DrawPoly( swX, swY, z, seX, seY, z, nwX, nwY, z, mr, mg, mb, 40 );
+
+                    // Checkered flag marker at center
+                    DrawMarker( 4, spawn.Position.X, spawn.Position.Y, spawn.Position.Z + 1,
+                        0.0f, 0.0f, 0.0f, 0.0f, 180.0f, 0.0f,
+                        1.5f, 1.5f, 1.5f, mr, mg, mb, 120,
+                        false, true, 2, false, null, null, false );
+                } else {
+                    DrawMarker( 2, spawn.Position.X, spawn.Position.Y, spawn.Position.Z + 1,
+                        0.0f, 0.0f, 0.0f, 0.0f, 180.0f, 0.0f,
+                        2.0f, 2.0f, 2.0f, mr, mg, mb, 80,
+                        false, true, 2, false, null, null, false );
+                }
 
                 // Heading direction line
                 if( spawn.SpawnType == SpawnType.PLAYER ) {
@@ -148,6 +190,8 @@ namespace GamemodeCityClient {
                 string label = spawn.SpawnType.ToString();
                 if( spawn.SpawnType == SpawnType.PLAYER ) {
                     label = "T" + spawn.Team + " H:" + spawn.Heading.ToString( "0" );
+                } else if( spawn.SpawnType == SpawnType.WIN_BARRIER ) {
+                    label = "BARRIER " + spawn.SizeX.ToString( "0" ) + "x" + spawn.SizeY.ToString( "0" ) + " R:" + spawn.Heading.ToString( "0" );
                 }
 
                 float dist = World.GetDistance( Game.PlayerPed.Position, spawn.Position );

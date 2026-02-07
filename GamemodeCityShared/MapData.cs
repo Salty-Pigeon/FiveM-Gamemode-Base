@@ -42,6 +42,8 @@ namespace GamemodeCityShared {
         public int SpawnType { get; set; }
         public string Entity { get; set; }
         public int Team { get; set; }
+        public float SizeX { get; set; }
+        public float SizeY { get; set; }
 
         public SpawnData() {
             Entity = "player";

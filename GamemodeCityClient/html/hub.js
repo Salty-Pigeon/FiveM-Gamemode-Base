@@ -560,7 +560,7 @@ function stopListening() {
 
 // ==================== Map Editor ====================
 
-var spawnTypeNames = ['PLAYER', 'WEAPON', 'OBJECT'];
+var spawnTypeNames = ['PLAYER', 'WEAPON', 'OBJECT', 'WIN_BARRIER'];
 
 function renderMapList() {
     var container = document.getElementById('mapListItems');
@@ -716,14 +716,22 @@ function renderSpawnList() {
         (function(idx) {
             sel.addEventListener('change', function() {
                 map.spawns[idx].spawnType = parseInt(sel.value);
+                if (parseInt(sel.value) === 3) {
+                    if (!map.spawns[idx].sizeX) map.spawns[idx].sizeX = 10;
+                    if (!map.spawns[idx].sizeY) map.spawns[idx].sizeY = 10;
+                }
+                renderSpawnList();
             });
         })(index);
         typeDiv.appendChild(sel);
         row.appendChild(typeDiv);
 
-        // Team input
+        var isBarrier = spawn.spawnType === 3;
+
+        // Team input (hidden for WIN_BARRIER)
         var teamDiv = document.createElement('div');
         teamDiv.className = 'map-spawn-team';
+        if (isBarrier) teamDiv.style.display = 'none';
         var teamInput = document.createElement('input');
         teamInput.type = 'number';
         teamInput.min = 0;
@@ -756,7 +764,7 @@ function renderSpawnList() {
         });
         row.appendChild(coordDiv);
 
-        // Heading
+        // Heading / Rotation
         var headDiv = document.createElement('div');
         headDiv.className = 'map-spawn-heading';
         var headInput = document.createElement('input');
@@ -765,7 +773,7 @@ function renderSpawnList() {
         headInput.max = 360;
         headInput.step = 5;
         headInput.value = round2(spawn.heading || 0);
-        headInput.title = 'Heading (0-360)';
+        headInput.title = isBarrier ? 'Rotation (0-360)' : 'Heading (0-360)';
         (function(idx) {
             headInput.addEventListener('change', function() {
                 map.spawns[idx].heading = parseFloat(headInput.value) || 0;
@@ -773,6 +781,41 @@ function renderSpawnList() {
         })(index);
         headDiv.appendChild(headInput);
         row.appendChild(headDiv);
+
+        // Width & Length (WIN_BARRIER only)
+        if (isBarrier) {
+            var sizeDiv = document.createElement('div');
+            sizeDiv.className = 'map-spawn-barrier-size';
+            var wInput = document.createElement('input');
+            wInput.type = 'number';
+            wInput.min = 1;
+            wInput.max = 500;
+            wInput.step = 1;
+            wInput.value = round2(spawn.sizeX || 10);
+            wInput.title = 'Width';
+            wInput.placeholder = 'W';
+            (function(idx) {
+                wInput.addEventListener('input', function() {
+                    map.spawns[idx].sizeX = parseFloat(wInput.value) || 10;
+                });
+            })(index);
+            sizeDiv.appendChild(wInput);
+            var lInput = document.createElement('input');
+            lInput.type = 'number';
+            lInput.min = 1;
+            lInput.max = 500;
+            lInput.step = 1;
+            lInput.value = round2(spawn.sizeY || 10);
+            lInput.title = 'Length';
+            lInput.placeholder = 'L';
+            (function(idx) {
+                lInput.addEventListener('input', function() {
+                    map.spawns[idx].sizeY = parseFloat(lInput.value) || 10;
+                });
+            })(index);
+            sizeDiv.appendChild(lInput);
+            row.appendChild(sizeDiv);
+        }
 
         // Actions
         var actDiv = document.createElement('div');
@@ -1183,7 +1226,8 @@ window.addEventListener('message', function(event) {
                     id: -1,
                     posX: px, posY: py, posZ: pz,
                     heading: round2(data.heading || 0),
-                    spawnType: 0, entity: 'player', team: 0
+                    spawnType: 0, entity: 'player', team: 0,
+                    sizeX: 0, sizeY: 0
                 });
                 renderSpawnList();
             }

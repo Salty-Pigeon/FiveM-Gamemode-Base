@@ -11,6 +11,8 @@ namespace GamemodeCityShared {
         public string Entity;
         public int Team;
         public int ID;
+        public float SizeX = 0f;
+        public float SizeY = 0f;
         public int R = 0;
         public int G = 0;
         public int B = 0;
@@ -32,6 +34,11 @@ namespace GamemodeCityShared {
                 case SpawnType.WEAPON:
                     B = 200;
                     break;
+                case SpawnType.WIN_BARRIER:
+                    R = 255;
+                    G = 200;
+                    B = 0;
+                    break;
             }
         }
 
@@ -44,18 +51,24 @@ namespace GamemodeCityShared {
                 Heading = Heading,
                 SpawnType = (int)SpawnType,
                 Entity = Entity,
-                Team = Team
+                Team = Team,
+                SizeX = SizeX,
+                SizeY = SizeY
             };
         }
 
         public static Spawn FromSpawnData( SpawnData data ) {
-            return new Spawn( data.Id, new Vector3( data.PosX, data.PosY, data.PosZ ), (SpawnType)data.SpawnType, data.Entity, data.Team, data.Heading );
+            var spawn = new Spawn( data.Id, new Vector3( data.PosX, data.PosY, data.PosZ ), (SpawnType)data.SpawnType, data.Entity, data.Team, data.Heading );
+            spawn.SizeX = data.SizeX;
+            spawn.SizeY = data.SizeY;
+            return spawn;
         }
     }
 
     public enum SpawnType {
         PLAYER,
         WEAPON,
-        OBJECT
+        OBJECT,
+        WIN_BARRIER
     }
 }

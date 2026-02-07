@@ -864,6 +864,28 @@ h1 {
     border-color: #5a8abb;
 }
 
+.map-spawn-barrier-size {
+    display: flex;
+    gap: 4px;
+    min-width: 90px;
+}
+
+.map-spawn-barrier-size input {
+    width: 42px;
+    padding: 4px 4px;
+    background: #1a1a0e;
+    border: 1px solid #c8a000;
+    border-radius: 4px;
+    color: #ffd54f;
+    font-size: 12px;
+    text-align: center;
+}
+
+.map-spawn-barrier-size input:focus {
+    border-color: #ffe082;
+    background: #2a2a10;
+}
+
 .map-spawn-actions {
     display: flex;
     gap: 4px;

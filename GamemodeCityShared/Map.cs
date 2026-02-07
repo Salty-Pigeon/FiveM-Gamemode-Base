@@ -71,6 +71,10 @@ namespace GamemodeCityShared {
             return Spawns.Where( x => x.SpawnType == type ).ToList();
         }
 
+        public List<Spawn> GetWinBarriers() {
+            return Spawns.Where( x => x.SpawnType == SpawnType.WIN_BARRIER ).ToList();
+        }
+
         public MapData ToMapData() {
             var data = new MapData {
                 Id = ID,
