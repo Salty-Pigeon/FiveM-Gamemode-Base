@@ -33,8 +33,12 @@ namespace GamemodeCityClient {
                         ClientGlobals.CurrentGame.AddAmmo( Hash, AmmoCount );
                         Destroy();
                     }
-                    else if( ClientGlobals.CurrentGame.CanPickupWeapon( Hash ) && IsControlJustReleased( 1, (int)eControl.ControlPickup ) ) {
-                        Equip();
+                    else if( IsControlJustReleased( 1, (int)eControl.ControlPickup ) ) {
+                        if( ClientGlobals.CurrentGame.CanPickupWeapon( Hash ) ) {
+                            Equip();
+                        } else {
+                            BaseGamemode.WriteChat( "TTT", "You already have a weapon of this type. Drop it first.", 200, 200, 30 );
+                        }
                     }
                 } 
             }

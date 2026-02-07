@@ -33,8 +33,13 @@ namespace ICMClient
             rand = new Random( GetGameTimer() );
             EventHandlers["salty:icmDriverKillable"] += new Action( Killable );
 
-            GamemodeRegistry.Register( "icm", "Ice Cream Man",
+            var gmInfo = GamemodeRegistry.Register( "icm", "Ice Cream Man",
                 "One player drives the ice cream truck while others try to survive the chaos.", "#50c878" );
+            gmInfo.MinPlayers = 2;
+            gmInfo.MaxPlayers = 16;
+            gmInfo.Tags = new string[] { "Asymmetric", "Vehicle" };
+            gmInfo.Teams = new string[] { "Driver", "Survivors" };
+            gmInfo.Features = new string[] { "Ice Cream Truck", "Bike Chase", "Trigger Zones" };
         }
 
         private void Killable() {

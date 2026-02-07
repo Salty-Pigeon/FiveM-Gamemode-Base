@@ -51,7 +51,9 @@ namespace TTTClient
         public static float teleportStatusTime = 0f;
 
         public static bool CanDisguise = false;
-        public bool isDisguised = false;
+        public static bool isDisguised = false;
+        public static string disguiseStatus = "";
+        public static float disguiseStatusTime = 0f;
 
         bool menuOpen = false;
 
@@ -68,8 +70,13 @@ namespace TTTClient
             EventHandlers["salty::UpdateDeadBody"] += new Action<int>( BodyDiscovered );
             EventHandlers["salty::TTTRoundResult"] += new Action<string, string, string>( OnRoundResult );
 
-            GamemodeRegistry.Register( "ttt", "Trouble in Terrorist Town",
+            var gmInfo = GamemodeRegistry.Register( "ttt", "Trouble in Terrorist Town",
                 "Discover who among you is a traitor before it's too late.", "#e94560" );
+            gmInfo.MinPlayers = 4;
+            gmInfo.MaxPlayers = 16;
+            gmInfo.Tags = new string[] { "Social Deduction", "FPS" };
+            gmInfo.Teams = new string[] { "Innocent", "Traitor", "Detective" };
+            gmInfo.Features = new string[] { "Buy Menu", "DNA Scanner", "Disguise", "Teleporter" };
 
             ControlConfig.RegisterDefaults( "ttt",
                 new Dictionary<string, int>() {
@@ -331,11 +338,11 @@ namespace TTTClient
             ClearTestBots();
             DeadBodies.Clear();
 
+            // Freeze player immediately
+            FreezeEntityPosition( PlayerPedId(), true );
+
             // Wait for role reveal to finish
             await Delay( 3200 );
-
-            // Freeze player during countdown
-            FreezeEntityPosition( PlayerPedId(), true );
 
             HubNUI.ShowCountdown( 3 );
             await Delay( 1000 );
@@ -496,11 +503,8 @@ namespace TTTClient
                 if( CanDisguise ) {
                     isDisguised = !isDisguised;
                     TriggerServerEvent( "salty:netUpdatePlayerDetail", "disguised", isDisguised );
-                    if( isDisguised ) {
-                        WriteChat( "TTT", "Disguise enabled", 200, 200, 20 );
-                    } else {
-                        WriteChat( "TTT", "Disguise disabled", 200, 200, 20 );
-                    }
+                    disguiseStatus = isDisguised ? "DISGUISE ON" : "DISGUISE OFF";
+                    disguiseStatusTime = GetGameTimer();
                 }
             }
 

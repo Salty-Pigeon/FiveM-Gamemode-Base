@@ -49,8 +49,13 @@ namespace MVBClient
             playerList.Remove( LocalPlayer );
             HUD.SetGameTimePosition( 0, 0, false );
 
-            GamemodeRegistry.Register( "mvb", "Monster Trucks vs Motorbikes",
+            var gmInfo = GamemodeRegistry.Register( "mvb", "Monster Trucks vs Motorbikes",
                 "Monster trucks try to crush motorbike riders in an arena showdown.", "#ff8c00" );
+            gmInfo.MinPlayers = 2;
+            gmInfo.MaxPlayers = 16;
+            gmInfo.Tags = new string[] { "Vehicle Combat", "Arena" };
+            gmInfo.Teams = new string[] { "Monster Trucks", "Motorbikes" };
+            gmInfo.Features = new string[] { "Boost", "Vehicle Physics", "Markers" };
         }
 
         public override void Start( float gameTime ) {

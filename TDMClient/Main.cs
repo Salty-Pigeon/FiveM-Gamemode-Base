@@ -16,8 +16,13 @@ namespace TDMClient
         public Main( ) : base ( "TDM" ) {
             HUD = new HUD();
 
-            GamemodeRegistry.Register( "tdm", "Team Deathmatch",
+            var gmInfo = GamemodeRegistry.Register( "tdm", "Team Deathmatch",
                 "Two teams battle it out. Eliminate the opposing team to win.", "#4a90d9" );
+            gmInfo.MinPlayers = 2;
+            gmInfo.MaxPlayers = 32;
+            gmInfo.Tags = new string[] { "Shooter", "Team" };
+            gmInfo.Teams = new string[] { "Team A", "Team B" };
+            gmInfo.Features = new string[] { "Loadouts" };
         }
 
         public override void Start( float gameTime ) {

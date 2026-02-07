@@ -47,6 +47,9 @@ namespace TTTClient {
             if( Main.CanTeleport )
                 ShowTeleport();
 
+            if( Main.CanDisguise )
+                ShowDisguise();
+
             ShowTalking();
 
             if( lastLooked + 300 > GetGameTimer() ) {
@@ -418,6 +421,56 @@ namespace TTTClient {
             } else {
                 // Idle — just show "TELEPORT" label
                 DrawText2D( barX + 0.007f, barY + 0.002f, "TELEPORT", 0.27f, 255, 255, 255, 120, false );
+            }
+        }
+
+        public void ShowDisguise() {
+            bool isTraitor = Main.Team == (int)Teams.Traitor;
+            int tcR, tcG, tcB;
+            if( isTraitor ) { tcR = 239; tcG = 68; tcB = 68; }
+            else { tcR = 59; tcG = 130; tcB = 246; }
+
+            float gameTime = GetGameTimer();
+
+            // Status bar — stacks above radar, DNA, and teleport bars
+            float barX = 0.025f;
+            float barY = 0.835f;
+            if( isRadarActive ) barY -= 0.025f;
+            if( DetectiveTracing != -1 ) barY -= 0.025f;
+            if( Main.CanTeleport ) barY -= 0.025f;
+            float barW = 0.12f;
+            float barH = 0.022f;
+
+            // Dark background
+            DrawRectangle( barX, barY, barW, barH, 0, 0, 0, 180 );
+
+            // Accent edge
+            DrawRectangle( barX, barY, 0.004f, barH, tcR, tcG, tcB, 200 );
+
+            // Toggle flash — brief highlight when status changes (within 2000ms)
+            bool recentToggle = Main.disguiseStatus != "" && gameTime - Main.disguiseStatusTime < 2000f;
+
+            if( Main.isDisguised ) {
+                // Active — team-colored fill across the bar
+                DrawRectangle( barX, barY, barW, barH, tcR, tcG, tcB, 80 );
+
+                if( recentToggle ) {
+                    float elapsed = gameTime - Main.disguiseStatusTime;
+                    int flashAlpha = (int)(60 * (1f - elapsed / 2000f));
+                    DrawRectangle( barX, barY, barW, barH, tcR, tcG, tcB, flashAlpha );
+                }
+
+                DrawText2D( barX + 0.007f, barY + 0.002f, "DISGUISE  ON", 0.27f, 255, 255, 255, 220, false );
+            } else {
+                // Inactive — dimmed label
+
+                if( recentToggle ) {
+                    float elapsed = gameTime - Main.disguiseStatusTime;
+                    int flashAlpha = (int)(60 * (1f - elapsed / 2000f));
+                    DrawRectangle( barX, barY, barW, barH, tcR, tcG, tcB, flashAlpha );
+                }
+
+                DrawText2D( barX + 0.007f, barY + 0.002f, "DISGUISE  OFF", 0.27f, 255, 255, 255, 120, false );
             }
         }
 

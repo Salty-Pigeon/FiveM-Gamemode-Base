@@ -14,6 +14,7 @@
             <button class="nav-btn" data-tab="controls">Controls</button>
             <button class="nav-btn" data-tab="debug">Debug</button>
             <button class="nav-btn" data-tab="shop">Shop</button>
+            <button class="nav-btn" data-tab="maps">Maps</button>
         </nav>
         <button class="nav-btn close-btn" id="closeBtn">Close</button>
     </div>
@@ -46,6 +47,121 @@
             <div class="coming-soon">
                 <h2>Shop</h2>
                 <p>Coming Soon</p>
+            </div>
+        </div>
+        <div class="tab hidden" id="tab-maps">
+            <h1>Maps</h1>
+            <p class="tab-subtitle">Create and edit maps for gamemodes</p>
+            <div class="map-editor">
+                <div class="map-list">
+                    <button class="btn map-create-btn" id="mapCreateBtn">+ Create New Map</button>
+                    <div class="map-list-items" id="mapListItems"></div>
+                </div>
+                <div class="map-editor-panel" id="mapEditorPanel">
+                    <div class="map-no-selection" id="mapNoSelection">
+                        <p>Select a map from the list or create a new one</p>
+                    </div>
+                    <div class="map-form hidden" id="mapForm">
+                        <div class="map-section">
+                            <div class="map-section-title">Info</div>
+                            <div class="map-input-group">
+                                <label>Name</label>
+                                <input type="text" class="map-input" id="mapName" placeholder="Map name">
+                            </div>
+                            <div class="map-input-group">
+                                <label>Author</label>
+                                <input type="text" class="map-input" id="mapAuthor" placeholder="Author">
+                            </div>
+                            <div class="map-input-group">
+                                <label>Description</label>
+                                <input type="text" class="map-input" id="mapDescription" placeholder="Description">
+                            </div>
+                        </div>
+                        <div class="map-section">
+                            <div class="map-section-title">Settings</div>
+                            <div class="map-input-group map-toggle-row">
+                                <label>Enabled</label>
+                                <label class="map-toggle">
+                                    <input type="checkbox" id="mapEnabled">
+                                    <span class="map-toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="map-input-group">
+                                <label>Gamemodes</label>
+                                <div class="map-checkbox-group" id="mapGamemodes">
+                                    <label class="map-checkbox"><input type="checkbox" value="tdm"><span>TDM</span></label>
+                                    <label class="map-checkbox"><input type="checkbox" value="ttt"><span>TTT</span></label>
+                                    <label class="map-checkbox"><input type="checkbox" value="icm"><span>ICM</span></label>
+                                    <label class="map-checkbox"><input type="checkbox" value="mvb"><span>MVB</span></label>
+                                </div>
+                            </div>
+                            <div class="map-input-group map-inline-group">
+                                <div>
+                                    <label>Min Players</label>
+                                    <input type="number" class="map-input map-input-small" id="mapMinPlayers" min="1" max="32" value="2">
+                                </div>
+                                <div>
+                                    <label>Max Players</label>
+                                    <input type="number" class="map-input map-input-small" id="mapMaxPlayers" min="1" max="32" value="32">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="map-section">
+                            <div class="map-section-title">
+                                Position
+                                <button class="btn map-section-btn" id="mapUseMyPos">Use My Position</button>
+                            </div>
+                            <div class="map-input-group map-inline-group">
+                                <div>
+                                    <label>X</label>
+                                    <input type="number" class="map-input" id="mapPosX" step="0.1">
+                                </div>
+                                <div>
+                                    <label>Y</label>
+                                    <input type="number" class="map-input" id="mapPosY" step="0.1">
+                                </div>
+                                <div>
+                                    <label>Z</label>
+                                    <input type="number" class="map-input" id="mapPosZ" step="0.1">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="map-section">
+                            <div class="map-section-title">Size</div>
+                            <div class="map-input-group map-inline-group">
+                                <div>
+                                    <label>Width (X)</label>
+                                    <input type="number" class="map-input" id="mapSizeX" step="1">
+                                </div>
+                                <div>
+                                    <label>Length (Y)</label>
+                                    <input type="number" class="map-input" id="mapSizeY" step="1">
+                                </div>
+                                <div>
+                                    <label>Height (Z)</label>
+                                    <input type="number" class="map-input" id="mapSizeZ" step="1" title="0 = no height limit">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="map-section full-width">
+                            <div class="map-section-title">
+                                Spawns <span class="map-spawn-count" id="mapSpawnCount">(0)</span>
+                                <button class="btn map-section-btn" id="mapAddSpawn">+ Add Spawn</button>
+                            </div>
+                            <div class="map-spawn-list" id="mapSpawnList"></div>
+                        </div>
+                        <div class="map-actions full-width">
+                            <div class="map-actions-left">
+                                <button class="btn map-action-btn" id="mapTeleport">Teleport to Map</button>
+                                <button class="btn map-action-btn" id="mapBoundaries">Show Boundaries</button>
+                            </div>
+                            <div class="map-actions-right">
+                                <button class="btn map-save-btn" id="mapSave">Save Map</button>
+                                <button class="btn map-delete-btn" id="mapDelete">Delete Map</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

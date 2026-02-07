@@ -7,6 +7,11 @@ namespace GamemodeCityClient {
         public string Name;
         public string Description;
         public string Color;
+        public int MinPlayers = 0;
+        public int MaxPlayers = 0;
+        public string[] Tags = new string[0];
+        public string[] Teams = new string[0];
+        public string[] Features = new string[0];
 
         public GamemodeInfo( string id, string name, string description, string color ) {
             Id = id;
@@ -20,8 +25,10 @@ namespace GamemodeCityClient {
 
         private static Dictionary<string, GamemodeInfo> Registry = new Dictionary<string, GamemodeInfo>();
 
-        public static void Register( string id, string name, string description, string color ) {
-            Registry[id] = new GamemodeInfo( id, name, description, color );
+        public static GamemodeInfo Register( string id, string name, string description, string color ) {
+            var info = new GamemodeInfo( id, name, description, color );
+            Registry[id] = info;
+            return info;
         }
 
         public static GamemodeInfo Get( string id ) {
@@ -37,6 +44,14 @@ namespace GamemodeCityClient {
             return s.Replace( "\\", "\\\\" ).Replace( "\"", "\\\"" );
         }
 
+        private static string BuildJsonArray( string[] items ) {
+            var escaped = new List<string>();
+            foreach( var item in items ) {
+                escaped.Add( "\"" + EscapeJson( item ) + "\"" );
+            }
+            return "[" + string.Join( ",", escaped ) + "]";
+        }
+
         public static string BuildAllGamemodesJson() {
             var entries = new List<string>();
             foreach( var kvp in Registry ) {
@@ -47,7 +62,12 @@ namespace GamemodeCityClient {
                     "\",\"name\":\"" + EscapeJson( info.Name ) +
                     "\",\"description\":\"" + EscapeJson( info.Description ) +
                     "\",\"color\":\"" + EscapeJson( info.Color ) +
-                    "\",\"hasControls\":" + ( hasControls ? "true" : "false" ) + "}"
+                    "\",\"hasControls\":" + ( hasControls ? "true" : "false" ) +
+                    ",\"minPlayers\":" + info.MinPlayers +
+                    ",\"maxPlayers\":" + info.MaxPlayers +
+                    ",\"tags\":" + BuildJsonArray( info.Tags ) +
+                    ",\"teams\":" + BuildJsonArray( info.Teams ) +
+                    ",\"features\":" + BuildJsonArray( info.Features ) + "}"
                 );
             }
             return "[" + string.Join( ",", entries ) + "]";

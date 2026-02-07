@@ -89,8 +89,8 @@ body {
 
 .tab { }
 
-.tab.hidden {
-    display: none;
+.hidden {
+    display: none !important;
 }
 
 h1 {
@@ -124,16 +124,62 @@ h1 {
     background: #1a2744;
 }
 
-.gamemode-card h3 {
-    font-size: 16px;
+.gamemode-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 8px;
+}
+
+.gamemode-card-header h3 {
+    font-size: 16px;
+    margin-bottom: 0;
     color: #ffffff;
+}
+
+.gamemode-player-count {
+    font-size: 12px;
+    color: #8888aa;
+    background: #1a1a2e;
+    padding: 2px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+.gamemode-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.gamemode-tag {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 10px;
+    white-space: nowrap;
 }
 
 .gamemode-card p {
     font-size: 13px;
     color: #8888aa;
     line-height: 1.5;
+    margin-bottom: 10px;
+}
+
+.gamemode-info-row {
+    font-size: 12px;
+    color: #8888aa;
+    line-height: 1.6;
+}
+
+.gamemode-info-label {
+    color: #6a6a8a;
+}
+
+.gamemode-info-values {
+    color: #aaaacc;
 }
 
 /* Controls Tab */
@@ -428,6 +474,472 @@ h1 {
 
 .coming-soon p {
     font-size: 16px;
+}
+
+/* ==================== Map Editor ==================== */
+
+#tab-maps {
+    margin-top: -12px;
+}
+
+#tab-maps h1 {
+    font-size: 22px;
+    margin-bottom: 2px;
+}
+
+#tab-maps .tab-subtitle {
+    margin-bottom: 14px;
+}
+
+.map-editor {
+    display: flex;
+    gap: 16px;
+    height: calc(100vh - 150px);
+}
+
+.map-list {
+    width: 240px;
+    min-width: 240px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.map-create-btn {
+    width: 100%;
+    padding: 12px 16px;
+    background: #0f3460;
+    border-color: #5a8abb;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+}
+
+.map-create-btn:hover {
+    background: #1a4a7a;
+}
+
+.map-list-items {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.map-list-item {
+    padding: 12px 14px;
+    background: #16213e;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s;
+    border: 1px solid transparent;
+}
+
+.map-list-item:hover {
+    background: #1a2744;
+}
+
+.map-list-item.selected {
+    background: #0f3460;
+    border-color: #5a8abb;
+}
+
+.map-list-item-name {
+    font-size: 14px;
+    color: #e0e0e0;
+    margin-bottom: 4px;
+}
+
+.map-list-item-name.disabled {
+    color: #6a6a8a;
+}
+
+.map-list-item-meta {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.map-list-badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 3px;
+    background: #1a1a2e;
+    color: #8888aa;
+    text-transform: uppercase;
+}
+
+.map-list-badge.gm-tdm { background: #2a1a1a; color: #e94560; }
+.map-list-badge.gm-ttt { background: #1a2a1a; color: #4ade80; }
+.map-list-badge.gm-icm { background: #1a1a2a; color: #60a5fa; }
+.map-list-badge.gm-mvb { background: #2a2a1a; color: #facc15; }
+
+.map-editor-panel {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 8px;
+}
+
+.map-no-selection {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #5a5a7a;
+    font-size: 15px;
+}
+
+.map-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.map-section {
+    background: #16213e;
+    border-radius: 8px;
+    padding: 14px;
+}
+
+.map-section.full-width {
+    grid-column: 1 / -1;
+}
+
+.map-section-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #8888aa;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #1a1a2e;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.map-section-btn {
+    font-size: 11px;
+    padding: 4px 10px;
+    background: #0f3460;
+    border-color: #3a5a8c;
+    color: #e0e0e0;
+}
+
+.map-section-btn:hover {
+    background: #1a4a7a;
+}
+
+.map-input-group {
+    margin-bottom: 8px;
+}
+
+.map-input-group:last-child {
+    margin-bottom: 0;
+}
+
+.map-input-group label {
+    display: block;
+    font-size: 12px;
+    color: #6a6a8a;
+    margin-bottom: 4px;
+}
+
+.map-input {
+    width: 100%;
+    padding: 8px 10px;
+    background: #0d0d1a;
+    border: 1px solid #2a2a4a;
+    border-radius: 4px;
+    color: #e0e0e0;
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+.map-input:focus {
+    border-color: #5a8abb;
+}
+
+.map-input-small {
+    width: 80px;
+}
+
+.map-inline-group {
+    display: flex;
+    gap: 10px;
+}
+
+.map-inline-group > div {
+    flex: 1;
+}
+
+.map-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.map-toggle-row > label:first-child {
+    margin-bottom: 0;
+}
+
+.map-toggle {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 22px;
+    cursor: pointer;
+}
+
+.map-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.map-toggle-slider {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: #2a2a4a;
+    border-radius: 11px;
+    transition: background 0.2s;
+}
+
+.map-toggle-slider:before {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    left: 3px;
+    bottom: 3px;
+    background: #8888aa;
+    border-radius: 50%;
+    transition: transform 0.2s, background 0.2s;
+}
+
+.map-toggle input:checked + .map-toggle-slider {
+    background: #0f3460;
+}
+
+.map-toggle input:checked + .map-toggle-slider:before {
+    transform: translateX(18px);
+    background: #5a8abb;
+}
+
+.map-checkbox-group {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.map-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #e0e0e0;
+}
+
+.map-checkbox input {
+    accent-color: #5a8abb;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+.map-spawn-count {
+    font-weight: 400;
+    font-size: 12px;
+    color: #6a6a8a;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.map-spawn-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.map-spawn-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: #0d0d1a;
+    border-radius: 4px;
+    border: 1px solid #2a2a4a;
+}
+
+.map-spawn-type {
+    min-width: 80px;
+}
+
+.map-spawn-type select {
+    width: 100%;
+    padding: 4px 6px;
+    background: #16213e;
+    border: 1px solid #2a2a4a;
+    border-radius: 3px;
+    color: #e0e0e0;
+    font-size: 12px;
+    font-family: inherit;
+    outline: none;
+    cursor: pointer;
+}
+
+.map-spawn-type select:focus {
+    border-color: #5a8abb;
+}
+
+.map-spawn-team {
+    width: 50px;
+}
+
+.map-spawn-team input {
+    width: 100%;
+    padding: 4px 6px;
+    background: #16213e;
+    border: 1px solid #2a2a4a;
+    border-radius: 3px;
+    color: #e0e0e0;
+    font-size: 12px;
+    font-family: inherit;
+    outline: none;
+    text-align: center;
+}
+
+.map-spawn-team input:focus {
+    border-color: #5a8abb;
+}
+
+.map-spawn-coords {
+    flex: 1;
+    display: flex;
+    gap: 4px;
+}
+
+.map-spawn-coords input {
+    width: 100%;
+    padding: 4px 6px;
+    background: #16213e;
+    border: 1px solid #2a2a4a;
+    border-radius: 3px;
+    color: #e0e0e0;
+    font-size: 12px;
+    font-family: inherit;
+    outline: none;
+    text-align: center;
+}
+
+.map-spawn-coords input:focus {
+    border-color: #5a8abb;
+}
+
+.map-spawn-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.map-spawn-btn {
+    padding: 4px 8px;
+    background: #16213e;
+    border: 1px solid #2a2a4a;
+    border-radius: 3px;
+    color: #8888aa;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.map-spawn-btn:hover {
+    background: #1a2744;
+    color: #e0e0e0;
+}
+
+.map-spawn-btn.delete:hover {
+    background: #2a1020;
+    color: #e94560;
+}
+
+.map-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    grid-column: 1 / -1;
+}
+
+.map-actions-left,
+.map-actions-right {
+    display: flex;
+    gap: 8px;
+}
+
+.map-action-btn {
+    padding: 8px 16px;
+    font-size: 13px;
+}
+
+.map-save-btn {
+    padding: 8px 20px;
+    background: #1a4a2a;
+    border-color: #4ade80;
+    color: #4ade80;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.map-save-btn:hover {
+    background: #2a5a3a;
+}
+
+.map-delete-btn {
+    padding: 8px 16px;
+    background: transparent;
+    border-color: #e94560;
+    color: #e94560;
+    font-size: 13px;
+}
+
+.map-delete-btn:hover {
+    background: #2a1020;
+}
+
+.map-delete-confirm {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.map-delete-confirm span {
+    font-size: 12px;
+    color: #e94560;
+}
+
+.map-delete-confirm .btn {
+    font-size: 12px;
+    padding: 4px 10px;
+}
+
+.map-delete-yes {
+    background: #4a1020 !important;
+    border-color: #e94560 !important;
+    color: #e94560 !important;
+}
+
+.map-delete-no {
+    border-color: #3a3a5c !important;
+    color: #8888aa !important;
 }
 
 /* ==================== TTT Overlays ==================== */

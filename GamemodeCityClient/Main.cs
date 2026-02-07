@@ -9,7 +9,6 @@ using GamemodeCityShared;
 namespace GamemodeCityClient {
     public class Main : BaseScript {
 
-        MapMenu MapMenu;
         MapVote MapVote;
         GameVote GameVote;
 
@@ -45,13 +44,16 @@ namespace GamemodeCityClient {
         }
 
         void OpenMapGUI() {
-            // Close existing menus before recreating
-            MenuAPI.MenuController.CloseAllMenus();
-            // Remove old -1 ID entries (unsaved new maps that now have real IDs)
-            if( ClientGlobals.Maps.ContainsKey( -1 ) ) {
-                ClientGlobals.Maps.Remove( -1 );
+            if( HubNUI.IsOpen ) {
+                // Hub already open — just refresh the maps list, keep any unsaved -1 map
+                HubNUI.SendMapsUpdate();
+            } else {
+                // Fresh open — clean up old -1 entries (unsaved maps that now have real IDs)
+                if( ClientGlobals.Maps.ContainsKey( -1 ) ) {
+                    ClientGlobals.Maps.Remove( -1 );
+                }
+                HubNUI.OpenHub( "maps" );
             }
-            MapMenu = new MapMenu( "Maps", "Map Editor", ClientGlobals.Maps );
         }
 
         void CacheMap( string mapJson ) {
@@ -225,8 +227,6 @@ namespace GamemodeCityClient {
                 ClientGlobals.CurrentGame.Update();
             if( ClientGlobals.isNoclip )
                 ClientGlobals.NoClipUpdate();
-            if( MapMenu != null )
-                MapMenu.Draw();
         }
 
         public async void Spawn( int typ, Vector3 spawn, uint hash ) {
