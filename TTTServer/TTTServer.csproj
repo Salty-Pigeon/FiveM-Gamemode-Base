@@ -48,13 +48,13 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\GamemodeCityServer\GamemodeCityServer.csproj">
+    <ProjectReference Include="..\GTA_GameRooServer\GTA_GameRooServer.csproj">
       <Project>{27ecf000-e6d8-4910-9117-b6cd01048e8b}</Project>
-      <Name>GamemodeCityServer</Name>
+      <Name>GTA_GameRooServer</Name>
     </ProjectReference>
-    <ProjectReference Include="..\GamemodeCityShared\GamemodeCityShared.csproj">
+    <ProjectReference Include="..\GTA_GameRooShared\GTA_GameRooShared.csproj">
       <Project>{d3800439-e6a1-4b66-ba19-8199d14c0af6}</Project>
-      <Name>GamemodeCityShared</Name>
+      <Name>GTA_GameRooShared</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

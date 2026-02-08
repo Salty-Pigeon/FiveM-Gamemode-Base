@@ -1,5 +1,5 @@
-﻿using GamemodeCityServer;
-using GamemodeCityShared;
+﻿using GTA_GameRooServer;
+using GTA_GameRooShared;
 using CitizenFX.Core;
 using static CitizenFX.Core.Native.API;
 using System;
@@ -46,7 +46,7 @@ namespace TTTServer
         }
 
         private void OnNetStartSoloTTT( [FromSource] Player player ) {
-            if( GamemodeCityServer.PlayerProgression.GetAdminLevel( player ) < 1 ) return;
+            if( GTA_GameRooServer.PlayerProgression.GetAdminLevel( player ) < 1 ) return;
             StartSoloMode();
         }
 
@@ -59,7 +59,7 @@ namespace TTTServer
                 ServerGlobals.CurrentGame.End();
             }
 
-            var existingMap = GamemodeCityServer.Main.MapManager.FindMap( "ttt" );
+            var existingMap = GTA_GameRooServer.Main.MapManager.FindMap( "ttt" );
             if( existingMap != null ) {
                 // Start directly, bypassing normal StartGame to avoid any issues
                 ServerGlobals.CurrentGame = (BaseGamemode)Activator.CreateInstance( ServerGlobals.Gamemodes["ttt"].GetType() );

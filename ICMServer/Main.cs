@@ -1,5 +1,5 @@
-﻿using GamemodeCityServer;
-using GamemodeCityShared;
+﻿using GTA_GameRooServer;
+using GTA_GameRooShared;
 using CitizenFX.Core;
 using static CitizenFX.Core.Native.API;
 using System;
@@ -37,7 +37,7 @@ namespace ICMServer
         
 
         private void OnNetStartSoloICM( [FromSource] Player player ) {
-            if( GamemodeCityServer.PlayerProgression.GetAdminLevel( player ) < 1 ) return;
+            if( GTA_GameRooServer.PlayerProgression.GetAdminLevel( player ) < 1 ) return;
             StartSoloMode();
         }
 
@@ -49,7 +49,7 @@ namespace ICMServer
                 ServerGlobals.CurrentGame.End();
             }
 
-            var existingMap = GamemodeCityServer.Main.MapManager.FindMap( "icm" );
+            var existingMap = GTA_GameRooServer.Main.MapManager.FindMap( "icm" );
             if( existingMap != null ) {
                 ServerGlobals.CurrentGame = (BaseGamemode)Activator.CreateInstance( ServerGlobals.Gamemodes["icm"].GetType() );
                 ServerGlobals.CurrentGame.GameTime = GetGameTimer() + ServerGlobals.CurrentGame.Settings.GameLength;

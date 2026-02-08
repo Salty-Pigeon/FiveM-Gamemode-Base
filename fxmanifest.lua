@@ -1,8 +1,8 @@
 fx_version 'cerulean'
 game 'gta5'
 
-name 'gamemodecity'
-description 'GamemodeCity - Multi-gamemode FiveM resource'
+name 'gta_gameroo'
+description 'GameRoo - Multi-gamemode FiveM resource'
 
 ui_page 'html/hub.html'
 
@@ -19,8 +19,8 @@ files {
 }
 
 client_scripts {
-    'GamemodeCityClient.net.dll',
-    'GamemodeCityShared.net.dll',
+    'GTA_GameRooClient.net.dll',
+    'GTA_GameRooShared.net.dll',
     'TTTClient.net.dll',
     'TDMClient.net.dll',
     'ICMClient.net.dll',
@@ -29,8 +29,8 @@ client_scripts {
 }
 
 server_scripts {
-    'GamemodeCityServer.net.dll',
-    'GamemodeCityShared.net.dll',
+    'GTA_GameRooServer.net.dll',
+    'GTA_GameRooShared.net.dll',
     'TTTServer.net.dll',
     'TDMServer.net.dll',
     'ICMServer.net.dll',

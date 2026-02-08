@@ -1,5 +1,5 @@
-﻿using GamemodeCityClient;
-using GamemodeCityShared;
+﻿using GTA_GameRooClient;
+using GTA_GameRooShared;
 using CitizenFX.Core;
 using static CitizenFX.Core.Native.API;
 using System;

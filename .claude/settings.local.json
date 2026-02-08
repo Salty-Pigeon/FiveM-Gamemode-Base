@@ -3,26 +3,24 @@
     "allow": [
       "Bash(dotnet build:*)",
       "Bash(where:*)",
-      "Bash(\"C:/Program Files \\(x86\\)/Microsoft Visual Studio/2019/Community/MSBuild/Current/Bin/MSBuild.exe\" \"C:\\\\Users\\\\jason\\\\Documents\\\\Projects\\\\FiveM-Gamemode-Base\\\\GamemodeCity.sln\" /t:Build /p:Configuration=Debug /verbosity:minimal)",
-      "Bash(\"C:/Program Files \\(x86\\)/Microsoft Visual Studio/2019/Community/MSBuild/Current/Bin/MSBuild.exe\" \"C:\\\\Users\\\\jason\\\\Documents\\\\Projects\\\\FiveM-Gamemode-Base\\\\GamemodeCity.sln\" -t:Build -p:Configuration=Debug -verbosity:minimal)",
-      "Bash(\"C:/Program Files \\(x86\\)/Microsoft Visual Studio/2019/Community/MSBuild/Current/Bin/MSBuild.exe\" \"C:\\\\Users\\\\jason\\\\Documents\\\\Projects\\\\FiveM-Gamemode-Base\\\\GamemodeCity.sln\" -t:Rebuild -p:Configuration=Debug -verbosity:minimal)",
+      "Bash(\"C:/Program Files \\(x86\\)/Microsoft Visual Studio/2019/Community/MSBuild/Current/Bin/MSBuild.exe\" \"C:\\\\Users\\\\jason\\\\Documents\\\\Projects\\\\FiveM-Gamemode-Base\\\\GTA_GameRoo.sln\" /t:Build /p:Configuration=Debug /verbosity:minimal)",
+      "Bash(\"C:/Program Files \\(x86\\)/Microsoft Visual Studio/2019/Community/MSBuild/Current/Bin/MSBuild.exe\" \"C:\\\\Users\\\\jason\\\\Documents\\\\Projects\\\\FiveM-Gamemode-Base\\\\GTA_GameRoo.sln\" -t:Build -p:Configuration=Debug -verbosity:minimal)",
+      "Bash(\"C:/Program Files \\(x86\\)/Microsoft Visual Studio/2019/Community/MSBuild/Current/Bin/MSBuild.exe\" \"C:\\\\Users\\\\jason\\\\Documents\\\\Projects\\\\FiveM-Gamemode-Base\\\\GTA_GameRoo.sln\" -t:Rebuild -p:Configuration=Debug -verbosity:minimal)",
       "Bash(dir:*)",
       "Bash(findstr:*)",
-      "Bash(cmd.exe /c \"dir /b \"\"C:\\\\FiveM\\\\txData\\\\FiveMBasicServerCFXDefault_857960.base\\\\resources\\\\[gamemodes]\\\\gamemodecity\"\"\")",
+      "Bash(cmd.exe /c \"dir /b \"\"C:\\\\FiveM\\\\txData\\\\FiveMBasicServerCFXDefault_857960.base\\\\resources\\\\[gamemodes]\\\\gta_gameroo\"\"\")",
       "Bash(cmd.exe /c:*)",
-      "Bash(del \"C:\\\\Users\\\\jason\\\\Documents\\\\Projects\\\\FiveM-Gamemode-Base\\\\GamemodeCityClient\\\\GameVote.cs\")",
       "Bash(find:*)",
       "Bash(grep:*)",
-      "Bash(\"C:/Program Files \\(x86\\)/Microsoft Visual Studio/2019/Community/MSBuild/Current/Bin/MSBuild.exe\" \"C:/Users/jason/Documents/Projects/FiveM-Gamemode-Base/GamemodeCityClient/GamemodeCityClient.csproj\" -t:Build -p:Configuration=Release)",
-      "Bash(\"C:/Program Files \\(x86\\)/Microsoft Visual Studio/2019/Community/MSBuild/Current/Bin/MSBuild.exe\" \"C:/Users/jason/Documents/Projects/FiveM-Gamemode-Base/GamemodeCityServer/GamemodeCityServer.csproj\" -t:Build -p:Configuration=Release)",
-      "Bash(\"C:/Program Files \\(x86\\)/Microsoft Visual Studio/2019/Community/MSBuild/Current/Bin/MSBuild.exe\" \"C:/Users/jason/Documents/Projects/FiveM-Gamemode-Base/GamemodeCityClient/GamemodeCityClient.csproj\" -t:Build -p:Configuration=Release -v:q)",
-      "Bash(\"C:\\\\Program Files\\\\Microsoft Visual Studio\\\\2022\\\\Community\\\\MSBuild\\\\Current\\\\Bin\\\\MSBuild.exe\" GamemodeCity.sln /t:Build /p:Configuration=Release)",
-      "Bash(del \"C:\\\\Users\\\\jason\\\\Documents\\\\Projects\\\\FiveM-Gamemode-Base\\\\GamemodeCityClient\\\\html\\\\hub.js\")",
-      "Bash(del \"C:\\\\Users\\\\jason\\\\Documents\\\\Projects\\\\FiveM-Gamemode-Base\\\\GamemodeCityClient\\\\html\\\\hub.css\")",
+      "Bash(\"C:/Program Files \\(x86\\)/Microsoft Visual Studio/2019/Community/MSBuild/Current/Bin/MSBuild.exe\" \"C:/Users/jason/Documents/Projects/FiveM-Gamemode-Base/GTA_GameRooClient/GTA_GameRooClient.csproj\" -t:Build -p:Configuration=Release)",
+      "Bash(\"C:/Program Files \\(x86\\)/Microsoft Visual Studio/2019/Community/MSBuild/Current/Bin/MSBuild.exe\" \"C:/Users/jason/Documents/Projects/FiveM-Gamemode-Base/GTA_GameRooServer/GTA_GameRooServer.csproj\" -t:Build -p:Configuration=Release)",
+      "Bash(\"C:/Program Files \\(x86\\)/Microsoft Visual Studio/2019/Community/MSBuild/Current/Bin/MSBuild.exe\" \"C:/Users/jason/Documents/Projects/FiveM-Gamemode-Base/GTA_GameRooClient/GTA_GameRooClient.csproj\" -t:Build -p:Configuration=Release -v:q)",
+      "Bash(\"C:\\\\Program Files\\\\Microsoft Visual Studio\\\\2022\\\\Community\\\\MSBuild\\\\Current\\\\Bin\\\\MSBuild.exe\" GTA_GameRoo.sln /t:Build /p:Configuration=Release)",
       "WebSearch",
       "WebFetch(domain:docs.altv.mp)",
       "WebFetch(domain:forum.cfx.re)",
-      "Bash(powershell -Command \"[System.Reflection.Assembly]::LoadFrom\\(''C:\\\\Users\\\\jason\\\\Documents\\\\Projects\\\\FiveM-Gamemode-Base\\\\lib\\\\MySql.Data.dll''\\).GetName\\(\\).Version.ToString\\(\\)\")"
+      "Bash(powershell -Command \"[System.Reflection.Assembly]::LoadFrom\\(''C:\\\\Users\\\\jason\\\\Documents\\\\Projects\\\\FiveM-Gamemode-Base\\\\lib\\\\MySql.Data.dll''\\).GetName\\(\\).Version.ToString\\(\\)\")",
+      "Bash(git mv:*)"
     ]
   }
 }

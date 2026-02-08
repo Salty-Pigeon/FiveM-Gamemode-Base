@@ -5,16 +5,16 @@ set "PROJECT=C:\Users\jason\Documents\Projects\FiveM-Gamemode-Base"
 set "SERVER=C:\FiveM\txData\FiveMBasicServerCFXDefault_857960.base\resources"
 
 echo ============================================
-echo  GamemodeCity Deploy Script
+echo  GameRoo Deploy Script
 echo ============================================
 echo.
 
-:: ---- gamemodecity (all gamemodes consolidated) ----
-echo [1/1] Deploying gamemodecity (all gamemodes)...
-set "DEST=%SERVER%\[gamemodes]\gamemodecity"
-xcopy /Y /Q "%PROJECT%\GamemodeCityClient\bin\Debug\GamemodeCityClient.net.dll"  "%DEST%\"
-xcopy /Y /Q "%PROJECT%\GamemodeCityServer\bin\Debug\GamemodeCityServer.net.dll"  "%DEST%\"
-xcopy /Y /Q "%PROJECT%\GamemodeCityShared\bin\Debug\GamemodeCityShared.net.dll"  "%DEST%\"
+:: ---- gta_gameroo (all gamemodes consolidated) ----
+echo [1/1] Deploying gta_gameroo (all gamemodes)...
+set "DEST=%SERVER%\[gamemodes]\gta_gameroo"
+xcopy /Y /Q "%PROJECT%\GTA_GameRooClient\bin\Debug\GTA_GameRooClient.net.dll"  "%DEST%\"
+xcopy /Y /Q "%PROJECT%\GTA_GameRooServer\bin\Debug\GTA_GameRooServer.net.dll"  "%DEST%\"
+xcopy /Y /Q "%PROJECT%\GTA_GameRooShared\bin\Debug\GTA_GameRooShared.net.dll"  "%DEST%\"
 xcopy /Y /Q "%PROJECT%\lib\MenuAPI.dll"                                          "%DEST%\"
 xcopy /Y /Q "%PROJECT%\lib\MySql.Data.dll"                                       "%DEST%\"
 xcopy /Y /Q "%PROJECT%\lib\BouncyCastle.Crypto.dll"                              "%DEST%\"
@@ -30,7 +30,7 @@ xcopy /Y /Q "%PROJECT%\HPClient\bin\Debug\HPClient.net.dll"                    "
 xcopy /Y /Q "%PROJECT%\HPServer\bin\Debug\HPServer.net.dll"                    "%DEST%\"
 xcopy /Y /Q "%PROJECT%\fxmanifest.lua"                                          "%DEST%\"
 if not exist "%DEST%\html" mkdir "%DEST%\html"
-xcopy /Y /Q "%PROJECT%\GamemodeCityClient\html\*.*"              "%DEST%\html\"
+xcopy /Y /Q "%PROJECT%\GTA_GameRooClient\html\*.*"              "%DEST%\html\"
 
 echo.
 echo ============================================

@@ -6,8 +6,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using GamemodeCityClient;
-using GamemodeCityShared;
+using GTA_GameRooClient;
+using GTA_GameRooShared;
 
 namespace HPClient
 {
