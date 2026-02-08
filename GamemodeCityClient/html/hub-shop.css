@@ -66,8 +66,19 @@
 }
 
 .rotate-btn {
+    background: transparent;
+    border: 1px solid #3a3a5c;
+    border-radius: 4px;
+    color: #8888aa;
     padding: 6px 10px;
     font-size: 10px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.rotate-btn:hover {
+    background: #16213e;
+    color: #e0e0e0;
 }
 
 .shop-panel {

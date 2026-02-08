@@ -203,10 +203,10 @@ namespace GamemodeCityClient {
         public static void SetPreviewCamera( string preset ) {
             if( _previewPed == 0 || !DoesEntityExist( _previewPed ) ) return;
 
-            // Offsets relative to the preview ped (heading 180)
+            // Offsets relative to the preview ped
             // Negative X shifts ped to the LEFT of screen (away from the UI panel)
-            float offX = -0.5f, offY = 3.5f, offZ = 0.3f;
-            float ptX = -0.5f, ptY = 0f, ptZ = -0.1f;
+            float offX = -0.8f, offY = 3.5f, offZ = 0.3f;
+            float ptX = -0.8f, ptY = 0f, ptZ = -0.1f;
 
             switch( preset ) {
                 case "head":
@@ -264,6 +264,11 @@ namespace GamemodeCityClient {
             } else {
                 _interiorLoaded = IsIplActive( PreviewIpl );
             }
+
+            // Force the streaming system to load assets at the preview location
+            SetFocusPosAndVel( _previewPos.X, _previewPos.Y, _previewPos.Z, 0f, 0f, 0f );
+            RequestCollisionAtCoord( _previewPos.X, _previewPos.Y, _previewPos.Z );
+            await BaseScript.Delay( 500 );
 
             // Load model and create ped
             string modelName = string.IsNullOrEmpty( SelectedModel ) ? "mp_m_freemode_01" : SelectedModel;
@@ -348,6 +353,9 @@ namespace GamemodeCityClient {
                 RemoveIpl( PreviewIpl );
                 _interiorLoaded = false;
             }
+
+            // Reset streaming focus back to player
+            ClearFocus();
 
             // Cleanup camera
             if( _previewCam != 0 && DoesCamExist( _previewCam ) ) {
