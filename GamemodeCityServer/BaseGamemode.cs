@@ -26,6 +26,15 @@ namespace GamemodeCityServer {
 
         public List<Player> Spectators = new List<Player>();
 
+        /// <summary>
+        /// Set this before calling End() to award win XP to these players.
+        /// Players not in this list get participation XP only.
+        /// </summary>
+        public List<Player> WinningPlayers = new List<Player>();
+
+        public const int XP_WIN = 50;
+        public const int XP_PARTICIPATE = 15;
+
         public bool PreGame = true;
         private float PreGameTime = 0;
 
@@ -88,6 +97,15 @@ namespace GamemodeCityServer {
         }
 
         public virtual void End() {
+            // Award XP to all participants and winners
+            foreach( var player in new PlayerList() ) {
+                if( WinningPlayers.Contains( player ) ) {
+                    PlayerProgression.AwardXP( player, XP_WIN );
+                } else {
+                    PlayerProgression.AwardXP( player, XP_PARTICIPATE );
+                }
+            }
+
             TriggerClientEvent( "salty:EndGame" );
             ServerGlobals.CurrentRound++;
             if( ServerGlobals.CurrentRound < Settings.Rounds ) {

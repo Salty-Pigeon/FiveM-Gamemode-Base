@@ -10,7 +10,12 @@
       "Bash(findstr:*)",
       "Bash(cmd.exe /c \"dir /b \"\"C:\\\\FiveM\\\\txData\\\\FiveMBasicServerCFXDefault_857960.base\\\\resources\\\\[gamemodes]\\\\gamemodecity\"\"\")",
       "Bash(cmd.exe /c:*)",
-      "Bash(del \"C:\\\\Users\\\\jason\\\\Documents\\\\Projects\\\\FiveM-Gamemode-Base\\\\GamemodeCityClient\\\\GameVote.cs\")"
+      "Bash(del \"C:\\\\Users\\\\jason\\\\Documents\\\\Projects\\\\FiveM-Gamemode-Base\\\\GamemodeCityClient\\\\GameVote.cs\")",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(\"C:/Program Files \\(x86\\)/Microsoft Visual Studio/2019/Community/MSBuild/Current/Bin/MSBuild.exe\" \"C:/Users/jason/Documents/Projects/FiveM-Gamemode-Base/GamemodeCityClient/GamemodeCityClient.csproj\" -t:Build -p:Configuration=Release)",
+      "Bash(\"C:/Program Files \\(x86\\)/Microsoft Visual Studio/2019/Community/MSBuild/Current/Bin/MSBuild.exe\" \"C:/Users/jason/Documents/Projects/FiveM-Gamemode-Base/GamemodeCityServer/GamemodeCityServer.csproj\" -t:Build -p:Configuration=Release)",
+      "Bash(\"C:/Program Files \\(x86\\)/Microsoft Visual Studio/2019/Community/MSBuild/Current/Bin/MSBuild.exe\" \"C:/Users/jason/Documents/Projects/FiveM-Gamemode-Base/GamemodeCityClient/GamemodeCityClient.csproj\" -t:Build -p:Configuration=Release -v:q)"
     ]
   }
 }

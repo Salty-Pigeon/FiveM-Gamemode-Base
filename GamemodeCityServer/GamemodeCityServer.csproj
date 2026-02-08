@@ -34,6 +34,9 @@
     <Reference Include="CitizenFX.Core">
       <HintPath>..\..\Salty-Gamemodes\Salty_Gamemodes\Salty_Gamemodes_Server\CitizenFX.Core.dll</HintPath>
     </Reference>
+    <Reference Include="MySql.Data">
+      <HintPath>..\lib\MySql.Data.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -51,6 +54,8 @@
     <Compile Include="ServerMap.cs" />
     <Compile Include="MapManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="PlayerDatabase.cs" />
+    <Compile Include="PlayerProgression.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="Vote.cs" />
   </ItemGroup>

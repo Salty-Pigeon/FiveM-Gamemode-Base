@@ -173,6 +173,8 @@ namespace TTTServer
                 if( Traitors.Count == 0 ) {
                     TriggerClientEvent( "salty::TTTRoundResult", "Innocents", "#22c55e", "All traitors eliminated" );
                     WriteChat( "TTT", "Innocents win", 20, 200, 20 );
+                    WinningPlayers.AddRange( Innocents );
+                    WinningPlayers.AddRange( Detectives );
                     End();
                     return;
                 }
@@ -195,6 +197,7 @@ namespace TTTServer
             if( Innocents.Count + Detectives.Count == 0 ) {
                 TriggerClientEvent( "salty::TTTRoundResult", "Traitors", "#ef4444", "All innocents eliminated" );
                 WriteChat( "TTT", "Traitors win", 200, 20, 20 );
+                WinningPlayers.AddRange( Traitors );
                 End();
                 return;
             }
@@ -219,6 +222,8 @@ namespace TTTServer
             if( !SoloTestMode && GameTime < GetGameTimer() ) {
                 TriggerClientEvent( "salty::TTTRoundResult", "Innocents", "#22c55e", "Time expired" );
                 WriteChat( "TTT", "Time over! Innocents win", 200, 20, 20 );
+                WinningPlayers.AddRange( Innocents );
+                WinningPlayers.AddRange( Detectives );
             }
             SoloTestMode = false; // Reset solo mode
             base.End();

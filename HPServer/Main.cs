@@ -101,6 +101,7 @@ namespace HPServer
                 string winnerName = winner != null ? winner.Name : "Nobody";
                 WriteChat( "Hot Potato", winnerName + " wins! Last one standing!", 50, 200, 50 );
                 TriggerClientEvent( "salty::HPRoundResult", winnerName, "#22c55e", "Last player standing!" );
+                if( winner != null ) WinningPlayers.Add( winner );
                 End();
             }
             else if( victimWasIt && aliveCount >= 2 ) {

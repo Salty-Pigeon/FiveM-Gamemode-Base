@@ -49,6 +49,7 @@
     <Compile Include="MapData.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SimpleJson.cs" />
+    <Compile Include="PedModels.cs" />
     <Compile Include="Spawn.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

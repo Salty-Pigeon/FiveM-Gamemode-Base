@@ -59,6 +59,7 @@
     <Compile Include="DebugRegistry.cs" />
     <Compile Include="GamemodeRegistry.cs" />
     <Compile Include="HubNUI.cs" />
+    <Compile Include="PlayerProgression.cs" />
     <Compile Include="VoteNUI.cs" />
     <Compile Include="MapVote.cs" />
     <Compile Include="SaltyEntity.cs" />

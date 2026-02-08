@@ -49,7 +49,8 @@ namespace MVBServer
                 SetTeam( victim, (int)Teams.Trucker );
             }
             if( GetTeamPlayers( (int)Teams.Bikie ).Count == 0 ) {
-                WriteChat( "ICM", "Game over.", 200, 200, 20 );
+                WriteChat( "MVB", "Game over. Trucker wins!", 200, 200, 20 );
+                WinningPlayers.AddRange( GetTeamPlayers( (int)Teams.Trucker ) );
                 End();
             }
             base.OnPlayerDied( victim, killerType, deathCoords );

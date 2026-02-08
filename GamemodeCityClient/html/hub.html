@@ -22,6 +22,16 @@
         <div class="tab" id="tab-home">
             <h1>Welcome to Gamemode City</h1>
             <p class="tab-subtitle">Choose a gamemode to get started</p>
+            <div class="player-stats-bar" id="playerStatsBar">
+                <div class="stats-level-badge" id="statsLevelBadge">LVL 1</div>
+                <div class="stats-xp-wrapper">
+                    <div class="stats-xp-bar">
+                        <div class="stats-xp-fill" id="statsXpFill" style="width: 0%"></div>
+                    </div>
+                    <span class="stats-xp-text" id="statsXpText">0 / 100 XP</span>
+                </div>
+                <div class="stats-tokens" id="statsTokens">0 Tokens</div>
+            </div>
             <div class="gamemode-grid" id="gamemodeGrid"></div>
             <div class="guide-detail hidden" id="guideDetail">
                 <button class="guide-back-btn" id="guideBackBtn">&larr; All Gamemodes</button>
@@ -49,9 +59,35 @@
             </div>
         </div>
         <div class="tab hidden" id="tab-shop">
-            <div class="coming-soon">
-                <h2>Shop</h2>
-                <p>Coming Soon</p>
+            <div class="shop-layout">
+                <div class="shop-preview-pane" id="shopPreviewPane">
+                    <div class="shop-camera-btns" id="shopCameraBtns">
+                        <button class="cam-btn active" data-preset="default">Full</button>
+                        <button class="cam-btn" data-preset="head">Head</button>
+                        <button class="cam-btn" data-preset="body">Body</button>
+                        <button class="cam-btn" data-preset="bottom">Bottom</button>
+                    </div>
+                </div>
+                <div class="shop-panel">
+                    <div class="shop-header">
+                        <h1>Customize</h1>
+                        <div class="shop-token-balance" id="shopTokenBalance">0 Tokens</div>
+                    </div>
+                    <div class="shop-sub-tabs" id="shopSubTabs">
+                        <button class="shop-sub-tab active" data-section="model">Model</button>
+                        <button class="shop-sub-tab" data-section="face">Face</button>
+                        <button class="shop-sub-tab" data-section="hair">Hair</button>
+                        <button class="shop-sub-tab" data-section="overlays">Features</button>
+                        <button class="shop-sub-tab" data-section="clothing">Clothing</button>
+                        <button class="shop-sub-tab" data-section="accessories">Accessories</button>
+                        <button class="shop-sub-tab" data-section="eyes">Eyes</button>
+                    </div>
+                    <div class="shop-section-content" id="shopSectionContent"></div>
+                    <div class="shop-bottom-bar">
+                        <button class="shop-save-btn" id="shopSaveBtn">Save</button>
+                        <button class="shop-cancel-btn" id="shopCancelBtn">Cancel</button>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="tab hidden" id="tab-maps">
@@ -244,6 +280,11 @@
             </div>
         </div>
     </div>
+</div>
+
+<div class="levelup-toast" id="levelupToast">
+    <div class="levelup-toast-title">LEVEL UP!</div>
+    <div class="levelup-toast-sub" id="levelupToastSub">Level 2 - +100 Tokens</div>
 </div>
 
 <script src="hub.js"></script>

@@ -114,6 +114,8 @@ namespace GamemodeCityClient {
 
             ClientGlobals.Init();
 
+            TriggerServerEvent( "salty:requestProgression" );
+
             RegisterCommand( "icm", new Action<int, List<object>, string>( ( source, args, raw ) => {
                 TriggerServerEvent( "salty:netStartGame", "icm" );
             } ), false );
@@ -263,6 +265,24 @@ namespace GamemodeCityClient {
                 while( !HasCollisionLoadedAroundEntity( PlayerPedId() ) && timeout < 20 ) {
                     await Delay( 100 );
                     timeout++;
+                }
+
+                // Apply selected character model before teleporting
+                string selectedModel = PlayerProgression.GetSelectedModel();
+                if( !string.IsNullOrEmpty( selectedModel ) ) {
+                    uint modelHash = (uint)GetHashKey( selectedModel );
+                    RequestModel( modelHash );
+                    int modelTimeout = 0;
+                    while( !HasModelLoaded( modelHash ) && modelTimeout < 50 ) {
+                        await Delay( 50 );
+                        modelTimeout++;
+                    }
+                    if( HasModelLoaded( modelHash ) ) {
+                        SetPlayerModel( PlayerId(), modelHash );
+                        SetModelAsNoLongerNeeded( modelHash );
+                        // Apply full appearance (clothing, face, hair, etc.)
+                        PlayerProgression.ApplyFullAppearance( PlayerPedId(), PlayerProgression.AppearanceJson );
+                    }
                 }
 
                 // Teleport the player

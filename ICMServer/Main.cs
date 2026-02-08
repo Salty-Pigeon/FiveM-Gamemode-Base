@@ -82,6 +82,7 @@ namespace ICMServer
         private void OnKidWin() {
             WriteChat( "Ice Cream Man", "A kid reached the finish line!", 6, 182, 212 );
             TriggerClientEvent( "salty::ICMRoundResult", "Kids", "#06b6d4", "A kid reached the finish line!" );
+            WinningPlayers.AddRange( GetTeamPlayers( (int)Teams.Kiddie ) );
             End();
         }
 
@@ -115,6 +116,7 @@ namespace ICMServer
         public override void OnTimerEnd() {
             WriteChat( "Ice Cream Man", "Ice cream man delivered ice cream safely", 255, 0, 0 );
             TriggerClientEvent( "salty::ICMRoundResult", "Ice Cream Man", "#f59e0b", "All ice cream delivered safely!" );
+            if( IceCreamMan != null ) WinningPlayers.Add( IceCreamMan );
             base.OnTimerEnd();
         }
 
@@ -123,6 +125,7 @@ namespace ICMServer
             if( team == Teams.IceCreamMan ) {
                 WriteChat( "Ice Cream Man", "Ice cream man defeated. Bikers win.", 255, 0, 0 );
                 TriggerClientEvent( "salty::ICMRoundResult", "Kids", "#06b6d4", "The Ice Cream Man has been stopped!" );
+                WinningPlayers.AddRange( GetTeamPlayers( (int)Teams.Kiddie ) );
                 End();
             }
             base.OnPlayerKilled( victim, attacker, deathCoords, weaponHash );
@@ -146,6 +149,7 @@ namespace ICMServer
                 }
                 if( allDead ) {
                     TriggerClientEvent( "salty::ICMRoundResult", "Ice Cream Man", "#f59e0b", "All kids have been splattered!" );
+                    if( IceCreamMan != null ) WinningPlayers.Add( IceCreamMan );
                     End();
                     return;
                 }

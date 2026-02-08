@@ -238,50 +238,42 @@ namespace HPClient
         private void DrawMarkers() {
             if( Team == SPECTATOR ) return;
 
-            bool iAmIt = ( Team == (int)Teams.It );
-
-            // Draw markers above real players
             foreach( var ply in new PlayerList() ) {
                 if( ply.ServerId == LocalPlayer.ServerId ) continue;
-                if( !DoesEntityExist( ply.Character.Handle ) ) continue;
                 object teamObj = GetPlayerDetail( ply.ServerId, "team" );
                 if( teamObj == null ) continue;
                 int plyTeam = Convert.ToInt32( teamObj );
 
-                if( iAmIt && plyTeam == (int)Teams.Safe ) {
-                    DrawTargetIndicator( ply.Character.Position, 50, 200, 50, 120 );
+                if( Team == (int)Teams.It && plyTeam == (int)Teams.Safe ) {
+                    // I'm "it" - draw green chevrons above safe players (targets)
+                    DrawMarker( 2, ply.Character.Position.X, ply.Character.Position.Y, ply.Character.Position.Z + 2.5f,
+                        0.0f, 0.0f, 0.0f, 0.0f, 180.0f, 0.0f, 2.0f, 2.0f, 2.0f,
+                        50, 200, 50, 120, false, true, 2, false, null, null, false );
                 }
-                else if( !iAmIt && plyTeam == (int)Teams.It ) {
-                    DrawTargetIndicator( ply.Character.Position, 255, 50, 50, 150 );
+                else if( Team == (int)Teams.Safe && plyTeam == (int)Teams.It ) {
+                    // I'm safe - draw red chevron above the "it" player (danger)
+                    DrawMarker( 2, ply.Character.Position.X, ply.Character.Position.Y, ply.Character.Position.Z + 2.5f,
+                        0.0f, 0.0f, 0.0f, 0.0f, 180.0f, 0.0f, 2.0f, 2.0f, 2.0f,
+                        255, 50, 50, 150, false, true, 2, false, null, null, false );
                 }
             }
 
             // Draw markers above bots
-            for( int i = 0; i < Bots.Count; i++ ) {
-                var bot = Bots[i];
+            foreach( var bot in Bots ) {
                 if( !DoesEntityExist( bot.PedHandle ) ) continue;
                 Vector3 botPos = GetEntityCoords( bot.PedHandle, true );
 
-                if( iAmIt && bot.Team == (int)Teams.Safe ) {
-                    DrawTargetIndicator( botPos, 50, 200, 50, 120 );
+                if( Team == (int)Teams.It && bot.Team == (int)Teams.Safe ) {
+                    DrawMarker( 2, botPos.X, botPos.Y, botPos.Z + 2.5f,
+                        0.0f, 0.0f, 0.0f, 0.0f, 180.0f, 0.0f, 2.0f, 2.0f, 2.0f,
+                        50, 200, 50, 120, false, true, 2, false, null, null, false );
                 }
-                else if( !iAmIt && bot.Team == (int)Teams.It ) {
-                    DrawTargetIndicator( botPos, 255, 50, 50, 150 );
+                else if( Team == (int)Teams.Safe && bot.Team == (int)Teams.It ) {
+                    DrawMarker( 2, botPos.X, botPos.Y, botPos.Z + 2.5f,
+                        0.0f, 0.0f, 0.0f, 0.0f, 180.0f, 0.0f, 2.0f, 2.0f, 2.0f,
+                        255, 50, 50, 150, false, true, 2, false, null, null, false );
                 }
             }
-        }
-
-        private void DrawTargetIndicator( Vector3 pos, int r, int g, int b, int a ) {
-            // 3D chevron marker above target
-            DrawMarker( 2, pos.X, pos.Y, pos.Z + 2.5f,
-                0.0f, 0.0f, 0.0f, 0.0f, 180.0f, 0.0f, 2.0f, 2.0f, 2.0f,
-                r, g, b, a, false, true, 2, false, null, null, false );
-
-            // 2D indicator that shows through walls using SetDrawOrigin
-            SetDrawOrigin( pos.X, pos.Y, pos.Z + 1.5f, 0 );
-            DrawRect( 0.0f, 0.0f, 0.02f, 0.035f, r, g, b, a );
-            DrawRect( 0.0f, -0.014f, 0.035f, 0.008f, r, g, b, a );
-            ClearDrawOrigin();
         }
 
         private void DrawPotatoTimer() {

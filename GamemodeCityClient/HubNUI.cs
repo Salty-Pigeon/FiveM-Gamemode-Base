@@ -204,7 +204,9 @@ namespace GamemodeCityClient {
             string debugActions = DebugRegistry.BuildDebugActionsJson();
             string mapsJson = BuildMapsJson();
             string tabJson = tab == "" ? "\"\"" : "\"" + EscapeJson( tab ) + "\"";
-            string payload = "{\"type\":\"openHub\",\"tab\":" + tabJson + ",\"gamemodes\":" + gamemodes + ",\"debugActions\":" + debugActions + ",\"maps\":" + mapsJson + "}";
+            string progressionJson = PlayerProgression.BuildProgressionJson();
+            string pedModelsJson = PlayerProgression.BuildPedModelsJson();
+            string payload = "{\"type\":\"openHub\",\"tab\":" + tabJson + ",\"gamemodes\":" + gamemodes + ",\"debugActions\":" + debugActions + ",\"maps\":" + mapsJson + ",\"progression\":" + progressionJson + ",\"pedModels\":" + pedModelsJson + "}";
             SendNuiMessage( payload );
             SetNuiFocus( true, true );
         }
@@ -221,6 +223,7 @@ namespace GamemodeCityClient {
                     map.RemoveBlip();
                 }
             }
+            PlayerProgression.StopCustomization( true );
             SetNuiFocus( false, false );
             SendNuiMessage( "{\"type\":\"closeHub\"}" );
         }
@@ -234,6 +237,7 @@ namespace GamemodeCityClient {
             isMapTabActive = false;
             currentControlsGamemode = null;
             // Keep IsEditingMap and LastSelectedMap — boundaries continue drawing
+            PlayerProgression.StopCustomization( true );
             SetNuiFocus( false, false );
             SendNuiMessage( "{\"type\":\"closeHub\"}" );
         }
