@@ -26,6 +26,7 @@ client_scripts {
     'ICMClient.net.dll',
     'MVBClient.net.dll',
     'HPClient.net.dll',
+    'GGClient.net.dll',
 }
 
 server_scripts {
@@ -36,4 +37,5 @@ server_scripts {
     'ICMServer.net.dll',
     'MVBServer.net.dll',
     'HPServer.net.dll',
+    'GGServer.net.dll',
 }

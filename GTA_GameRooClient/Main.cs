@@ -150,6 +150,10 @@ namespace GTA_GameRooClient {
                 TriggerServerEvent( "salty:netStartGame", "hp" );
             } ), false );
 
+            RegisterCommand( "gg", new Action<int, List<object>, string>( ( source, args, raw ) => {
+                TriggerServerEvent( "salty:netStartGame", "gg" );
+            } ), false );
+
             RegisterCommand( "tdm", new Action<int, List<object>, string>( ( source, args, raw ) => {
                 TriggerServerEvent( "salty:netStartGame", "tdm" );
             } ), false );

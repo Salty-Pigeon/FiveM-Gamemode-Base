@@ -292,6 +292,7 @@ window.addEventListener('message', function(event) {
         var timerEl = document.getElementById('game-timer');
         timerEl.classList.remove('active');
         timerEl.classList.remove('urgent');
+        hideGGLevelHud();
     }
     // TTT Overlays
     else if (data.type === 'tttRoleReveal') {
@@ -343,6 +344,28 @@ window.addEventListener('message', function(event) {
         document.getElementById('tttBodyWeapon').textContent = data.weapon || unknownText;
         document.getElementById('tttBodyDeathTime').textContent = data.deathTime || unknownText;
         showTTTOverlay('ttt-body-inspect', 5000);
+    }
+    // Gun Game Overlays
+    else if (data.type === 'ggInit') {
+        showGGLevelHud();
+    }
+    else if (data.type === 'ggUpdateLevel') {
+        updateGGLevel(data.level, data.weaponName, data.maxLevel);
+    }
+    else if (data.type === 'ggLeaderboard') {
+        updateGGLeaderboard(data.players || []);
+    }
+    else if (data.type === 'ggLevelUp') {
+        updateGGLevel(data.level, data.weaponName, data.maxLevel);
+        document.getElementById('ggLevelUpWeapon').textContent = data.weaponName;
+        document.getElementById('ggLevelUpLevel').textContent = 'Level ' + data.level + ' / ' + data.maxLevel;
+        showTTTOverlay('gg-levelup', 2500);
+    }
+    else if (data.type === 'ggDemotion') {
+        updateGGLevel(data.level, data.weaponName, data.maxLevel);
+        document.getElementById('ggDemotionWeapon').textContent = data.weaponName;
+        document.getElementById('ggDemotionLevel').textContent = 'Level ' + data.level + ' / ' + data.maxLevel;
+        showTTTOverlay('gg-demotion', 2000);
     }
     // Vote Overlay
     else if (data.type === 'openVote') {

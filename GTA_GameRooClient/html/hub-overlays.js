@@ -240,3 +240,65 @@ function hideTTTOverlay(id) {
         el.classList.remove('fade-out');
     }, 500);
 }
+
+// ==================== Gun Game Overlays ====================
+
+function showGGLevelHud() {
+    var hud = document.getElementById('gg-level-hud');
+    var lb = document.getElementById('gg-leaderboard');
+    if (hud) hud.style.display = 'block';
+    if (lb) lb.style.display = 'block';
+}
+
+function hideGGLevelHud() {
+    var hud = document.getElementById('gg-level-hud');
+    var lb = document.getElementById('gg-leaderboard');
+    if (hud) hud.style.display = 'none';
+    if (lb) lb.style.display = 'none';
+}
+
+function updateGGLevel(level, weaponName, maxLevel) {
+    var numEl = document.getElementById('ggLevelNumber');
+    var wepEl = document.getElementById('ggLevelWeapon');
+    var fillEl = document.getElementById('ggProgressFill');
+    if (numEl) numEl.textContent = level;
+    if (wepEl) wepEl.textContent = weaponName;
+    if (fillEl) {
+        var pct = maxLevel > 0 ? ((level / maxLevel) * 100) : 0;
+        fillEl.style.width = pct + '%';
+    }
+}
+
+function updateGGLeaderboard(players) {
+    var list = document.getElementById('ggLbList');
+    if (!list) return;
+
+    // Sort by level descending
+    players.sort(function(a, b) { return b.level - a.level; });
+
+    var highestLevel = players.length > 0 ? players[0].level : 0;
+
+    list.innerHTML = '';
+    players.forEach(function(p) {
+        var entry = document.createElement('div');
+        entry.className = 'gg-lb-entry';
+        if (p.level === highestLevel && highestLevel > 0) {
+            entry.classList.add('leader');
+        }
+        if (p.isLocal) {
+            entry.classList.add('local');
+        }
+
+        var name = document.createElement('span');
+        name.className = 'gg-lb-entry-name';
+        name.textContent = p.name;
+        entry.appendChild(name);
+
+        var lvl = document.createElement('span');
+        lvl.className = 'gg-lb-entry-level';
+        lvl.textContent = 'Lv.' + p.level;
+        entry.appendChild(lvl);
+
+        list.appendChild(entry);
+    });
+}

@@ -146,6 +146,7 @@
                                     <label class="map-checkbox"><input type="checkbox" value="icm"><span>ICM</span></label>
                                     <label class="map-checkbox"><input type="checkbox" value="mvb"><span>MVB</span></label>
                                     <label class="map-checkbox"><input type="checkbox" value="hp"><span>HP</span></label>
+                                    <label class="map-checkbox"><input type="checkbox" value="gg"><span>GG</span></label>
                                 </div>
                             </div>
                             <div class="map-input-group map-inline-group">
@@ -349,6 +350,41 @@
                 <span class="ttt-body-detail-value" id="tttBodyDeathTime"></span>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- Gun Game Overlays -->
+<div id="gg-level-hud" class="gg-level-hud" style="display:none;">
+    <div class="gg-level-hud-label">LEVEL</div>
+    <div class="gg-level-hud-number" id="ggLevelNumber">0</div>
+    <div class="gg-level-hud-weapon" id="ggLevelWeapon">Heavy Sniper</div>
+    <div class="gg-level-hud-progress-bar">
+        <div class="gg-level-hud-progress-fill" id="ggProgressFill" style="width:0%"></div>
+    </div>
+</div>
+
+<div id="gg-leaderboard" class="gg-leaderboard" style="display:none;">
+    <div class="gg-lb-title">LEADERBOARD</div>
+    <div class="gg-lb-list" id="ggLbList"></div>
+</div>
+
+<div class="ttt-overlay" id="gg-levelup">
+    <div class="ttt-role-bg"></div>
+    <div class="gg-levelup-content">
+        <div class="gg-levelup-label">LEVEL UP</div>
+        <div class="gg-levelup-line"></div>
+        <div class="gg-levelup-weapon" id="ggLevelUpWeapon"></div>
+        <div class="gg-levelup-level" id="ggLevelUpLevel"></div>
+    </div>
+</div>
+
+<div class="ttt-overlay" id="gg-demotion">
+    <div class="ttt-role-bg"></div>
+    <div class="gg-demotion-content">
+        <div class="gg-demotion-label">DEMOTED</div>
+        <div class="gg-demotion-line"></div>
+        <div class="gg-demotion-weapon" id="ggDemotionWeapon"></div>
+        <div class="gg-demotion-level" id="ggDemotionLevel"></div>
     </div>
 </div>
 

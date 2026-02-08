@@ -574,3 +574,219 @@
     filter: grayscale(0.6);
     cursor: default;
 }
+
+/* ==================== Gun Game Overlays ==================== */
+
+.gg-level-hud {
+    position: fixed;
+    bottom: 30px;
+    right: 20px;
+    z-index: 950;
+    pointer-events: none;
+    background: rgba(10, 10, 20, 0.85);
+    border-left: 4px solid #f59e0b;
+    border-radius: 6px;
+    padding: 14px 20px;
+    min-width: 180px;
+}
+
+.gg-level-hud-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 4px;
+    color: #8888aa;
+    margin-bottom: 4px;
+}
+
+.gg-level-hud-number {
+    font-size: 36px;
+    font-weight: 700;
+    color: #f59e0b;
+    line-height: 1;
+    margin-bottom: 4px;
+}
+
+.gg-level-hud-weapon {
+    font-size: 14px;
+    font-weight: 600;
+    color: #e0e0e0;
+    margin-bottom: 10px;
+}
+
+.gg-level-hud-progress-bar {
+    width: 100%;
+    height: 4px;
+    background: #1a1a2e;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.gg-level-hud-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #f59e0b, #fbbf24);
+    border-radius: 2px;
+    transition: width 0.4s ease;
+}
+
+/* Gun Game Leaderboard */
+.gg-leaderboard {
+    position: fixed;
+    top: 60px;
+    right: 20px;
+    z-index: 950;
+    pointer-events: none;
+    background: rgba(10, 10, 20, 0.75);
+    border-radius: 6px;
+    padding: 10px 14px;
+    min-width: 160px;
+    max-width: 220px;
+}
+
+.gg-lb-title {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    color: #8888aa;
+    margin-bottom: 8px;
+}
+
+.gg-lb-list {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.gg-lb-entry {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 3px 6px;
+    border-radius: 3px;
+    font-size: 12px;
+}
+
+.gg-lb-entry-name {
+    color: #c0c0d0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+}
+
+.gg-lb-entry-level {
+    font-weight: 700;
+    color: #8888aa;
+    margin-left: 8px;
+}
+
+.gg-lb-entry.leader {
+    background: rgba(245, 158, 11, 0.15);
+}
+
+.gg-lb-entry.leader .gg-lb-entry-name {
+    color: #f59e0b;
+}
+
+.gg-lb-entry.leader .gg-lb-entry-level {
+    color: #f59e0b;
+}
+
+.gg-lb-entry.local {
+    background: rgba(59, 130, 246, 0.15);
+}
+
+.gg-lb-entry.local .gg-lb-entry-name {
+    color: #60a5fa;
+}
+
+.gg-lb-entry.local .gg-lb-entry-level {
+    color: #60a5fa;
+}
+
+/* Gun Game Level Up overlay */
+.gg-levelup-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    opacity: 0;
+    transform: translateY(30px);
+    animation: revealSlideUp 0.6s ease 0.3s forwards;
+}
+
+.gg-levelup-label {
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 6px;
+    color: #f59e0b;
+    margin-bottom: 12px;
+}
+
+.gg-levelup-line {
+    width: 0;
+    height: 3px;
+    background: #f59e0b;
+    margin-bottom: 20px;
+    animation: lineExpand 0.5s ease 0.5s forwards;
+}
+
+.gg-levelup-weapon {
+    font-size: 48px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: #f59e0b;
+    text-shadow: 0 0 40px rgba(245, 158, 11, 0.6), 0 0 80px rgba(245, 158, 11, 0.3);
+}
+
+.gg-levelup-level {
+    font-size: 18px;
+    font-weight: 500;
+    color: #8888aa;
+    margin-top: 8px;
+}
+
+/* Gun Game Demotion overlay */
+.gg-demotion-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    opacity: 0;
+    transform: translateY(30px);
+    animation: revealSlideUp 0.6s ease 0.3s forwards;
+}
+
+.gg-demotion-label {
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 6px;
+    color: #ef4444;
+    margin-bottom: 12px;
+}
+
+.gg-demotion-line {
+    width: 0;
+    height: 3px;
+    background: #ef4444;
+    margin-bottom: 20px;
+    animation: lineExpand 0.5s ease 0.5s forwards;
+}
+
+.gg-demotion-weapon {
+    font-size: 48px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: #ef4444;
+    text-shadow: 0 0 40px rgba(239, 68, 68, 0.6), 0 0 80px rgba(239, 68, 68, 0.3);
+}
+
+.gg-demotion-level {
+    font-size: 18px;
+    font-weight: 500;
+    color: #8888aa;
+    margin-top: 8px;
+}

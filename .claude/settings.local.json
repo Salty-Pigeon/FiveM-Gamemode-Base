@@ -20,7 +20,10 @@
       "WebFetch(domain:docs.altv.mp)",
       "WebFetch(domain:forum.cfx.re)",
       "Bash(powershell -Command \"[System.Reflection.Assembly]::LoadFrom\\(''C:\\\\Users\\\\jason\\\\Documents\\\\Projects\\\\FiveM-Gamemode-Base\\\\lib\\\\MySql.Data.dll''\\).GetName\\(\\).Version.ToString\\(\\)\")",
-      "Bash(git mv:*)"
+      "Bash(git mv:*)",
+      "Bash(done)",
+      "Bash(wc:*)",
+      "Bash(ls:*)"
     ]
   }
 }
