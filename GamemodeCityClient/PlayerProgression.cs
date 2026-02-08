@@ -168,21 +168,21 @@ namespace GamemodeCityClient {
 
             // Offsets relative to the preview ped (heading 180)
             // Negative X shifts ped to the LEFT of screen (away from the UI panel)
-            float offX = -1.2f, offY = 3.5f, offZ = 0.3f;
-            float ptX = -1.2f, ptY = 0f, ptZ = -0.1f;
+            float offX = -0.5f, offY = 3.5f, offZ = 0.3f;
+            float ptX = -0.5f, ptY = 0f, ptZ = -0.1f;
 
             switch( preset ) {
                 case "head":
-                    offX = -0.5f; offY = 0.9f; offZ = 0.65f;
-                    ptX = -0.5f; ptZ = 0.6f;
+                    offX = -0.2f; offY = 0.9f; offZ = 0.65f;
+                    ptX = -0.2f; ptZ = 0.6f;
                     break;
                 case "body":
-                    offX = -0.8f; offY = 1.2f; offZ = 0.2f;
-                    ptX = -0.8f; ptZ = 0.2f;
+                    offX = -0.3f; offY = 1.2f; offZ = 0.2f;
+                    ptX = -0.3f; ptZ = 0.2f;
                     break;
                 case "bottom":
-                    offX = -0.6f; offY = 0.98f; offZ = -0.7f;
-                    ptX = -0.6f; ptZ = -0.9f;
+                    offX = -0.25f; offY = 0.98f; offZ = -0.7f;
+                    ptX = -0.25f; ptZ = -0.9f;
                     break;
             }
 
@@ -217,6 +217,7 @@ namespace GamemodeCityClient {
             // Load model and create ped
             string modelName = string.IsNullOrEmpty( SelectedModel ) ? "mp_m_freemode_01" : SelectedModel;
             uint hash = (uint)GetHashKey( modelName );
+            Debug.WriteLine( "[GamemodeCity] StartCustomization: model=" + modelName + " hash=" + hash + " pos=" + _previewPos );
             RequestModel( hash );
             int timeout = 0;
             while( !HasModelLoaded( hash ) && timeout < 100 ) {
@@ -227,6 +228,7 @@ namespace GamemodeCityClient {
             if( HasModelLoaded( hash ) ) {
                 _previewPed = CreatePed( 4, hash, _previewPos.X, _previewPos.Y, _previewPos.Z, 180f, false, false );
                 SetModelAsNoLongerNeeded( hash );
+                Debug.WriteLine( "[GamemodeCity] StartCustomization: ped=" + _previewPed + " exists=" + DoesEntityExist( _previewPed ) );
 
                 FreezeEntityPosition( _previewPed, true );
                 TaskStandStill( _previewPed, -1 );
@@ -234,9 +236,10 @@ namespace GamemodeCityClient {
                 SetEntityCollision( _previewPed, false, false );
                 SetBlockingOfNonTemporaryEvents( _previewPed, true );
 
-                // Initialize head blend for freemode peds (required before face features/overlays work)
+                // Initialize freemode peds (matching fivem-appearance pattern)
                 if( IsFreemodeModelName( modelName ) ) {
-                    SetPedHeadBlendData( _previewPed, 0, 0, 0, 0, 0, 0, 0.5f, 0.5f, 0f, false );
+                    SetPedDefaultComponentVariation( _previewPed );
+                    SetPedHeadBlendData( _previewPed, 0, 0, 0, 0, 0, 0, 0f, 0f, 0f, false );
                 }
 
                 // Apply current appearance to preview ped
@@ -248,6 +251,8 @@ namespace GamemodeCityClient {
                 SetEntityVisible( playerPed, false, false );
 
                 SetPreviewCamera( "default" );
+            } else {
+                Debug.WriteLine( "[GamemodeCity] StartCustomization: FAILED to load model after " + timeout + " ticks" );
             }
         }
 
@@ -542,25 +547,35 @@ namespace GamemodeCityClient {
         // ==================== NUI Callbacks ====================
 
         private async void OnNuiCustomizeStart( IDictionary<string, object> data, CallbackDelegate cb ) {
-            string modelName = string.IsNullOrEmpty( SelectedModel ) ? "mp_m_freemode_01" : SelectedModel;
-            StartCustomization();
+            try {
+                string modelName = string.IsNullOrEmpty( SelectedModel ) ? "mp_m_freemode_01" : SelectedModel;
+                Debug.WriteLine( "[GamemodeCity] customizeStart: model=" + modelName + " _customizing=" + _customizing + " _previewPed=" + _previewPed );
+                StartCustomization();
 
-            // Wait for preview ped to spawn
-            int timeout = 0;
-            while( ( _previewPed == 0 || !DoesEntityExist( _previewPed ) ) && timeout < 100 ) {
-                await Delay( 50 );
-                timeout++;
+                // Wait for preview ped to spawn
+                int timeout = 0;
+                while( ( _previewPed == 0 || !DoesEntityExist( _previewPed ) ) && timeout < 100 ) {
+                    await Delay( 50 );
+                    timeout++;
+                }
+
+                Debug.WriteLine( "[GamemodeCity] customizeStart: waited " + timeout + " ticks, _previewPed=" + _previewPed + " exists=" + ( _previewPed != 0 && DoesEntityExist( _previewPed ) ) );
+
+                if( _previewPed == 0 || !DoesEntityExist( _previewPed ) ) {
+                    Debug.WriteLine( "[GamemodeCity] customizeStart: FAILED - ped not spawned" );
+                    cb( "{\"status\":\"error\",\"reason\":\"ped_timeout\"}" );
+                    return;
+                }
+
+                string settings = BuildAppearanceSettingsJson( _previewPed, modelName );
+                string appearance = GetCurrentAppearanceJson( _previewPed );
+
+                Debug.WriteLine( "[GamemodeCity] customizeStart: OK, isFreemode=" + IsFreemodeModelName( modelName ) );
+                cb( "{\"status\":\"ok\",\"settings\":" + settings + ",\"appearance\":" + appearance + "}" );
+            } catch( Exception ex ) {
+                Debug.WriteLine( "[GamemodeCity] customizeStart EXCEPTION: " + ex.Message );
+                cb( "{\"status\":\"error\",\"reason\":\"exception\"}" );
             }
-
-            if( _previewPed == 0 || !DoesEntityExist( _previewPed ) ) {
-                cb( "{\"status\":\"error\"}" );
-                return;
-            }
-
-            string settings = BuildAppearanceSettingsJson( _previewPed, modelName );
-            string appearance = GetCurrentAppearanceJson( _previewPed );
-
-            cb( "{\"status\":\"ok\",\"settings\":" + settings + ",\"appearance\":" + appearance + "}" );
         }
 
         private void OnNuiCustomizeCancel( IDictionary<string, object> data, CallbackDelegate cb ) {
@@ -587,7 +602,8 @@ namespace GamemodeCityClient {
 
         private async void OnNuiChangeModel( IDictionary<string, object> data, CallbackDelegate cb ) {
             string modelHash = data.ContainsKey( "modelHash" ) ? data["modelHash"].ToString() : "";
-            if( string.IsNullOrEmpty( modelHash ) ) { cb( "{\"status\":\"error\"}" ); return; }
+            Debug.WriteLine( "[GamemodeCity] changeModel: hash=" + modelHash + " _previewPos=" + _previewPos );
+            if( string.IsNullOrEmpty( modelHash ) ) { cb( "{\"status\":\"error\",\"reason\":\"empty_hash\"}" ); return; }
 
             try {
                 uint hash = (uint)GetHashKey( modelHash );
@@ -597,7 +613,11 @@ namespace GamemodeCityClient {
                     await Delay( 50 );
                     timeout++;
                 }
-                if( !HasModelLoaded( hash ) ) { cb( "{\"status\":\"error\"}" ); return; }
+                if( !HasModelLoaded( hash ) ) {
+                    Debug.WriteLine( "[GamemodeCity] changeModel: model failed to load after " + timeout + " ticks" );
+                    cb( "{\"status\":\"error\",\"reason\":\"model_load_timeout\"}" );
+                    return;
+                }
 
                 // Delete old preview ped and create new one with the new model
                 if( _previewPed != 0 && DoesEntityExist( _previewPed ) ) {
@@ -607,15 +627,18 @@ namespace GamemodeCityClient {
                 _previewPed = CreatePed( 4, hash, _previewPos.X, _previewPos.Y, _previewPos.Z, 180f, false, false );
                 SetModelAsNoLongerNeeded( hash );
 
+                Debug.WriteLine( "[GamemodeCity] changeModel: created ped " + _previewPed + " exists=" + DoesEntityExist( _previewPed ) );
+
                 FreezeEntityPosition( _previewPed, true );
                 TaskStandStill( _previewPed, -1 );
                 SetEntityInvincible( _previewPed, true );
                 SetEntityCollision( _previewPed, false, false );
                 SetBlockingOfNonTemporaryEvents( _previewPed, true );
 
-                // Initialize head blend for freemode peds (required before face features/overlays work)
+                // Initialize freemode peds (matching fivem-appearance pattern)
                 if( IsFreemodeModelName( modelHash ) ) {
-                    SetPedHeadBlendData( _previewPed, 0, 0, 0, 0, 0, 0, 0.5f, 0.5f, 0f, false );
+                    SetPedDefaultComponentVariation( _previewPed );
+                    SetPedHeadBlendData( _previewPed, 0, 0, 0, 0, 0, 0, 0f, 0f, 0f, false );
                 }
 
                 // Refresh camera to look at new ped
@@ -624,10 +647,11 @@ namespace GamemodeCityClient {
                 string settings = BuildAppearanceSettingsJson( _previewPed, modelHash );
                 string appearance = GetCurrentAppearanceJson( _previewPed );
 
+                Debug.WriteLine( "[GamemodeCity] changeModel: OK, isFreemode=" + IsFreemodeModelName( modelHash ) );
                 cb( "{\"status\":\"ok\",\"settings\":" + settings + ",\"appearance\":" + appearance + "}" );
             } catch( Exception ex ) {
-                Debug.WriteLine( "[GamemodeCity] Error changing model: " + ex.Message );
-                cb( "{\"status\":\"error\"}" );
+                Debug.WriteLine( "[GamemodeCity] changeModel EXCEPTION: " + ex.Message + "\n" + ex.StackTrace );
+                cb( "{\"status\":\"error\",\"reason\":\"exception\"}" );
             }
         }
 

@@ -594,6 +594,15 @@ var eyeColorNames = [
     'Blaze','Frost','Vivid'
 ];
 
+// FiveM cb(string) double-JSON-encodes: r.json() returns a string, not an object.
+// This helper parses the inner JSON if needed.
+function nuiResp(r) {
+    return r.json().then(function(d) {
+        if (typeof d === 'string') { try { return JSON.parse(d); } catch(e) { return d; } }
+        return d;
+    });
+}
+
 var componentNames = ['Face','Mask','Hair','Torso','Legs','Bag','Shoes','Accessory','Undershirt','Armor','Decals','Tops'];
 var propNames = { 0:'Hats', 1:'Glasses', 2:'Ears', 6:'Watch', 7:'Bracelet' };
 var propIndices = [0, 1, 2, 6, 7];
@@ -612,17 +621,22 @@ var settingsVersion = 0; // Track which settings response is latest
 
 function changePreviewModel(hash) {
     settingsVersion++;
+    console.log('[shop] changePreviewModel:', hash);
     fetch('https://gamemodecity/changeModel', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ modelHash: hash })
-    }).then(function(r) { return r.json(); }).then(function(data) {
+    }).then(nuiResp).then(function(data) {
+        console.log('[shop] changeModel response:', JSON.stringify(data));
         if (data.status === 'ok') {
             customizeSettings = data.settings;
             currentAppearance = data.appearance;
+            console.log('[shop] isFreemode:', customizeSettings && customizeSettings.isFreemode);
             updateSubTabStates();
             renderCurrentSection();
         }
+    }).catch(function(err) {
+        console.log('[shop] changeModel ERROR:', err);
     });
 }
 
@@ -639,18 +653,23 @@ function enterCustomization() {
     // Spawn preview ped in background — update settings when ready
     settingsVersion++;
     var myVersion = settingsVersion;
+    console.log('[shop] enterCustomization: firing customizeStart');
     fetch('https://gamemodecity/customizeStart', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({})
-    }).then(function(r) { return r.json(); }).then(function(data) {
+    }).then(nuiResp).then(function(data) {
+        console.log('[shop] customizeStart response:', JSON.stringify(data), 'myVersion:', myVersion, 'settingsVersion:', settingsVersion);
         if (data.status !== 'ok') return;
         // Only apply if user hasn't changed model since we started
         if (settingsVersion !== myVersion) return;
         customizeSettings = data.settings;
         currentAppearance = data.appearance;
+        console.log('[shop] customizeStart: isFreemode:', customizeSettings && customizeSettings.isFreemode);
         updateSubTabStates();
         renderCurrentSection();
+    }).catch(function(err) {
+        console.log('[shop] customizeStart ERROR:', err);
     });
 }
 
@@ -1229,7 +1248,7 @@ function renderClothingSection(container) {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ componentId: compId, drawable: val, texture: 0 })
-                }).then(function(r) { return r.json(); }).then(function(data) {
+                }).then(nuiResp).then(function(data) {
                     if (data.maxTexture !== undefined) {
                         maxTex = data.maxTexture;
                         if (texPn && texPn.updateMax) texPn.updateMax(maxTex);
@@ -1342,7 +1361,7 @@ function renderAccessoriesSection(container) {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ propId: pId, drawable: val, texture: 0 })
-                }).then(function(r) { return r.json(); }).then(function(data) {
+                }).then(nuiResp).then(function(data) {
                     if (data.maxTexture !== undefined) {
                         maxTex = data.maxTexture;
                         if (texPn && texPn.updateMax) texPn.updateMax(maxTex);
