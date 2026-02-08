@@ -40,7 +40,7 @@ namespace GamemodeCityClient {
         public static void SetSpectator( bool spectate ) {
             if( !spectate )
                 SetNoClip( false );
-            BaseGamemode.Team = spectate ? -1 : 0;
+            BaseGamemode.Team = spectate ? BaseGamemode.SPECTATOR : 0;
         }
 
         public static void SendMap( ClientMap map ) {

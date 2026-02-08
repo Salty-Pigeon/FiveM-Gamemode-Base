@@ -43,7 +43,15 @@ function enterCustomization() {
         body: JSON.stringify({})
     }).then(nuiResp).then(function(data) {
         console.log('[shop] customizeStart response:', JSON.stringify(data), 'myVersion:', myVersion, 'settingsVersion:', settingsVersion);
-        if (data.status !== 'ok') return;
+        if (data.status !== 'ok') {
+            if (data.reason === 'in_game') {
+                customizeActive = false;
+                document.getElementById('hub').classList.remove('shop-preview-active');
+                switchTab('home');
+                showAdminStatus('Cannot customize during an active game', false);
+            }
+            return;
+        }
         // Only apply if user hasn't changed model since we started
         if (settingsVersion !== myVersion) return;
         customizeSettings = data.settings;
@@ -128,6 +136,16 @@ function renderCurrentSection() {
 var previewingModelHash = null;
 var purchaseConfirmHash = null;
 
+function getModelCost(category) {
+    if (category === 'Freemode') return 100000;
+    if (category === 'Special') return 1000;
+    return 500;
+}
+
+function formatTokens(amount) {
+    return amount.toLocaleString() + 'T';
+}
+
 function renderModelSection(container) {
     // Category filters
     var filters = document.createElement('div');
@@ -156,7 +174,8 @@ function renderModelSection(container) {
         var isOwned = progression.unlockedModels.indexOf(model.hash) !== -1;
         var isSelected = progression.selectedModel === model.hash;
         var isPreviewing = previewingModelHash === model.hash;
-        var canAfford = progression.tokens >= 500;
+        var modelCost = getModelCost(model.category);
+        var canAfford = progression.tokens >= modelCost;
 
         var card = document.createElement('div');
         card.className = 'shop-card';
@@ -214,7 +233,7 @@ function renderModelSection(container) {
         } else if (purchaseConfirmHash === model.hash) {
             // Confirm purchase state
             btn.classList.add('confirm-btn');
-            btn.textContent = 'Confirm - 500T';
+            btn.textContent = 'Confirm - ' + formatTokens(modelCost);
             (function(hash) {
                 btn.addEventListener('click', function(e) {
                     e.stopPropagation();
@@ -230,7 +249,7 @@ function renderModelSection(container) {
             })(model.hash);
         } else if (canAfford) {
             btn.classList.add('buy-btn');
-            btn.textContent = '500T';
+            btn.textContent = formatTokens(modelCost);
             (function(hash) {
                 btn.addEventListener('click', function(e) {
                     e.stopPropagation();
@@ -240,7 +259,7 @@ function renderModelSection(container) {
             })(model.hash);
         } else {
             btn.classList.add('cant-afford');
-            btn.textContent = '500T';
+            btn.textContent = formatTokens(modelCost);
         }
         card.appendChild(btn);
         grid.appendChild(card);
@@ -400,15 +419,6 @@ function renderHairSection(container) {
     badge.className = 'cust-buy-badge';
     badge.id = 'hairUnlockBadge';
     updateHairBadge(badge, hair.style);
-    badge.addEventListener('click', function() {
-        var key = 'hair_' + hair.style;
-        if (hair.style === 0 || progression.unlockedItems.indexOf(key) !== -1) return;
-        fetch('https://gamemodecity/purchaseItem', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ itemKey: key })
-        });
-    });
     row.appendChild(badge);
     container.appendChild(row);
 
@@ -477,14 +487,8 @@ function checkHairUnlock(style) {
 }
 
 function updateHairBadge(badge, style) {
-    var key = 'hair_' + style;
-    if (style === 0 || progression.unlockedItems.indexOf(key) !== -1) {
-        badge.textContent = 'Owned';
-        badge.classList.add('owned');
-    } else {
-        badge.textContent = '50T';
-        badge.classList.remove('owned');
-    }
+    badge.textContent = 'Free';
+    badge.classList.add('owned');
 }
 
 // ---- Overlays Section ----
@@ -646,15 +650,6 @@ function renderClothingSection(container) {
             badge.className = 'cust-buy-badge';
             badge.id = 'compBadge_' + compId;
             updateCompBadgeEl(badge, compId, cur.drawable);
-            badge.addEventListener('click', function() {
-                var key = 'comp_' + compId + '_' + cur.drawable;
-                if (cur.drawable === 0 || progression.unlockedItems.indexOf(key) !== -1) return;
-                fetch('https://gamemodecity/purchaseItem', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ itemKey: key })
-                });
-            });
             row.appendChild(badge);
             container.appendChild(row);
 
@@ -692,14 +687,8 @@ function updateCompBadge(compId, drawable) {
 }
 
 function updateCompBadgeEl(badge, compId, drawable) {
-    var key = 'comp_' + compId + '_' + drawable;
-    if (drawable === 0 || progression.unlockedItems.indexOf(key) !== -1) {
-        badge.textContent = 'Owned';
-        badge.classList.add('owned');
-    } else {
-        badge.textContent = '100T';
-        badge.classList.remove('owned');
-    }
+    badge.textContent = 'Free';
+    badge.classList.add('owned');
 }
 
 // ---- Accessories Section ----
@@ -759,15 +748,6 @@ function renderAccessoriesSection(container) {
             badge.className = 'cust-buy-badge';
             badge.id = 'propBadge_' + pId;
             updatePropBadgeEl(badge, pId, cur.drawable);
-            badge.addEventListener('click', function() {
-                var key = 'prop_' + pId + '_' + cur.drawable;
-                if (cur.drawable <= 0 || progression.unlockedItems.indexOf(key) !== -1) return;
-                fetch('https://gamemodecity/purchaseItem', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ itemKey: key })
-                });
-            });
             row.appendChild(badge);
             container.appendChild(row);
 
@@ -803,14 +783,8 @@ function updatePropBadge(propId, drawable) {
 }
 
 function updatePropBadgeEl(badge, propId, drawable) {
-    var key = 'prop_' + propId + '_' + drawable;
-    if (drawable <= 0 || progression.unlockedItems.indexOf(key) !== -1) {
-        badge.textContent = 'Owned';
-        badge.classList.add('owned');
-    } else {
-        badge.textContent = '75T';
-        badge.classList.remove('owned');
-    }
+    badge.textContent = 'Free';
+    badge.classList.add('owned');
 }
 
 // ---- Eyes Section ----
@@ -922,6 +896,23 @@ document.getElementById('shopCameraBtns').addEventListener('click', function(e) 
     var btn = e.target.closest('.cam-btn');
     if (!btn) return;
     setCamera(btn.getAttribute('data-preset'));
+});
+
+// Rotate buttons
+document.getElementById('rotateLeft').addEventListener('click', function() {
+    fetch('https://gamemodecity/rotatePed', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ delta: -15 })
+    });
+});
+
+document.getElementById('rotateRight').addEventListener('click', function() {
+    fetch('https://gamemodecity/rotatePed', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ delta: 15 })
+    });
 });
 
 // Save/Cancel buttons

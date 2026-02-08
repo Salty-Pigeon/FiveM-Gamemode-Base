@@ -58,6 +58,18 @@
     color: #ffffff;
 }
 
+.cam-btn-sep {
+    width: 1px;
+    background: #3a3a5c;
+    align-self: stretch;
+    margin: 2px 2px;
+}
+
+.rotate-btn {
+    padding: 6px 10px;
+    font-size: 10px;
+}
+
 .shop-panel {
     flex: 1;
     min-height: 0;

@@ -383,6 +383,16 @@ window.addEventListener('message', function(event) {
             el.textContent = 'Player not found in database';
         }
     }
+    else if (data.type === 'previewPedPosition') {
+        var ex = document.getElementById('adminPedX');
+        var ey = document.getElementById('adminPedY');
+        var ez = document.getElementById('adminPedZ');
+        var eh = document.getElementById('adminPedH');
+        if (ex) ex.value = data.x.toFixed(4);
+        if (ey) ey.value = data.y.toFixed(4);
+        if (ez) ez.value = data.z.toFixed(4);
+        if (eh && data.heading !== undefined) eh.value = data.heading.toFixed(1);
+    }
 });
 
 // Hide restricted tabs on initial load

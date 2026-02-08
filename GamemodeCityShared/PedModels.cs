@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 
 namespace GamemodeCityShared {
     public class PedModelInfo {
@@ -14,10 +15,20 @@ namespace GamemodeCityShared {
     }
 
     public static class AppearanceConstants {
-        public const int ModelCost = 500;
-        public const int ClothingCost = 100;
-        public const int PropCost = 75;
-        public const int HairStyleCost = 50;
+        public const int RegularModelCost = 500;      // Male/Female
+        public const int SpecialModelCost = 1000;      // Special
+        public const int FreemodeModelCost = 100000;   // Freemode
+        public const int ClothingCost = 0;
+        public const int PropCost = 0;
+        public const int HairStyleCost = 0;
+
+        public static int GetModelCost( string modelHash ) {
+            var model = PedModels.All.FirstOrDefault( m => m.Hash == modelHash );
+            if( model == null ) return RegularModelCost;
+            if( model.Category == "Freemode" ) return FreemodeModelCost;
+            if( model.Category == "Special" ) return SpecialModelCost;
+            return RegularModelCost;
+        }
 
         public static readonly string[] ComponentNames = {
             "Face",        // 0

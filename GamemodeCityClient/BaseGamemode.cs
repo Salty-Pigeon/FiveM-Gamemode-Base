@@ -32,7 +32,7 @@ namespace GamemodeCityClient {
         IList<uint> PlayerWeapons = new List<uint>();
         uint lastWep = 0;
 
-        public int SPECTATOR = -1;
+        public const int SPECTATOR = -1;
         public bool CountdownActive = false;
 
         public List<WinBarrierData> WinBarriers = new List<WinBarrierData>();

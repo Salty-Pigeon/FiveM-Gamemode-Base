@@ -42,7 +42,6 @@ namespace GamemodeCityServer {
             connString.Database = "gamemodecity";
             connString.ConnectionTimeout = 10;
             connString.DefaultCommandTimeout = 15;
-            connString.CharacterSet = "utf8mb4";
             _connection = new MySqlConnection( connString.ToString() );
             _connection.Open();
             return _connection;
@@ -73,6 +72,53 @@ namespace GamemodeCityServer {
             // Check if columns exist now
             _hasNewColumns = HasColumn( "appearance" );
             CitizenFX.Core.Debug.WriteLine( "[GamemodeCity] New columns available: " + _hasNewColumns );
+
+            EnsureSettingsTable();
+        }
+
+        private static void EnsureSettingsTable() {
+            try {
+                var conn = GetConnection();
+                var cmd = new MySqlCommand( @"CREATE TABLE IF NOT EXISTS settings (
+                    setting_key VARCHAR(64) PRIMARY KEY,
+                    setting_value TEXT
+                )", conn );
+                cmd.ExecuteNonQuery();
+            } catch( Exception ex ) {
+                CitizenFX.Core.Debug.WriteLine( "[GamemodeCity] Error creating settings table: " + ex.Message );
+            }
+        }
+
+        public static string GetSetting( string key ) {
+            try {
+                var conn = GetConnection();
+                var cmd = new MySqlCommand( "SELECT setting_value FROM settings WHERE setting_key = ?key", conn );
+                cmd.Parameters.AddWithValue( "key", key );
+                var reader = cmd.ExecuteReader();
+                if( reader.Read() ) {
+                    string val = reader.IsDBNull( 0 ) ? null : reader.GetString( 0 );
+                    reader.Close();
+                    return val;
+                }
+                reader.Close();
+                return null;
+            } catch( Exception ex ) {
+                CitizenFX.Core.Debug.WriteLine( "[GamemodeCity] Error getting setting: " + ex.Message );
+                return null;
+            }
+        }
+
+        public static void SetSetting( string key, string value ) {
+            try {
+                var conn = GetConnection();
+                var cmd = new MySqlCommand( "INSERT INTO settings (setting_key, setting_value) VALUES (?key, ?value) ON DUPLICATE KEY UPDATE setting_value = ?value2", conn );
+                cmd.Parameters.AddWithValue( "key", key );
+                cmd.Parameters.AddWithValue( "value", value );
+                cmd.Parameters.AddWithValue( "value2", value );
+                cmd.ExecuteNonQuery();
+            } catch( Exception ex ) {
+                CitizenFX.Core.Debug.WriteLine( "[GamemodeCity] Error saving setting: " + ex.Message );
+            }
         }
 
         private static void TryAddColumn( string columnName, string columnType ) {

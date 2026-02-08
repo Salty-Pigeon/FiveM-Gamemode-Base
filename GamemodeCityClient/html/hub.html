@@ -74,6 +74,9 @@
                         <button class="cam-btn" data-preset="head">Head</button>
                         <button class="cam-btn" data-preset="body">Body</button>
                         <button class="cam-btn" data-preset="bottom">Bottom</button>
+                        <span class="cam-btn-sep"></span>
+                        <button class="cam-btn rotate-btn" id="rotateLeft">&#9664;</button>
+                        <button class="cam-btn rotate-btn" id="rotateRight">&#9654;</button>
                     </div>
                 </div>
                 <div class="shop-panel">
@@ -248,6 +251,24 @@
                         <button class="btn admin-action-btn" id="adminLookupBtn">Lookup</button>
                     </div>
                     <div class="admin-lookup-result" id="adminLookupResult"></div>
+                </div>
+            </div>
+            <div class="admin-section">
+                <div class="admin-section-title">Preview PED Position</div>
+                <div class="admin-ped-pos-row">
+                    <label>X</label>
+                    <input type="number" class="admin-input admin-coord-input" id="adminPedX" step="0.01">
+                    <label>Y</label>
+                    <input type="number" class="admin-input admin-coord-input" id="adminPedY" step="0.01">
+                    <label>Z</label>
+                    <input type="number" class="admin-input admin-coord-input" id="adminPedZ" step="0.01">
+                    <label>H</label>
+                    <input type="number" class="admin-input admin-coord-input" id="adminPedH" step="1" title="Heading (0-360)">
+                    <button class="btn admin-action-btn" id="adminPedApply">Apply</button>
+                </div>
+                <div class="admin-manual-row">
+                    <button class="btn admin-action-btn" id="adminPedToMe">Move PED to Me</button>
+                    <button class="btn admin-action-btn" id="adminTpToPed">Teleport to PED</button>
                 </div>
             </div>
         </div>

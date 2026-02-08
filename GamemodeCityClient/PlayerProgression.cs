@@ -26,6 +26,10 @@ namespace GamemodeCityClient {
         private static string _savedAppearance = null;
         private static string _savedModel = null;
         private static Vector3 _previewPos;
+        private static float _previewHeading = 10f;
+        private static bool _previewPosFromServer = false;
+        private static bool _interiorLoaded = false;
+        private const string PreviewIpl = "apa_v_mp_h_01_c";
 
         public PlayerProgression() {
             EventHandlers["salty:receiveProgression"] += new Action<string>( OnReceiveProgression );
@@ -86,10 +90,23 @@ namespace GamemodeCityClient {
             RegisterNuiCallbackType( "lookupPlayer" );
             EventHandlers["__cfx_nui:lookupPlayer"] += new Action<IDictionary<string, object>, CallbackDelegate>( OnNuiLookupPlayer );
 
+            RegisterNuiCallbackType( "setPedPosition" );
+            EventHandlers["__cfx_nui:setPedPosition"] += new Action<IDictionary<string, object>, CallbackDelegate>( OnNuiSetPedPosition );
+
+            RegisterNuiCallbackType( "movePedToPlayer" );
+            EventHandlers["__cfx_nui:movePedToPlayer"] += new Action<IDictionary<string, object>, CallbackDelegate>( OnNuiMovePedToPlayer );
+
+            RegisterNuiCallbackType( "teleportToPed" );
+            EventHandlers["__cfx_nui:teleportToPed"] += new Action<IDictionary<string, object>, CallbackDelegate>( OnNuiTeleportToPed );
+
+            RegisterNuiCallbackType( "rotatePed" );
+            EventHandlers["__cfx_nui:rotatePed"] += new Action<IDictionary<string, object>, CallbackDelegate>( OnNuiRotatePed );
+
             // Admin event handlers (server → client → NUI)
             EventHandlers["salty:onlinePlayers"] += new Action<string>( OnOnlinePlayers );
             EventHandlers["salty:adminResult"] += new Action<string>( OnAdminResult );
             EventHandlers["salty:lookupResult"] += new Action<string>( OnLookupResult );
+            EventHandlers["salty:previewPedPos"] += new Action<string>( OnPreviewPedPos );
         }
 
         // ==================== Progression Data ====================
@@ -230,9 +247,23 @@ namespace GamemodeCityClient {
             _savedAppearance = GetCurrentAppearanceJson( playerPed );
             _savedModel = SelectedModel;
 
-            // Spawn preview NPC below the map near the player
-            Vector3 playerPos = GetEntityCoords( playerPed, true );
-            _previewPos = new Vector3( playerPos.X, playerPos.Y, playerPos.Z - 50f );
+            // Load apartment interior for preview room
+            RequestIpl( PreviewIpl );
+            await BaseScript.Delay( 500 );
+
+            if( !_previewPosFromServer ) {
+                if( IsIplActive( PreviewIpl ) ) {
+                    _previewPos = new Vector3( 121.2738f, -225.2129f, 53.6f );
+                    _interiorLoaded = true;
+                } else {
+                    // Fallback: below map
+                    Vector3 playerPos = GetEntityCoords( playerPed, true );
+                    _previewPos = new Vector3( playerPos.X, playerPos.Y, playerPos.Z - 50f );
+                    _interiorLoaded = false;
+                }
+            } else {
+                _interiorLoaded = IsIplActive( PreviewIpl );
+            }
 
             // Load model and create ped
             string modelName = string.IsNullOrEmpty( SelectedModel ) ? "mp_m_freemode_01" : SelectedModel;
@@ -246,7 +277,7 @@ namespace GamemodeCityClient {
             }
 
             if( HasModelLoaded( hash ) ) {
-                _previewPed = CreatePed( 4, hash, _previewPos.X, _previewPos.Y, _previewPos.Z, 180f, false, false );
+                _previewPed = CreatePed( 4, hash, _previewPos.X, _previewPos.Y, _previewPos.Z, _previewHeading, false, false );
                 SetModelAsNoLongerNeeded( hash );
                 Debug.WriteLine( "[GamemodeCity] StartCustomization: ped=" + _previewPed + " exists=" + DoesEntityExist( _previewPed ) );
 
@@ -267,10 +298,10 @@ namespace GamemodeCityClient {
                     ApplyFullAppearance( _previewPed, _savedAppearance );
                 }
 
-                // Hide the player ped from camera
-                SetEntityVisible( playerPed, false, false );
-
                 SetPreviewCamera( "default" );
+
+                // Send preview position to admin panel
+                SendNuiMessage( "{\"type\":\"previewPedPosition\",\"x\":" + F( _previewPos.X ) + ",\"y\":" + F( _previewPos.Y ) + ",\"z\":" + F( _previewPos.Z ) + ",\"heading\":" + F( _previewHeading ) + "}" );
             } else {
                 Debug.WriteLine( "[GamemodeCity] StartCustomization: FAILED to load model after " + timeout + " ticks" );
             }
@@ -312,8 +343,11 @@ namespace GamemodeCityClient {
             }
             _previewPed = 0;
 
-            // Show player again
-            SetEntityVisible( playerPed, true, false );
+            // Unload interior
+            if( _interiorLoaded ) {
+                RemoveIpl( PreviewIpl );
+                _interiorLoaded = false;
+            }
 
             // Cleanup camera
             if( _previewCam != 0 && DoesCamExist( _previewCam ) ) {
@@ -568,6 +602,12 @@ namespace GamemodeCityClient {
 
         private async void OnNuiCustomizeStart( IDictionary<string, object> data, CallbackDelegate cb ) {
             try {
+                // Block customization during active gameplay (allow if dead/spectating)
+                if( ClientGlobals.CurrentGame != null && BaseGamemode.Team != BaseGamemode.SPECTATOR ) {
+                    cb( "{\"status\":\"error\",\"reason\":\"in_game\"}" );
+                    return;
+                }
+
                 string modelName = string.IsNullOrEmpty( SelectedModel ) ? "mp_m_freemode_01" : SelectedModel;
                 Debug.WriteLine( "[GamemodeCity] customizeStart: model=" + modelName + " _customizing=" + _customizing + " _previewPed=" + _previewPed );
                 StartCustomization();
@@ -644,7 +684,7 @@ namespace GamemodeCityClient {
                     DeletePed( ref _previewPed );
                 }
 
-                _previewPed = CreatePed( 4, hash, _previewPos.X, _previewPos.Y, _previewPos.Z, 180f, false, false );
+                _previewPed = CreatePed( 4, hash, _previewPos.X, _previewPos.Y, _previewPos.Z, _previewHeading, false, false );
                 SetModelAsNoLongerNeeded( hash );
 
                 Debug.WriteLine( "[GamemodeCity] changeModel: created ped " + _previewPed + " exists=" + DoesEntityExist( _previewPed ) );
@@ -782,6 +822,50 @@ namespace GamemodeCityClient {
             cb( "{\"status\":\"ok\"}" );
         }
 
+        private void OnNuiSetPedPosition( IDictionary<string, object> data, CallbackDelegate cb ) {
+            float x = data.ContainsKey( "x" ) ? Convert.ToSingle( data["x"] ) : _previewPos.X;
+            float y = data.ContainsKey( "y" ) ? Convert.ToSingle( data["y"] ) : _previewPos.Y;
+            float z = data.ContainsKey( "z" ) ? Convert.ToSingle( data["z"] ) : _previewPos.Z;
+            float h = data.ContainsKey( "heading" ) ? Convert.ToSingle( data["heading"] ) : _previewHeading;
+            ApplyPreviewPos( x, y, z, h );
+            TriggerServerEvent( "salty:setPreviewPedPos", F( x ) + "," + F( y ) + "," + F( z ) + "," + F( h ) );
+            cb( "{\"status\":\"ok\"}" );
+        }
+
+        private void OnNuiMovePedToPlayer( IDictionary<string, object> data, CallbackDelegate cb ) {
+            Vector3 playerPos = Game.PlayerPed.Position;
+            ApplyPreviewPos( playerPos.X, playerPos.Y, playerPos.Z, _previewHeading );
+            TriggerServerEvent( "salty:setPreviewPedPos", F( playerPos.X ) + "," + F( playerPos.Y ) + "," + F( playerPos.Z ) + "," + F( _previewHeading ) );
+            cb( "{\"status\":\"ok\"}" );
+        }
+
+        private void OnNuiRotatePed( IDictionary<string, object> data, CallbackDelegate cb ) {
+            float delta = data.ContainsKey( "delta" ) ? Convert.ToSingle( data["delta"] ) : 0f;
+            _previewHeading = ( _previewHeading + delta ) % 360f;
+            if( _previewHeading < 0f ) _previewHeading += 360f;
+            if( _previewPed != 0 && DoesEntityExist( _previewPed ) ) {
+                SetEntityHeading( _previewPed, _previewHeading );
+            }
+            cb( "{\"status\":\"ok\"}" );
+        }
+
+        private static void ApplyPreviewPos( float x, float y, float z, float heading ) {
+            _previewPos = new Vector3( x, y, z );
+            _previewHeading = heading;
+            _previewPosFromServer = true;
+            if( _previewPed != 0 && DoesEntityExist( _previewPed ) ) {
+                SetEntityCoords( _previewPed, x, y, z, false, false, false, true );
+                SetEntityHeading( _previewPed, heading );
+                SetPreviewCamera( "default" );
+            }
+            SendNuiMessage( "{\"type\":\"previewPedPosition\",\"x\":" + F( x ) + ",\"y\":" + F( y ) + ",\"z\":" + F( z ) + ",\"heading\":" + F( heading ) + "}" );
+        }
+
+        private void OnNuiTeleportToPed( IDictionary<string, object> data, CallbackDelegate cb ) {
+            Game.PlayerPed.Position = _previewPos;
+            cb( "{\"status\":\"ok\"}" );
+        }
+
         // ==================== Admin Event Handlers ====================
 
         private void OnOnlinePlayers( string json ) {
@@ -794,6 +878,17 @@ namespace GamemodeCityClient {
 
         private void OnLookupResult( string json ) {
             SendNuiMessage( "{\"type\":\"lookupResult\",\"data\":" + json + "}" );
+        }
+
+        private void OnPreviewPedPos( string posStr ) {
+            var parts = posStr.Split( ',' );
+            if( parts.Length < 3 ) return;
+            float x, y, z, h = 180f;
+            if( !float.TryParse( parts[0], NumberStyles.Any, CultureInfo.InvariantCulture, out x ) ) return;
+            if( !float.TryParse( parts[1], NumberStyles.Any, CultureInfo.InvariantCulture, out y ) ) return;
+            if( !float.TryParse( parts[2], NumberStyles.Any, CultureInfo.InvariantCulture, out z ) ) return;
+            if( parts.Length >= 4 ) float.TryParse( parts[3], NumberStyles.Any, CultureInfo.InvariantCulture, out h );
+            ApplyPreviewPos( x, y, z, h );
         }
 
         // ==================== Helpers ====================

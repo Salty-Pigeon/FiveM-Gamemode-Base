@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using CitizenFX.Core;
 using GamemodeCityShared;
@@ -9,8 +10,15 @@ namespace GamemodeCityServer {
 
         private static Dictionary<string, PlayerData> Cache = new Dictionary<string, PlayerData>();
 
+        private static float _previewPedX = 0;
+        private static float _previewPedY = 0;
+        private static float _previewPedZ = 0;
+        private static float _previewPedH = 10f;
+        private static bool _previewPedPosLoaded = false;
+
         public PlayerProgression() {
             PlayerDatabase.EnsureTable();
+            LoadPreviewPedPos();
 
             EventHandlers["playerConnecting"] += new Action<Player, string, dynamic, dynamic>( OnPlayerConnecting );
             EventHandlers["playerDropped"] += new Action<Player, string>( OnPlayerDropped );
@@ -23,6 +31,8 @@ namespace GamemodeCityServer {
             EventHandlers["salty:setAdminLevel"] += new Action<Player, string, int>( OnSetAdminLevel );
             EventHandlers["salty:getOnlinePlayers"] += new Action<Player>( OnGetOnlinePlayers );
             EventHandlers["salty:lookupPlayer"] += new Action<Player, string>( OnLookupPlayer );
+            EventHandlers["salty:setPreviewPedPos"] += new Action<Player, string>( OnSetPreviewPedPos );
+            EventHandlers["salty:getPreviewPedPos"] += new Action<Player>( OnGetPreviewPedPos );
         }
 
         public static int GetAdminLevel( Player player ) {
@@ -67,6 +77,11 @@ namespace GamemodeCityServer {
             }
             if( Cache.ContainsKey( license ) ) {
                 SendProgression( player, Cache[license] );
+            }
+
+            // Also send current preview ped position
+            if( _previewPedPosLoaded ) {
+                player.TriggerEvent( "salty:previewPedPos", BuildPedPosString() );
             }
         }
 
@@ -126,9 +141,10 @@ namespace GamemodeCityServer {
             if( data.UnlockedModels.Contains( modelHash ) ) return;
 
             // Not enough tokens
-            if( data.Tokens < AppearanceConstants.ModelCost ) return;
+            int cost = AppearanceConstants.GetModelCost( modelHash );
+            if( data.Tokens < cost ) return;
 
-            data.Tokens -= AppearanceConstants.ModelCost;
+            data.Tokens -= cost;
             data.UnlockedModels.Add( modelHash );
             PlayerDatabase.SavePlayer( data );
             SendProgression( player, data );
@@ -169,10 +185,12 @@ namespace GamemodeCityServer {
                 return; // Invalid format
             }
 
-            // Not enough tokens
-            if( data.Tokens < cost ) return;
+            // Deduct tokens if cost > 0
+            if( cost > 0 ) {
+                if( data.Tokens < cost ) return;
+                data.Tokens -= cost;
+            }
 
-            data.Tokens -= cost;
             data.UnlockedItems.Add( itemKey );
             PlayerDatabase.SavePlayer( data );
             SendProgression( player, data );
@@ -278,6 +296,61 @@ namespace GamemodeCityServer {
                 source.TriggerEvent( "salty:lookupResult", "{\"found\":true,\"name\":\"" + EscapeJson( data.Name ) + "\",\"adminLevel\":" + data.AdminLevel + "}" );
             } else {
                 source.TriggerEvent( "salty:lookupResult", "{\"found\":false,\"name\":\"\",\"adminLevel\":0}" );
+            }
+        }
+
+        // ==================== Preview PED Position ====================
+
+        private static string F( float v ) {
+            return v.ToString( CultureInfo.InvariantCulture );
+        }
+
+        private void LoadPreviewPedPos() {
+            string val = PlayerDatabase.GetSetting( "preview_ped_pos" );
+            if( val != null ) {
+                var parts = val.Split( ',' );
+                if( parts.Length >= 3 ) {
+                    float.TryParse( parts[0], NumberStyles.Any, CultureInfo.InvariantCulture, out _previewPedX );
+                    float.TryParse( parts[1], NumberStyles.Any, CultureInfo.InvariantCulture, out _previewPedY );
+                    float.TryParse( parts[2], NumberStyles.Any, CultureInfo.InvariantCulture, out _previewPedZ );
+                    if( parts.Length >= 4 ) float.TryParse( parts[3], NumberStyles.Any, CultureInfo.InvariantCulture, out _previewPedH );
+                    _previewPedPosLoaded = true;
+                    Debug.WriteLine( "[GamemodeCity] Loaded preview PED pos: " + val );
+                }
+            }
+        }
+
+        private string BuildPedPosString() {
+            return F( _previewPedX ) + "," + F( _previewPedY ) + "," + F( _previewPedZ ) + "," + F( _previewPedH );
+        }
+
+        private void OnSetPreviewPedPos( [FromSource] Player source, string posStr ) {
+            if( GetAdminLevel( source ) < 2 ) return;
+
+            var parts = posStr.Split( ',' );
+            if( parts.Length < 3 ) return;
+
+            float x, y, z, h = 180f;
+            if( !float.TryParse( parts[0], NumberStyles.Any, CultureInfo.InvariantCulture, out x ) ) return;
+            if( !float.TryParse( parts[1], NumberStyles.Any, CultureInfo.InvariantCulture, out y ) ) return;
+            if( !float.TryParse( parts[2], NumberStyles.Any, CultureInfo.InvariantCulture, out z ) ) return;
+            if( parts.Length >= 4 ) float.TryParse( parts[3], NumberStyles.Any, CultureInfo.InvariantCulture, out h );
+
+            _previewPedX = x;
+            _previewPedY = y;
+            _previewPedZ = z;
+            _previewPedH = h;
+            _previewPedPosLoaded = true;
+
+            PlayerDatabase.SetSetting( "preview_ped_pos", BuildPedPosString() );
+
+            // Broadcast to all clients
+            TriggerClientEvent( "salty:previewPedPos", BuildPedPosString() );
+        }
+
+        private void OnGetPreviewPedPos( [FromSource] Player source ) {
+            if( _previewPedPosLoaded ) {
+                source.TriggerEvent( "salty:previewPedPos", BuildPedPosString() );
             }
         }
     }

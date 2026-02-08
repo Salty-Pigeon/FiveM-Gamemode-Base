@@ -146,6 +146,44 @@
     color: #ef4444;
 }
 
+.admin-copy-btn {
+    background: #1a1a2e;
+    border: 1px solid #2a2a4a;
+    border-radius: 3px;
+    color: #8888aa;
+    font-size: 11px;
+    font-family: 'Consolas', monospace;
+    padding: 2px 8px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s;
+}
+
+.admin-copy-btn:hover {
+    border-color: #5a5a8a;
+    background: #22224a;
+    color: #c0c0e0;
+}
+
+.admin-ped-pos-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.admin-ped-pos-row label {
+    font-family: 'Consolas', monospace;
+    font-size: 12px;
+    color: #8888aa;
+}
+
+.admin-coord-input {
+    width: 100px;
+    font-family: 'Consolas', monospace;
+    font-size: 12px;
+}
+
 .admin-empty {
     text-align: center;
     padding: 20px;

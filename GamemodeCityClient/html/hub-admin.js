@@ -24,6 +24,18 @@ function renderAdminOnlinePlayers(players) {
         lic.title = p.license;
         row.appendChild(lic);
 
+        var copyBtn = document.createElement('button');
+        copyBtn.className = 'admin-copy-btn';
+        copyBtn.textContent = 'Copy';
+        (function(license, btn) {
+            btn.addEventListener('click', function() {
+                navigator.clipboard.writeText(license);
+                btn.textContent = 'Copied!';
+                setTimeout(function() { btn.textContent = 'Copy'; }, 1500);
+            });
+        })(p.license, copyBtn);
+        row.appendChild(copyBtn);
+
         var badge = document.createElement('span');
         badge.className = 'admin-level-badge admin-level-' + p.adminLevel;
         badge.textContent = p.adminLevel + ' ' + (adminLevelNames[p.adminLevel] || '');
@@ -86,5 +98,35 @@ document.getElementById('adminLookupBtn').addEventListener('click', function() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ license: license })
+    });
+});
+
+document.getElementById('adminPedApply').addEventListener('click', function() {
+    var x = parseFloat(document.getElementById('adminPedX').value);
+    var y = parseFloat(document.getElementById('adminPedY').value);
+    var z = parseFloat(document.getElementById('adminPedZ').value);
+    var h = parseFloat(document.getElementById('adminPedH').value);
+    if (isNaN(x) || isNaN(y) || isNaN(z)) return;
+    if (isNaN(h)) h = 180;
+    fetch('https://gamemodecity/setPedPosition', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ x: x, y: y, z: z, heading: h })
+    });
+});
+
+document.getElementById('adminPedToMe').addEventListener('click', function() {
+    fetch('https://gamemodecity/movePedToPlayer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+    });
+});
+
+document.getElementById('adminTpToPed').addEventListener('click', function() {
+    fetch('https://gamemodecity/teleportToPed', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
     });
 });
