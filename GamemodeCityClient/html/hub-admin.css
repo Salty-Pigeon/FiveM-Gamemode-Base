@@ -1,0 +1,154 @@
+/* ==================== Admin Panel ==================== */
+
+.admin-section {
+    background: #16213e;
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 12px;
+}
+
+.admin-section-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #8888aa;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #1a1a2e;
+}
+
+.admin-player-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 340px;
+    overflow-y: auto;
+}
+
+.admin-player-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: 4px;
+    background: #0d0d1a;
+}
+
+.admin-player-row:nth-child(even) {
+    background: #111128;
+}
+
+.admin-player-name {
+    flex: 1;
+    font-size: 14px;
+    color: #e0e0e0;
+    min-width: 100px;
+}
+
+.admin-player-license {
+    font-size: 11px;
+    color: #6a6a8a;
+    font-family: 'Consolas', monospace;
+    min-width: 140px;
+}
+
+.admin-level-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 3px;
+    letter-spacing: 0.5px;
+    min-width: 24px;
+    text-align: center;
+}
+
+.admin-level-0 { background: #2a2a3a; color: #8888aa; }
+.admin-level-1 { background: #1a2a4a; color: #60a5fa; }
+.admin-level-2 { background: #3a2a1a; color: #f97316; }
+.admin-level-3 { background: #3a1a1a; color: #ef4444; }
+
+.admin-select {
+    padding: 6px 8px;
+    background: #0d0d1a;
+    border: 1px solid #2a2a4a;
+    border-radius: 4px;
+    color: #e0e0e0;
+    font-size: 12px;
+    font-family: inherit;
+    outline: none;
+    cursor: pointer;
+}
+
+.admin-select:focus {
+    border-color: #5a8abb;
+}
+
+.admin-action-btn {
+    padding: 6px 14px;
+    background: #0f3460;
+    border-color: #3a5a8c;
+    color: #e0e0e0;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.admin-action-btn:hover {
+    background: #1a4a7a;
+}
+
+.admin-bottom-panels {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.admin-manual-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.admin-input {
+    flex: 1;
+    padding: 8px 10px;
+    background: #0d0d1a;
+    border: 1px solid #2a2a4a;
+    border-radius: 4px;
+    color: #e0e0e0;
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+}
+
+.admin-input:focus {
+    border-color: #5a8abb;
+}
+
+.admin-lookup-result {
+    margin-top: 10px;
+    font-size: 13px;
+    color: #c8c8e0;
+    min-height: 20px;
+}
+
+.admin-status {
+    margin-bottom: 12px;
+    font-size: 13px;
+    min-height: 20px;
+}
+
+.admin-status.success {
+    color: #4ade80;
+}
+
+.admin-status.error {
+    color: #ef4444;
+}
+
+.admin-empty {
+    text-align: center;
+    padding: 20px;
+    color: #5a5a7a;
+    font-size: 14px;
+}

@@ -30,11 +30,16 @@ namespace ICMServer
             Settings.Rounds = 1;
             Settings.PreGameTime = (1 * 1000 * 15);
 
-            EventHandlers["salty:netStartSoloICM"] += new Action( StartSoloMode );
+            EventHandlers["salty:netStartSoloICM"] += new Action<Player>( OnNetStartSoloICM );
             EventHandlers["salty:netICMKidWin"] += new Action( OnKidWin );
         }
 
         
+
+        private void OnNetStartSoloICM( [FromSource] Player player ) {
+            if( GamemodeCityServer.PlayerProgression.GetAdminLevel( player ) < 1 ) return;
+            StartSoloMode();
+        }
 
         private void StartSoloMode() {
             SoloTestMode = true;

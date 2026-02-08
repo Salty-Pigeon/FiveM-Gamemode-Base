@@ -25,12 +25,12 @@ namespace GamemodeCityServer {
 
             MapManager = new MapManager();
 
-            EventHandlers["salty:netStartGame"] += new Action<string>( StartGame );
-            EventHandlers["salty:netEndGame"] += new Action( EndGame );
+            EventHandlers["salty:netStartGame"] += new Action<Player, string>( OnNetStartGame );
+            EventHandlers["salty:netEndGame"] += new Action<Player>( OnNetEndGame );
             EventHandlers["salty:netOpenMapGUI"] += new Action<Player>( OpenMapGUI );
 
-            EventHandlers["salty:netBeginMapVote"] += new Action( BeginMapVote );
-            EventHandlers["salty:netBeginGameVote"] += new Action( BeginGameVote );
+            EventHandlers["salty:netBeginMapVote"] += new Action<Player>( OnNetBeginMapVote );
+            EventHandlers["salty:netBeginGameVote"] += new Action<Player>( OnNetBeginGameVote );
 
             EventHandlers["salty:netVote"] += new Action<Player, object>( MakeVote );
 
@@ -167,6 +167,26 @@ namespace GamemodeCityServer {
                 ply.TriggerEvent( "salty:CacheMap", mapJson );
             }
             ply.TriggerEvent( "salty:OpenMapGUI" );
+        }
+
+        private void OnNetStartGame( [FromSource] Player player, string ID ) {
+            if( PlayerProgression.GetAdminLevel( player ) < 1 ) return;
+            StartGame( ID );
+        }
+
+        private void OnNetEndGame( [FromSource] Player player ) {
+            if( PlayerProgression.GetAdminLevel( player ) < 1 ) return;
+            EndGame();
+        }
+
+        private void OnNetBeginMapVote( [FromSource] Player player ) {
+            if( PlayerProgression.GetAdminLevel( player ) < 1 ) return;
+            BeginMapVote();
+        }
+
+        private void OnNetBeginGameVote( [FromSource] Player player ) {
+            if( PlayerProgression.GetAdminLevel( player ) < 1 ) return;
+            BeginGameVote();
         }
 
         public static void StartGame( string ID ) {

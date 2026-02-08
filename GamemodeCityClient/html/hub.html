@@ -3,7 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <title>Player Hub</title>
-<link rel="stylesheet" href="hub.css">
+<link rel="stylesheet" href="hub-base.css">
+<link rel="stylesheet" href="hub-home.css">
+<link rel="stylesheet" href="hub-controls.css">
+<link rel="stylesheet" href="hub-debug.css">
+<link rel="stylesheet" href="hub-shop.css">
+<link rel="stylesheet" href="hub-maps.css">
+<link rel="stylesheet" href="hub-admin.css">
+<link rel="stylesheet" href="hub-overlays.css">
 </head>
 <body>
 <div class="hub" id="hub">
@@ -15,6 +22,7 @@
             <button class="nav-btn" data-tab="debug">Debug</button>
             <button class="nav-btn" data-tab="shop">Shop</button>
             <button class="nav-btn" data-tab="maps">Maps</button>
+            <button class="nav-btn" data-tab="admin">Admin</button>
         </nav>
         <button class="nav-btn close-btn" id="closeBtn">Close</button>
     </div>
@@ -210,6 +218,39 @@
                 </div>
             </div>
         </div>
+        <div class="tab hidden" id="tab-admin">
+            <h1>Admin Panel</h1>
+            <p class="tab-subtitle">Manage player admin levels</p>
+            <div class="admin-status" id="adminStatus"></div>
+            <div class="admin-section">
+                <div class="admin-section-title">Online Players</div>
+                <div class="admin-player-list" id="adminPlayerList">
+                    <div class="admin-empty">Loading...</div>
+                </div>
+            </div>
+            <div class="admin-bottom-panels">
+                <div class="admin-section">
+                    <div class="admin-section-title">Set Level by License</div>
+                    <div class="admin-manual-row">
+                        <input type="text" class="admin-input" id="adminManualLicense" placeholder="license:xxxxxxxx">
+                        <select class="admin-select" id="adminManualLevel">
+                            <option value="0">0 - Player</option>
+                            <option value="1">1 - Moderator</option>
+                            <option value="2">2 - Admin</option>
+                        </select>
+                        <button class="btn admin-action-btn" id="adminManualSet">Set Level</button>
+                    </div>
+                </div>
+                <div class="admin-section">
+                    <div class="admin-section-title">Lookup Player</div>
+                    <div class="admin-manual-row">
+                        <input type="text" class="admin-input" id="adminLookupLicense" placeholder="license:xxxxxxxx">
+                        <button class="btn admin-action-btn" id="adminLookupBtn">Lookup</button>
+                    </div>
+                    <div class="admin-lookup-result" id="adminLookupResult"></div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -287,6 +328,15 @@
     <div class="levelup-toast-sub" id="levelupToastSub">Level 2 - +100 Tokens</div>
 </div>
 
-<script src="hub.js"></script>
+<script src="hub-helpers.js"></script>
+<script src="hub-core.js"></script>
+<script src="hub-home.js"></script>
+<script src="hub-shop.js"></script>
+<script src="hub-controls.js"></script>
+<script src="hub-debug.js"></script>
+<script src="hub-maps.js"></script>
+<script src="hub-admin.js"></script>
+<script src="hub-overlays.js"></script>
+<script src="hub-messages.js"></script>
 </body>
 </html>

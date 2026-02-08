@@ -16,6 +16,7 @@ namespace GamemodeCityServer {
         public string SelectedModel;
         public string AppearanceJson;
         public List<string> UnlockedItems;
+        public int AdminLevel;
     }
 
     public class PlayerDatabase {
@@ -67,6 +68,7 @@ namespace GamemodeCityServer {
             // Add new columns separately — each fully independent so one failure doesn't block the other
             TryAddColumn( "appearance", "TEXT" );
             TryAddColumn( "unlocked_items", "TEXT" );
+            TryAddColumn( "admin_level", "INT DEFAULT 0" );
 
             // Check if columns exist now
             _hasNewColumns = HasColumn( "appearance" );
@@ -123,6 +125,9 @@ namespace GamemodeCityServer {
                         data.AppearanceJson = reader.IsDBNull( 7 ) ? null : reader.GetString( 7 );
                         if( reader.FieldCount > 8 ) {
                             data.UnlockedItems = reader.IsDBNull( 8 ) ? new List<string>() : reader.GetString( 8 ).Split( new[] { ',' }, StringSplitOptions.RemoveEmptyEntries ).ToList();
+                        }
+                        if( reader.FieldCount > 9 ) {
+                            data.AdminLevel = reader.IsDBNull( 9 ) ? 0 : reader.GetInt32( 9 );
                         }
                     }
 
@@ -242,6 +247,9 @@ namespace GamemodeCityServer {
                         if( reader.FieldCount > 8 ) {
                             data.UnlockedItems = reader.IsDBNull( 8 ) ? new List<string>() : reader.GetString( 8 ).Split( new[] { ',' }, StringSplitOptions.RemoveEmptyEntries ).ToList();
                         }
+                        if( reader.FieldCount > 9 ) {
+                            data.AdminLevel = reader.IsDBNull( 9 ) ? 0 : reader.GetInt32( 9 );
+                        }
                     }
 
                     reader.Close();
@@ -251,6 +259,42 @@ namespace GamemodeCityServer {
                 return null;
             } catch( Exception ex ) {
                 CitizenFX.Core.Debug.WriteLine( "[GamemodeCity] Error getting player: " + ex.Message );
+                return null;
+            }
+        }
+
+        public static void SetAdminLevel( string license, int level ) {
+            try {
+                var conn = GetConnection();
+                var cmd = new MySqlCommand( "UPDATE players SET admin_level=?level WHERE license=?license", conn );
+                cmd.Parameters.AddWithValue( "license", license );
+                cmd.Parameters.AddWithValue( "level", level );
+                cmd.ExecuteNonQuery();
+            } catch( Exception ex ) {
+                CitizenFX.Core.Debug.WriteLine( "[GamemodeCity] Error setting admin level: " + ex.Message );
+            }
+        }
+
+        public static PlayerData LookupPlayer( string license ) {
+            try {
+                var conn = GetConnection();
+                var cmd = new MySqlCommand( "SELECT name, admin_level FROM players WHERE license = ?license", conn );
+                cmd.Parameters.AddWithValue( "license", license );
+                var reader = cmd.ExecuteReader();
+
+                if( reader.Read() ) {
+                    var data = new PlayerData {
+                        License = license,
+                        Name = reader.IsDBNull( 0 ) ? "" : reader.GetString( 0 ),
+                        AdminLevel = reader.IsDBNull( 1 ) ? 0 : reader.GetInt32( 1 )
+                    };
+                    reader.Close();
+                    return data;
+                }
+                reader.Close();
+                return null;
+            } catch( Exception ex ) {
+                CitizenFX.Core.Debug.WriteLine( "[GamemodeCity] Error looking up player: " + ex.Message );
                 return null;
             }
         }

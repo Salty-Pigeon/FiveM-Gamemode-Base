@@ -87,6 +87,7 @@ namespace GamemodeCityClient {
             } ), false );
 
             RegisterCommand( "debug", new Action<int, List<object>, string>( ( source, args, raw ) => {
+                if( PlayerProgression.AdminLevel < 1 ) return;
                 if( isOpen ) {
                     CloseHub();
                 } else {
@@ -259,6 +260,7 @@ namespace GamemodeCityClient {
         }
 
         private void OnSelectDebugGamemode( IDictionary<string, object> data, CallbackDelegate cb ) {
+            if( PlayerProgression.AdminLevel < 1 ) { cb( "{\"status\":\"ok\"}" ); return; }
             string gamemodeId = data["gamemodeId"].ToString();
             string entities = DebugRegistry.BuildEntitiesJson( gamemodeId );
             string payload = "{\"type\":\"showDebugEntities\",\"gamemodeId\":\"" + EscapeJson( gamemodeId ) + "\",\"entities\":" + entities + "}";
@@ -291,6 +293,7 @@ namespace GamemodeCityClient {
         }
 
         private void OnDebugAction( IDictionary<string, object> data, CallbackDelegate cb ) {
+            if( PlayerProgression.AdminLevel < 1 ) { cb( "{\"status\":\"ok\"}" ); return; }
             string gamemodeId = data["gamemodeId"].ToString();
             string actionId = data["actionId"].ToString();
 
@@ -322,6 +325,7 @@ namespace GamemodeCityClient {
         // ==================== Map Editor Callbacks ====================
 
         private void OnSaveMap( IDictionary<string, object> data, CallbackDelegate cb ) {
+            if( PlayerProgression.AdminLevel < 2 ) { cb( "{\"status\":\"ok\"}" ); return; }
             try {
                 var mapData = data["map"] as IDictionary<string, object>;
                 if( mapData == null ) { cb( "{\"status\":\"error\"}" ); return; }
@@ -404,6 +408,7 @@ namespace GamemodeCityClient {
         }
 
         private void OnDeleteMap( IDictionary<string, object> data, CallbackDelegate cb ) {
+            if( PlayerProgression.AdminLevel < 2 ) { cb( "{\"status\":\"ok\"}" ); return; }
             int mapId = Convert.ToInt32( data["mapId"] );
             if( mapId > 0 ) {
                 ClientGlobals.DeleteMap( mapId );
@@ -434,6 +439,7 @@ namespace GamemodeCityClient {
         }
 
         private void OnCreateMap( IDictionary<string, object> data, CallbackDelegate cb ) {
+            if( PlayerProgression.AdminLevel < 2 ) { cb( "{\"status\":\"ok\"}" ); return; }
             Vector3 pos = Game.PlayerPed.Position;
             var map = new ClientMap( -1, "unnamed_" + Game.GameTime, new List<string>() { "tdm" }, pos, new Vector3( 100, 100, 0 ), true );
             map.Author = Game.Player.Name;
@@ -508,6 +514,7 @@ namespace GamemodeCityClient {
         }
 
         private void OnRequestMaps( IDictionary<string, object> data, CallbackDelegate cb ) {
+            if( PlayerProgression.AdminLevel < 2 ) { cb( "{\"status\":\"ok\"}" ); return; }
             // Trigger the server event to fetch maps — server will send salty:CacheMap for each map
             // then salty:OpenMapGUI which will call SendMapsUpdate() since hub is already open
             TriggerServerEvent( "salty:netOpenMapGUI" );

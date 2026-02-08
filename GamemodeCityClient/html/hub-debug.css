@@ -1,0 +1,150 @@
+/* Debug Tab */
+.debug-gamemode-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 24px;
+}
+
+.debug-gm-btn {
+    background: #16213e;
+    border: 1px solid #3a3a5c;
+    border-radius: 6px;
+    color: #e0e0e0;
+    padding: 10px 20px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.debug-gm-btn:hover {
+    background: #1a2744;
+    border-color: #5a8abb;
+}
+
+.debug-gm-btn.active {
+    background: #0f3460;
+    border-color: #5a8abb;
+    color: #ffffff;
+}
+
+.debug-gm-btn.no-debug {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.debug-gm-btn.no-debug:hover {
+    background: #16213e;
+    border-color: #3a3a5c;
+}
+
+.debug-panel {
+    max-width: 800px;
+}
+
+.debug-category {
+    margin-bottom: 24px;
+}
+
+.debug-category-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #8888aa;
+    padding-bottom: 8px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid #1a1a2e;
+}
+
+.debug-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 8px;
+}
+
+.debug-action-btn {
+    background: #16213e;
+    border: 1px solid #3a3a5c;
+    border-radius: 6px;
+    color: #e0e0e0;
+    padding: 10px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    text-align: center;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.debug-action-btn:hover {
+    background: #1a2744;
+    border-color: #5a8abb;
+}
+
+.debug-action-btn:active {
+    background: #0f3460;
+    border-color: #5a8abb;
+}
+
+.debug-action-btn.disabled {
+    opacity: 0.4;
+    cursor: default;
+    pointer-events: none;
+}
+
+/* Entity List */
+.debug-entity-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 240px;
+    overflow-y: auto;
+}
+
+.debug-entity-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    border-radius: 4px;
+    background: #16213e;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.debug-entity-row:hover {
+    background: #1a2744;
+}
+
+.debug-entity-row.selected {
+    background: #0f3460;
+    border: 1px solid #5a8abb;
+}
+
+.entity-name {
+    flex: 1;
+    font-size: 14px;
+    color: #e0e0e0;
+}
+
+.entity-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 3px;
+    letter-spacing: 0.5px;
+}
+
+.entity-badge-player {
+    background: #1a4a2a;
+    color: #4ade80;
+}
+
+.entity-badge-bot {
+    background: #4a3a1a;
+    color: #facc15;
+}
+
+.entity-team {
+    font-size: 12px;
+    color: #8888aa;
+    min-width: 70px;
+    text-align: right;
+}

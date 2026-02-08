@@ -35,6 +35,7 @@ namespace GamemodeCityServer {
         }
 
         public void Update( [FromSource] Player ply, string mapJson ) {
+            if( PlayerProgression.GetAdminLevel( ply ) < 2 ) return;
             try {
                 MapData data = SimpleJson.Deserialize( mapJson );
                 if( data == null ) return;
@@ -66,6 +67,7 @@ namespace GamemodeCityServer {
         }
 
         public void DeleteMap( [FromSource] Player ply, int mapId ) {
+            if( PlayerProgression.GetAdminLevel( ply ) < 2 ) return;
             var map = Maps.Find( x => x.ID == mapId );
             if( map != null ) {
                 Maps.Remove( map );

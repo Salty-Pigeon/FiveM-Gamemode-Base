@@ -42,7 +42,12 @@ namespace TTTServer
             Settings.PreGameTime = (1 * 1000 * 15);
 
             EventHandlers["salty::netBodyDiscovered"] += new Action<Player, int>( BodyDiscovered );
-            EventHandlers["salty:netStartSoloTTT"] += new Action( StartSoloMode );
+            EventHandlers["salty:netStartSoloTTT"] += new Action<Player>( OnNetStartSoloTTT );
+        }
+
+        private void OnNetStartSoloTTT( [FromSource] Player player ) {
+            if( GamemodeCityServer.PlayerProgression.GetAdminLevel( player ) < 1 ) return;
+            StartSoloMode();
         }
 
         private void StartSoloMode() {

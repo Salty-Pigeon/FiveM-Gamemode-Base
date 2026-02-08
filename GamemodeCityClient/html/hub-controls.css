@@ -1,0 +1,107 @@
+/* Controls Tab */
+.controls-gamemode-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 24px;
+}
+
+.controls-gm-btn {
+    background: #16213e;
+    border: 1px solid #3a3a5c;
+    border-radius: 6px;
+    color: #e0e0e0;
+    padding: 10px 20px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.controls-gm-btn:hover {
+    background: #1a2744;
+    border-color: #5a8abb;
+}
+
+.controls-gm-btn.active {
+    background: #0f3460;
+    border-color: #5a8abb;
+    color: #ffffff;
+}
+
+.controls-gm-btn.no-controls {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.controls-gm-btn.no-controls:hover {
+    background: #16213e;
+    border-color: #3a3a5c;
+}
+
+/* Binding Rows */
+.controls-panel {
+    max-width: 600px;
+}
+
+.row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    margin-bottom: 4px;
+    border-radius: 4px;
+    background: #16213e;
+    transition: background 0.15s;
+}
+
+.row:hover {
+    background: #1a2744;
+}
+
+.row .action-name {
+    font-size: 14px;
+    flex: 1;
+}
+
+.row .key-btn {
+    background: #0f3460;
+    border: 1px solid #3a5a8c;
+    border-radius: 4px;
+    color: #e0e0e0;
+    padding: 6px 16px;
+    font-size: 13px;
+    cursor: pointer;
+    min-width: 110px;
+    text-align: center;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.row .key-btn:hover {
+    background: #1a4a7a;
+    border-color: #5a8abb;
+}
+
+.row .key-btn.listening {
+    background: #e94560;
+    border-color: #e94560;
+    color: #fff;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.controls-footer {
+    margin-top: 16px;
+}
+
+.btn.reset {
+    border-color: #e94560;
+    color: #e94560;
+}
+
+.btn.reset:hover {
+    background: #2a1020;
+}

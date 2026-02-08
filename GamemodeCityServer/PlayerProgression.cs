@@ -20,9 +20,18 @@ namespace GamemodeCityServer {
             EventHandlers["salty:awardXP"] += new Action<Player, int>( OnAwardXP );
             EventHandlers["salty:purchaseItem"] += new Action<Player, string>( OnPurchaseItem );
             EventHandlers["salty:saveAppearance"] += new Action<Player, string>( OnSaveAppearance );
+            EventHandlers["salty:setAdminLevel"] += new Action<Player, string, int>( OnSetAdminLevel );
+            EventHandlers["salty:getOnlinePlayers"] += new Action<Player>( OnGetOnlinePlayers );
+            EventHandlers["salty:lookupPlayer"] += new Action<Player, string>( OnLookupPlayer );
         }
 
-        private static string GetLicense( Player player ) {
+        public static int GetAdminLevel( Player player ) {
+            string license = GetLicense( player );
+            if( Cache.ContainsKey( license ) ) return Cache[license].AdminLevel;
+            return 0;
+        }
+
+        public static string GetLicense( Player player ) {
             foreach( var id in player.Identifiers ) {
                 if( id.StartsWith( "license:" ) ) {
                     return id;
@@ -201,6 +210,7 @@ namespace GamemodeCityServer {
                 ",\"selectedModel\":\"" + EscapeJson( data.SelectedModel ) + "\"" +
                 ",\"appearanceJson\":" + ( data.AppearanceJson != null ? "\"" + EscapeJson( data.AppearanceJson ) + "\"" : "null" ) +
                 ",\"unlockedItems\":[" + string.Join( ",", unlockedItems ) + "]" +
+                ",\"adminLevel\":" + data.AdminLevel +
                 ",\"leveledUp\":" + ( leveledUp ? "true" : "false" ) + "}";
         }
 
@@ -212,6 +222,63 @@ namespace GamemodeCityServer {
         private static void SendProgressionWithLevelUp( Player player, PlayerData data, bool leveledUp ) {
             string json = BuildProgressionJson( data, leveledUp );
             player.TriggerEvent( "salty:receiveProgression", json );
+        }
+
+        // ==================== Admin Events ====================
+
+        private void OnSetAdminLevel( [FromSource] Player source, string targetLicense, int level ) {
+            string sourceLicense = GetLicense( source );
+            if( !Cache.ContainsKey( sourceLicense ) || Cache[sourceLicense].AdminLevel < 3 ) {
+                source.TriggerEvent( "salty:adminResult", "{\"success\":false,\"message\":\"Access denied\"}" );
+                return;
+            }
+            if( level < 0 || level > 2 ) {
+                source.TriggerEvent( "salty:adminResult", "{\"success\":false,\"message\":\"Invalid level (0-2)\"}" );
+                return;
+            }
+
+            // Update DB
+            PlayerDatabase.SetAdminLevel( targetLicense, level );
+
+            // Update cache if target is online
+            if( Cache.ContainsKey( targetLicense ) ) {
+                Cache[targetLicense].AdminLevel = level;
+                // Find online player and send updated progression
+                foreach( var p in Players ) {
+                    if( GetLicense( p ) == targetLicense ) {
+                        SendProgression( p, Cache[targetLicense] );
+                        break;
+                    }
+                }
+            }
+
+            source.TriggerEvent( "salty:adminResult", "{\"success\":true,\"message\":\"Admin level set to " + level + "\"}" );
+        }
+
+        private void OnGetOnlinePlayers( [FromSource] Player source ) {
+            string sourceLicense = GetLicense( source );
+            if( !Cache.ContainsKey( sourceLicense ) || Cache[sourceLicense].AdminLevel < 3 ) return;
+
+            var entries = new List<string>();
+            foreach( var p in Players ) {
+                string lic = GetLicense( p );
+                int adminLvl = Cache.ContainsKey( lic ) ? Cache[lic].AdminLevel : 0;
+                entries.Add( "{\"handle\":\"" + EscapeJson( p.Handle ) + "\",\"name\":\"" + EscapeJson( p.Name ) + "\",\"license\":\"" + EscapeJson( lic ) + "\",\"adminLevel\":" + adminLvl + "}" );
+            }
+            string json = "[" + string.Join( ",", entries ) + "]";
+            source.TriggerEvent( "salty:onlinePlayers", json );
+        }
+
+        private void OnLookupPlayer( [FromSource] Player source, string license ) {
+            string sourceLicense = GetLicense( source );
+            if( !Cache.ContainsKey( sourceLicense ) || Cache[sourceLicense].AdminLevel < 3 ) return;
+
+            var data = PlayerDatabase.LookupPlayer( license );
+            if( data != null ) {
+                source.TriggerEvent( "salty:lookupResult", "{\"found\":true,\"name\":\"" + EscapeJson( data.Name ) + "\",\"adminLevel\":" + data.AdminLevel + "}" );
+            } else {
+                source.TriggerEvent( "salty:lookupResult", "{\"found\":false,\"name\":\"\",\"adminLevel\":0}" );
+            }
         }
     }
 }

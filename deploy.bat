@@ -30,9 +30,7 @@ xcopy /Y /Q "%PROJECT%\HPClient\bin\Debug\HPClient.net.dll"                    "
 xcopy /Y /Q "%PROJECT%\HPServer\bin\Debug\HPServer.net.dll"                    "%DEST%\"
 xcopy /Y /Q "%PROJECT%\fxmanifest.lua"                                          "%DEST%\"
 if not exist "%DEST%\html" mkdir "%DEST%\html"
-xcopy /Y /Q "%PROJECT%\GamemodeCityClient\html\hub.html"   "%DEST%\html\"
-xcopy /Y /Q "%PROJECT%\GamemodeCityClient\html\hub.css"    "%DEST%\html\"
-xcopy /Y /Q "%PROJECT%\GamemodeCityClient\html\hub.js"     "%DEST%\html\"
+xcopy /Y /Q "%PROJECT%\GamemodeCityClient\html\*.*"              "%DEST%\html\"
 
 echo.
 echo ============================================

@@ -17,6 +17,7 @@ namespace GamemodeCityClient {
         public static string SelectedModel = "";
         public static string AppearanceJson = null;
         public static List<string> UnlockedItems = new List<string>();
+        public static int AdminLevel = 0;
         private static bool dataLoaded = false;
 
         private static int _previewCam = 0;
@@ -74,6 +75,21 @@ namespace GamemodeCityClient {
 
             RegisterNuiCallbackType( "purchaseItem" );
             EventHandlers["__cfx_nui:purchaseItem"] += new Action<IDictionary<string, object>, CallbackDelegate>( OnNuiPurchaseItem );
+
+            // Admin callbacks
+            RegisterNuiCallbackType( "getOnlinePlayers" );
+            EventHandlers["__cfx_nui:getOnlinePlayers"] += new Action<IDictionary<string, object>, CallbackDelegate>( OnNuiGetOnlinePlayers );
+
+            RegisterNuiCallbackType( "setAdminLevel" );
+            EventHandlers["__cfx_nui:setAdminLevel"] += new Action<IDictionary<string, object>, CallbackDelegate>( OnNuiSetAdminLevel );
+
+            RegisterNuiCallbackType( "lookupPlayer" );
+            EventHandlers["__cfx_nui:lookupPlayer"] += new Action<IDictionary<string, object>, CallbackDelegate>( OnNuiLookupPlayer );
+
+            // Admin event handlers (server → client → NUI)
+            EventHandlers["salty:onlinePlayers"] += new Action<string>( OnOnlinePlayers );
+            EventHandlers["salty:adminResult"] += new Action<string>( OnAdminResult );
+            EventHandlers["salty:lookupResult"] += new Action<string>( OnLookupResult );
         }
 
         // ==================== Progression Data ====================
@@ -105,6 +121,8 @@ namespace GamemodeCityClient {
                     AppearanceJson = dict["appearanceJson"].ToString();
                 }
 
+                AdminLevel = dict.ContainsKey( "adminLevel" ) ? Convert.ToInt32( dict["adminLevel"] ) : 0;
+
                 bool leveledUp = dict.ContainsKey( "leveledUp" ) && Convert.ToBoolean( dict["leveledUp"] );
 
                 dataLoaded = true;
@@ -117,6 +135,7 @@ namespace GamemodeCityClient {
                     ",\"unlockedModels\":[" + BuildUnlockedModelsJson() + "]" +
                     ",\"selectedModel\":\"" + EscapeJson( SelectedModel ) + "\"" +
                     ",\"unlockedItems\":[" + BuildUnlockedItemsJson() + "]" +
+                    ",\"adminLevel\":" + AdminLevel +
                     ",\"leveledUp\":" + ( leveledUp ? "true" : "false" ) + "}" );
             } catch( Exception ex ) {
                 Debug.WriteLine( "[GamemodeCity] Error parsing progression: " + ex.Message );
@@ -150,6 +169,7 @@ namespace GamemodeCityClient {
                 ",\"unlockedModels\":[" + BuildUnlockedModelsJson() + "]" +
                 ",\"selectedModel\":\"" + EscapeJson( SelectedModel ) + "\"" +
                 ",\"unlockedItems\":[" + BuildUnlockedItemsJson() + "]" +
+                ",\"adminLevel\":" + AdminLevel +
                 ",\"appearanceJson\":" + ( AppearanceJson != null ? "\"" + EscapeJson( AppearanceJson ) + "\"" : "null" ) + "}";
         }
 
@@ -736,6 +756,44 @@ namespace GamemodeCityClient {
                 TriggerServerEvent( "salty:purchaseItem", itemKey );
             }
             cb( "{\"status\":\"ok\"}" );
+        }
+
+        // ==================== Admin NUI Callbacks ====================
+
+        private void OnNuiGetOnlinePlayers( IDictionary<string, object> data, CallbackDelegate cb ) {
+            TriggerServerEvent( "salty:getOnlinePlayers" );
+            cb( "{\"status\":\"ok\"}" );
+        }
+
+        private void OnNuiSetAdminLevel( IDictionary<string, object> data, CallbackDelegate cb ) {
+            string license = data.ContainsKey( "license" ) ? data["license"].ToString() : "";
+            int level = data.ContainsKey( "level" ) ? Convert.ToInt32( data["level"] ) : 0;
+            if( !string.IsNullOrEmpty( license ) ) {
+                TriggerServerEvent( "salty:setAdminLevel", license, level );
+            }
+            cb( "{\"status\":\"ok\"}" );
+        }
+
+        private void OnNuiLookupPlayer( IDictionary<string, object> data, CallbackDelegate cb ) {
+            string license = data.ContainsKey( "license" ) ? data["license"].ToString() : "";
+            if( !string.IsNullOrEmpty( license ) ) {
+                TriggerServerEvent( "salty:lookupPlayer", license );
+            }
+            cb( "{\"status\":\"ok\"}" );
+        }
+
+        // ==================== Admin Event Handlers ====================
+
+        private void OnOnlinePlayers( string json ) {
+            SendNuiMessage( "{\"type\":\"onlinePlayers\",\"players\":" + json + "}" );
+        }
+
+        private void OnAdminResult( string json ) {
+            SendNuiMessage( "{\"type\":\"adminResult\",\"data\":" + json + "}" );
+        }
+
+        private void OnLookupResult( string json ) {
+            SendNuiMessage( "{\"type\":\"lookupResult\",\"data\":" + json + "}" );
         }
 
         // ==================== Helpers ====================
