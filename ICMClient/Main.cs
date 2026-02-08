@@ -50,6 +50,32 @@ namespace ICMClient
             gmInfo.Tags = new string[] { "Asymmetric", "Vehicle" };
             gmInfo.Teams = new string[] { "Driver", "Survivors" };
             gmInfo.Features = new string[] { "Ice Cream Truck", "Bike Chase", "Trigger Zones" };
+            gmInfo.Guide = new GuideSection {
+                Overview = "Asymmetric vehicle chase. One player drives a massive ice cream truck trying to splatter the rest, who ride bicycles toward the finish line.",
+                HowToWin = "Kids win by reaching the finish line. The Ice Cream Man wins by splattering all kids before time runs out.",
+                Rules = new string[] {
+                    "The truck is indestructible until the boost zone.",
+                    "Kids can't exit their bikes.",
+                    "Going out of bounds resets your position."
+                },
+                TeamRoles = new GuideTeamRole[] {
+                    new GuideTeamRole {
+                        Name = "Ice Cream Man", Color = "#50c878",
+                        Goal = "Drive the truck and chase down the kids.",
+                        Tips = new string[] { "Your truck is heavy and fast.", "Auto-respawns if you leave the map.", "Cut off escape routes rather than chasing directly." }
+                    },
+                    new GuideTeamRole {
+                        Name = "Kids", Color = "#60a5fa",
+                        Goal = "Ride your bike toward the finish line.",
+                        Tips = new string[] { "After the boost zone you get a weapon to fight back.", "Use narrow paths the truck can't fit through.", "Stay unpredictable to avoid being caught." }
+                    }
+                },
+                Tips = new string[] {
+                    "Kids \u2014 use narrow paths the truck can't fit through.",
+                    "Driver \u2014 cut off escape routes rather than chasing directly.",
+                    "After the boost zone, bikes get a speed boost and a weapon."
+                }
+            };
 
             RegisterCommand( "spawnbot", new Action<int, List<object>, string>( async ( source, args, raw ) => {
                 if( Team == 0 ) {
@@ -279,6 +305,10 @@ namespace ICMClient
                 }
             }
 
+            // Load collision at spawn point
+            RequestCollisionAtCoord( spawnPos.X, spawnPos.Y, spawnPos.Z );
+            NewLoadSceneStart( spawnPos.X, spawnPos.Y, spawnPos.Z, spawnPos.X, spawnPos.Y, spawnPos.Z, 50f, 0 );
+
             string[] pedModels = { "a_m_y_hipster_01", "a_f_y_hipster_02", "a_m_y_skater_01", "a_f_y_skater_01", "a_m_y_runner_01" };
             string pedModelName = pedModels[rand.Next( pedModels.Length )];
             string bikeModel = Bikes[rand.Next( Bikes.Count )];
@@ -290,19 +320,39 @@ namespace ICMClient
 
             int timeout = 0;
             while( (!HasModelLoaded( pedHash ) || !HasModelLoaded( vehHash )) && timeout < 100 ) {
-                await Delay( 10 );
+                await Delay( 50 );
                 timeout++;
             }
+            NewLoadSceneStop();
 
             if( !HasModelLoaded( pedHash ) || !HasModelLoaded( vehHash ) ) {
-                WriteChat( "ICM", "Failed to load bot models", 200, 30, 30 );
+                WriteChat( "ICM", "Failed to load bot models (ped:" + HasModelLoaded( pedHash ) + " veh:" + HasModelLoaded( vehHash ) + ")", 200, 30, 30 );
                 return;
             }
 
-            int vehicle = CreateVehicle( vehHash, spawnPos.X, spawnPos.Y, spawnPos.Z, 0f, true, false );
-            int ped = CreatePed( 4, pedHash, spawnPos.X, spawnPos.Y, spawnPos.Z, 0f, true, false );
-            SetEntityAsMissionEntity( ped, true, true );
+            float groundZ = spawnPos.Z;
+            float outZ = 0f;
+            if( GetGroundZFor_3dCoord( spawnPos.X, spawnPos.Y, spawnPos.Z + 5f, ref outZ, false ) ) {
+                groundZ = outZ + 0.5f;
+            }
+
+            int vehicle = CreateVehicle( vehHash, spawnPos.X, spawnPos.Y, groundZ, 0f, false, false );
+            if( vehicle == 0 ) {
+                WriteChat( "ICM", "Failed to create bot vehicle", 200, 30, 30 );
+                return;
+            }
             SetEntityAsMissionEntity( vehicle, true, true );
+            SetVehicleOnGroundProperly( vehicle );
+
+            await Delay( 100 );
+
+            int ped = CreatePed( 4, pedHash, spawnPos.X, spawnPos.Y, groundZ, 0f, false, false );
+            if( ped == 0 ) {
+                WriteChat( "ICM", "Failed to create bot ped", 200, 30, 30 );
+                DeleteVehicle( ref vehicle );
+                return;
+            }
+            SetEntityAsMissionEntity( ped, true, true );
             SetPedIntoVehicle( ped, vehicle, -1 );
             SetBlockingOfNonTemporaryEvents( ped, true );
             SetPedFleeAttributes( ped, 0, false );
@@ -328,7 +378,7 @@ namespace ICMClient
 
             int botId = nextBotId++;
             Bots.Add( new ICMBot { PedHandle = ped, VehicleHandle = vehicle, FakeServerId = botId, Team = 1 } );
-            WriteChat( "ICM", "Spawned kid bot on " + bikeModel, 30, 200, 30 );
+            WriteChat( "ICM", "Spawned kid bot on " + bikeModel + " at " + spawnPos.X.ToString("F1") + ", " + spawnPos.Y.ToString("F1") + ", " + groundZ.ToString("F1"), 30, 200, 30 );
         }
 
         public async Task SpawnICMBot() {
@@ -343,6 +393,10 @@ namespace ICMClient
                 }
             }
 
+            // Load collision at spawn point
+            RequestCollisionAtCoord( spawnPos.X, spawnPos.Y, spawnPos.Z );
+            NewLoadSceneStart( spawnPos.X, spawnPos.Y, spawnPos.Z, spawnPos.X, spawnPos.Y, spawnPos.Z, 50f, 0 );
+
             uint pedHash = (uint)GetHashKey( "a_m_m_business_01" );
             uint vehHash = (uint)GetHashKey( "cutter" );
             RequestModel( pedHash );
@@ -350,19 +404,39 @@ namespace ICMClient
 
             int timeout = 0;
             while( (!HasModelLoaded( pedHash ) || !HasModelLoaded( vehHash )) && timeout < 100 ) {
-                await Delay( 10 );
+                await Delay( 50 );
                 timeout++;
             }
+            NewLoadSceneStop();
 
             if( !HasModelLoaded( pedHash ) || !HasModelLoaded( vehHash ) ) {
-                WriteChat( "ICM", "Failed to load bot models", 200, 30, 30 );
+                WriteChat( "ICM", "Failed to load bot models (ped:" + HasModelLoaded( pedHash ) + " veh:" + HasModelLoaded( vehHash ) + ")", 200, 30, 30 );
                 return;
             }
 
-            int vehicle = CreateVehicle( vehHash, spawnPos.X, spawnPos.Y, spawnPos.Z, 0f, true, false );
-            int ped = CreatePed( 4, pedHash, spawnPos.X, spawnPos.Y, spawnPos.Z, 0f, true, false );
-            SetEntityAsMissionEntity( ped, true, true );
+            float groundZ = spawnPos.Z;
+            float outZ = 0f;
+            if( GetGroundZFor_3dCoord( spawnPos.X, spawnPos.Y, spawnPos.Z + 5f, ref outZ, false ) ) {
+                groundZ = outZ + 0.5f;
+            }
+
+            int vehicle = CreateVehicle( vehHash, spawnPos.X, spawnPos.Y, groundZ, 0f, false, false );
+            if( vehicle == 0 ) {
+                WriteChat( "ICM", "Failed to create bot vehicle", 200, 30, 30 );
+                return;
+            }
             SetEntityAsMissionEntity( vehicle, true, true );
+            SetVehicleOnGroundProperly( vehicle );
+
+            await Delay( 100 );
+
+            int ped = CreatePed( 4, pedHash, spawnPos.X, spawnPos.Y, groundZ, 0f, false, false );
+            if( ped == 0 ) {
+                WriteChat( "ICM", "Failed to create bot ped", 200, 30, 30 );
+                DeleteVehicle( ref vehicle );
+                return;
+            }
+            SetEntityAsMissionEntity( ped, true, true );
             SetPedIntoVehicle( ped, vehicle, -1 );
             SetBlockingOfNonTemporaryEvents( ped, true );
             SetPedFleeAttributes( ped, 0, false );
@@ -402,7 +476,7 @@ namespace ICMClient
 
             int botId = nextBotId++;
             Bots.Add( new ICMBot { PedHandle = ped, VehicleHandle = vehicle, FakeServerId = botId, Team = 0 } );
-            WriteChat( "ICM", "Spawned ICM bot in cutter truck", 30, 200, 30 );
+            WriteChat( "ICM", "Spawned ICM bot at " + spawnPos.X.ToString("F1") + ", " + spawnPos.Y.ToString("F1") + ", " + groundZ.ToString("F1"), 30, 200, 30 );
         }
 
         public void ClearBots() {

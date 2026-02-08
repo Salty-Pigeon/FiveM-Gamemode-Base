@@ -162,6 +162,16 @@ let selectedMapId = null;
 let deleteConfirmActive = false;
 let boundariesShown = {};
 let mapsRequested = false;
+let guideOpen = false;
+
+// Vote state
+let voteGamemodes = [];
+let voteSelectedId = null;
+let voteVoters = {};
+let voteDuration = 30;
+let voteTimeLeft = 30;
+let voteTimerInterval = null;
+let voteIsOpen = false;
 
 // Tab switching
 function switchTab(name) {
@@ -177,6 +187,11 @@ function switchTab(name) {
     if (tab) tab.classList.remove('hidden');
     var btn = document.querySelector('.nav-btn[data-tab="' + name + '"]');
     if (btn) btn.classList.add('active');
+
+    // Reset guide state when leaving home tab
+    if (name !== 'home') {
+        hideGuide();
+    }
 
     // Reset controls state when leaving controls tab
     if (name !== 'controls') {
@@ -298,9 +313,219 @@ function renderGamemodeCards() {
             card.appendChild(featRow);
         }
 
+        (function(gmData) {
+            card.addEventListener('click', function() {
+                showGuide(gmData);
+            });
+        })(gm);
+
         grid.appendChild(card);
     });
 }
+
+// Guide detail view
+function showGuide(gm) {
+    guideOpen = true;
+    document.getElementById('gamemodeGrid').classList.add('hidden');
+    var subtitle = document.querySelector('#tab-home .tab-subtitle');
+    var title = document.querySelector('#tab-home h1');
+    if (subtitle) subtitle.classList.add('hidden');
+    if (title) title.classList.add('hidden');
+    var detail = document.getElementById('guideDetail');
+    detail.classList.remove('hidden');
+
+    // Render hero
+    var hero = document.getElementById('guideHero');
+    hero.innerHTML = '';
+    var accent = document.createElement('div');
+    accent.className = 'guide-hero-accent';
+    accent.style.background = gm.color;
+    hero.appendChild(accent);
+
+    var body = document.createElement('div');
+    body.className = 'guide-hero-body';
+
+    var header = document.createElement('div');
+    header.className = 'guide-hero-header';
+    var name = document.createElement('div');
+    name.className = 'guide-hero-name';
+    name.textContent = gm.name;
+    header.appendChild(name);
+    if (gm.minPlayers > 0 && gm.maxPlayers > 0) {
+        var players = document.createElement('span');
+        players.className = 'guide-hero-players';
+        players.textContent = gm.minPlayers + '-' + gm.maxPlayers + ' players';
+        header.appendChild(players);
+    }
+    body.appendChild(header);
+
+    var desc = document.createElement('div');
+    desc.className = 'guide-hero-desc';
+    desc.textContent = gm.description;
+    body.appendChild(desc);
+
+    if (gm.tags && gm.tags.length > 0) {
+        var tags = document.createElement('div');
+        tags.className = 'guide-hero-tags';
+        gm.tags.forEach(function(tag) {
+            var pill = document.createElement('span');
+            pill.className = 'guide-hero-tag';
+            pill.textContent = tag;
+            pill.style.background = gm.color + '22';
+            pill.style.color = gm.color;
+            tags.appendChild(pill);
+        });
+        body.appendChild(tags);
+    }
+
+    hero.appendChild(body);
+
+    // Render guide content
+    var content = document.getElementById('guideContent');
+    content.innerHTML = '';
+
+    if (!gm.guide) {
+        var soon = document.createElement('div');
+        soon.className = 'guide-coming-soon';
+        soon.textContent = 'Guide coming soon';
+        content.appendChild(soon);
+        return;
+    }
+
+    var sections = document.createElement('div');
+    sections.className = 'guide-sections';
+
+    // Overview
+    if (gm.guide.overview) {
+        var sec = document.createElement('div');
+        sec.className = 'guide-section';
+        var t = document.createElement('div');
+        t.className = 'guide-section-title';
+        t.textContent = 'Overview';
+        sec.appendChild(t);
+        var txt = document.createElement('div');
+        txt.className = 'guide-section-text';
+        txt.textContent = gm.guide.overview;
+        sec.appendChild(txt);
+        sections.appendChild(sec);
+    }
+
+    // How to Win
+    if (gm.guide.howToWin) {
+        var sec = document.createElement('div');
+        sec.className = 'guide-section';
+        var t = document.createElement('div');
+        t.className = 'guide-section-title';
+        t.textContent = 'How to Win';
+        sec.appendChild(t);
+        var txt = document.createElement('div');
+        txt.className = 'guide-section-text';
+        txt.textContent = gm.guide.howToWin;
+        sec.appendChild(txt);
+        sections.appendChild(sec);
+    }
+
+    // Rules
+    if (gm.guide.rules && gm.guide.rules.length > 0) {
+        var sec = document.createElement('div');
+        sec.className = 'guide-section';
+        var t = document.createElement('div');
+        t.className = 'guide-section-title';
+        t.textContent = 'Rules';
+        sec.appendChild(t);
+        var ul = document.createElement('ul');
+        ul.className = 'guide-rule-list';
+        gm.guide.rules.forEach(function(rule) {
+            var li = document.createElement('li');
+            li.className = 'guide-rule';
+            li.textContent = rule;
+            ul.appendChild(li);
+        });
+        sec.appendChild(ul);
+        sections.appendChild(sec);
+    }
+
+    // Team Roles
+    if (gm.guide.teamRoles && gm.guide.teamRoles.length > 0) {
+        var sec = document.createElement('div');
+        sec.className = 'guide-section';
+        var t = document.createElement('div');
+        t.className = 'guide-section-title';
+        t.textContent = 'Team Roles';
+        sec.appendChild(t);
+        var grid = document.createElement('div');
+        grid.className = 'guide-roles-grid';
+        gm.guide.teamRoles.forEach(function(role) {
+            var card = document.createElement('div');
+            card.className = 'guide-role-card';
+            card.style.borderLeftColor = role.color;
+
+            var rName = document.createElement('div');
+            rName.className = 'guide-role-name';
+            rName.textContent = role.name;
+            rName.style.color = role.color;
+            card.appendChild(rName);
+
+            var rGoal = document.createElement('div');
+            rGoal.className = 'guide-role-goal';
+            rGoal.textContent = role.goal;
+            card.appendChild(rGoal);
+
+            if (role.tips && role.tips.length > 0) {
+                var tips = document.createElement('ul');
+                tips.className = 'guide-role-tips';
+                role.tips.forEach(function(tip) {
+                    var li = document.createElement('li');
+                    li.className = 'guide-role-tip';
+                    li.textContent = tip;
+                    tips.appendChild(li);
+                });
+                card.appendChild(tips);
+            }
+
+            grid.appendChild(card);
+        });
+        sec.appendChild(grid);
+        sections.appendChild(sec);
+    }
+
+    // Tips
+    if (gm.guide.tips && gm.guide.tips.length > 0) {
+        var sec = document.createElement('div');
+        sec.className = 'guide-section';
+        var t = document.createElement('div');
+        t.className = 'guide-section-title';
+        t.textContent = 'Tips';
+        sec.appendChild(t);
+        var ul = document.createElement('ul');
+        ul.className = 'guide-tip-list';
+        gm.guide.tips.forEach(function(tip) {
+            var li = document.createElement('li');
+            li.className = 'guide-tip';
+            li.textContent = tip;
+            ul.appendChild(li);
+        });
+        sec.appendChild(ul);
+        sections.appendChild(sec);
+    }
+
+    content.appendChild(sections);
+}
+
+function hideGuide() {
+    if (!guideOpen) return;
+    guideOpen = false;
+    document.getElementById('guideDetail').classList.add('hidden');
+    document.getElementById('gamemodeGrid').classList.remove('hidden');
+    var subtitle = document.querySelector('#tab-home .tab-subtitle');
+    var title = document.querySelector('#tab-home h1');
+    if (subtitle) subtitle.classList.remove('hidden');
+    if (title) title.classList.remove('hidden');
+    document.getElementById('guideHero').innerHTML = '';
+    document.getElementById('guideContent').innerHTML = '';
+}
+
+document.getElementById('guideBackBtn').addEventListener('click', hideGuide);
 
 // Render gamemode selector buttons on Controls tab
 function renderControlsGamemodeList() {
@@ -1014,6 +1239,224 @@ document.getElementById('resetBtn').addEventListener('click', function() {
     });
 });
 
+// ==================== Vote Overlay ====================
+
+function renderVoteCards() {
+    var grid = document.getElementById('voteGrid');
+    grid.innerHTML = '';
+
+    voteGamemodes.forEach(function(gm) {
+        var card = document.createElement('div');
+        card.className = 'vote-card';
+        card.setAttribute('data-gm-id', gm.id);
+
+        if (voteSelectedId === gm.id) {
+            card.classList.add('selected');
+        }
+
+        // Color banner
+        var banner = document.createElement('div');
+        banner.className = 'vote-card-banner';
+        banner.style.background = gm.color;
+        card.appendChild(banner);
+
+        var body = document.createElement('div');
+        body.className = 'vote-card-body';
+
+        // Header: name + tally
+        var header = document.createElement('div');
+        header.className = 'vote-card-header';
+
+        var name = document.createElement('div');
+        name.className = 'vote-card-name';
+        name.textContent = gm.name;
+        header.appendChild(name);
+
+        var tally = document.createElement('div');
+        tally.className = 'vote-card-tally';
+        tally.id = 'vote-tally-' + gm.id;
+        var voters = voteVoters[gm.id] || [];
+        tally.textContent = voters.length > 0 ? voters.length : '';
+        header.appendChild(tally);
+
+        body.appendChild(header);
+
+        // Tags
+        if (gm.tags && gm.tags.length > 0) {
+            var tagsRow = document.createElement('div');
+            tagsRow.className = 'vote-card-tags';
+            gm.tags.forEach(function(tag) {
+                var pill = document.createElement('span');
+                pill.className = 'vote-card-tag';
+                pill.textContent = tag;
+                pill.style.background = gm.color + '22';
+                pill.style.color = gm.color;
+                tagsRow.appendChild(pill);
+            });
+            body.appendChild(tagsRow);
+        }
+
+        // Description
+        var desc = document.createElement('div');
+        desc.className = 'vote-card-desc';
+        desc.textContent = gm.description;
+        body.appendChild(desc);
+
+        // Player count
+        if (gm.minPlayers > 0 && gm.maxPlayers > 0) {
+            var players = document.createElement('div');
+            players.className = 'vote-card-players';
+            players.textContent = gm.minPlayers + '-' + gm.maxPlayers + ' players';
+            body.appendChild(players);
+        }
+
+        // Voter pills
+        var votersDiv = document.createElement('div');
+        votersDiv.className = 'vote-card-voters';
+        votersDiv.id = 'vote-voters-' + gm.id;
+        voters.forEach(function(voterName) {
+            var pill = document.createElement('span');
+            pill.className = 'vote-voter-pill';
+            pill.textContent = voterName;
+            votersDiv.appendChild(pill);
+        });
+        body.appendChild(votersDiv);
+
+        card.appendChild(body);
+
+        // Click handler
+        (function(gmId) {
+            card.addEventListener('click', function() {
+                if (card.classList.contains('winner') || card.classList.contains('loser')) return;
+                voteSelectedId = gmId;
+                // Update selection visuals
+                document.querySelectorAll('.vote-card').forEach(function(c) {
+                    c.classList.remove('selected');
+                });
+                card.classList.add('selected');
+                // Send vote to server
+                fetch('https://gamemodecity/castVote', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ gamemodeId: gmId })
+                });
+            });
+        })(gm.id);
+
+        grid.appendChild(card);
+    });
+}
+
+function updateVoteDisplay() {
+    var totalVotes = 0;
+    for (var key in voteVoters) {
+        totalVotes += voteVoters[key].length;
+    }
+
+    // Update vote count with bump
+    var countEl = document.getElementById('voteCount');
+    countEl.textContent = totalVotes + (totalVotes === 1 ? ' vote' : ' votes');
+    countEl.classList.add('bump');
+    setTimeout(function() { countEl.classList.remove('bump'); }, 200);
+
+    // Update each card's tally and voter pills
+    voteGamemodes.forEach(function(gm) {
+        var voters = voteVoters[gm.id] || [];
+        var tallyEl = document.getElementById('vote-tally-' + gm.id);
+        if (tallyEl) {
+            tallyEl.textContent = voters.length > 0 ? voters.length : '';
+            tallyEl.classList.add('bump');
+            setTimeout(function() { tallyEl.classList.remove('bump'); }, 200);
+        }
+
+        var votersDiv = document.getElementById('vote-voters-' + gm.id);
+        if (votersDiv) {
+            votersDiv.innerHTML = '';
+            voters.forEach(function(voterName) {
+                var pill = document.createElement('span');
+                pill.className = 'vote-voter-pill';
+                pill.textContent = voterName;
+                votersDiv.appendChild(pill);
+            });
+        }
+    });
+}
+
+function startVoteTimer(duration) {
+    voteDuration = duration;
+    voteTimeLeft = duration;
+    clearInterval(voteTimerInterval);
+
+    updateTimerDisplay();
+
+    voteTimerInterval = setInterval(function() {
+        voteTimeLeft--;
+        if (voteTimeLeft < 0) voteTimeLeft = 0;
+        updateTimerDisplay();
+        if (voteTimeLeft <= 0) {
+            clearInterval(voteTimerInterval);
+        }
+    }, 1000);
+}
+
+function updateTimerDisplay() {
+    var fill = document.getElementById('voteTimerFill');
+    var text = document.getElementById('voteTimerText');
+    var pct = (voteTimeLeft / voteDuration) * 100;
+    fill.style.width = pct + '%';
+    text.textContent = voteTimeLeft + 's';
+
+    if (voteTimeLeft <= 10) {
+        fill.classList.add('urgent');
+    } else {
+        fill.classList.remove('urgent');
+    }
+}
+
+function showVoteWinner(winnerId) {
+    clearInterval(voteTimerInterval);
+
+    document.querySelectorAll('.vote-card').forEach(function(card) {
+        var gmId = card.getAttribute('data-gm-id');
+        card.style.cursor = 'default';
+        if (gmId === winnerId) {
+            card.classList.remove('selected');
+            card.classList.add('winner');
+            // Insert winner banner after color banner
+            var banner = card.querySelector('.vote-card-banner');
+            if (banner) {
+                var winBanner = document.createElement('div');
+                winBanner.className = 'vote-card-winner-banner';
+                winBanner.textContent = 'WINNER';
+                banner.insertAdjacentElement('afterend', winBanner);
+            }
+        } else {
+            card.classList.remove('selected');
+            card.classList.add('loser');
+        }
+    });
+
+    // Auto-close after 4s
+    setTimeout(function() {
+        closeVoteOverlay();
+    }, 4000);
+}
+
+function closeVoteOverlay() {
+    var overlay = document.getElementById('vote-overlay');
+    overlay.classList.add('fade-out');
+    clearInterval(voteTimerInterval);
+    setTimeout(function() {
+        overlay.classList.remove('active');
+        overlay.classList.remove('fade-out');
+        // Reset state
+        voteGamemodes = [];
+        voteSelectedId = null;
+        voteVoters = {};
+        voteIsOpen = false;
+    }, 400);
+}
+
 // Keydown handler
 document.addEventListener('keydown', function(e) {
     // Allow typing in input/select fields (for map editor etc.)
@@ -1033,6 +1476,19 @@ document.addEventListener('keydown', function(e) {
     e.stopPropagation();
 
     if (e.key === 'Escape') {
+        if (guideOpen) {
+            hideGuide();
+            return;
+        }
+        if (voteIsOpen) {
+            // Release NUI focus but keep overlay visible
+            fetch('https://gamemodecity/closeVote', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({})
+            });
+            return;
+        }
         if (listeningAction) {
             stopListening();
         } else {
@@ -1103,6 +1559,7 @@ window.addEventListener('message', function(event) {
         } else {
             mapsRequested = false;
         }
+        hideGuide();
         renderGamemodeCards();
         renderControlsGamemodeList();
         renderDebugGamemodeList();
@@ -1336,5 +1793,27 @@ window.addEventListener('message', function(event) {
         document.getElementById('tttBodyWeapon').textContent = data.weapon || unknownText;
         document.getElementById('tttBodyDeathTime').textContent = data.deathTime || unknownText;
         showTTTOverlay('ttt-body-inspect', 5000);
+    }
+    // Vote Overlay
+    else if (data.type === 'openVote') {
+        voteGamemodes = data.gamemodes || [];
+        voteSelectedId = null;
+        voteVoters = {};
+        voteIsOpen = true;
+        renderVoteCards();
+        var overlay = document.getElementById('vote-overlay');
+        overlay.classList.remove('fade-out');
+        overlay.classList.add('active');
+        startVoteTimer(data.duration || 30);
+    }
+    else if (data.type === 'updateVotes') {
+        voteVoters = data.votes || {};
+        updateVoteDisplay();
+    }
+    else if (data.type === 'voteWinner') {
+        showVoteWinner(data.winnerId);
+    }
+    else if (data.type === 'closeVote') {
+        closeVoteOverlay();
     }
 });

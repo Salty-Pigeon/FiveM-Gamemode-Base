@@ -56,6 +56,32 @@ namespace MVBClient
             gmInfo.Tags = new string[] { "Vehicle Combat", "Arena" };
             gmInfo.Teams = new string[] { "Monster Trucks", "Motorbikes" };
             gmInfo.Features = new string[] { "Boost", "Vehicle Physics", "Markers" };
+            gmInfo.Guide = new GuideSection {
+                Overview = "Arena vehicle combat. One player drives a monster truck trying to crush motorbike riders. Bikes are fast but fragile \u2014 the truck is slow but devastating.",
+                HowToWin = "The monster truck wins by crushing all bikers. Eliminated bikers rotate into the truck role.",
+                Rules = new string[] {
+                    "Driving into water destroys bikes.",
+                    "Out of bounds pushes you back.",
+                    "Driving on grass gives a speed boost."
+                },
+                TeamRoles = new GuideTeamRole[] {
+                    new GuideTeamRole {
+                        Name = "Monster Truck", Color = "#ff8c00",
+                        Goal = "Crush the bikers! Indestructible and heavy.",
+                        Tips = new string[] { "Use grass boosts to gain speed.", "Use arena edges to trap bikes.", "Be patient and cut off escape routes." }
+                    },
+                    new GuideTeamRole {
+                        Name = "Motorbikes", Color = "#60a5fa",
+                        Goal = "Dodge the truck and survive. Fast and nimble but one hit kills.",
+                        Tips = new string[] { "Stay near obstacles the truck can't navigate.", "Use grass for speed boosts too.", "Keep moving \u2014 a stationary bike is a dead bike." }
+                    }
+                },
+                Tips = new string[] {
+                    "Bikers \u2014 stay near obstacles the truck can't navigate.",
+                    "Truck \u2014 use arena edges to trap bikes.",
+                    "Grass gives both teams a speed boost."
+                }
+            };
         }
 
         public override void Start( float gameTime ) {

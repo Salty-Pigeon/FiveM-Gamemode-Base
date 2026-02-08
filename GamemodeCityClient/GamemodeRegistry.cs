@@ -2,6 +2,21 @@ using System.Collections.Generic;
 
 namespace GamemodeCityClient {
 
+    public class GuideTeamRole {
+        public string Name;
+        public string Color;
+        public string Goal;
+        public string[] Tips;
+    }
+
+    public class GuideSection {
+        public string Overview;
+        public string HowToWin;
+        public string[] Rules;
+        public GuideTeamRole[] TeamRoles;
+        public string[] Tips;
+    }
+
     public class GamemodeInfo {
         public string Id;
         public string Name;
@@ -12,6 +27,7 @@ namespace GamemodeCityClient {
         public string[] Tags = new string[0];
         public string[] Teams = new string[0];
         public string[] Features = new string[0];
+        public GuideSection Guide = null;
 
         public GamemodeInfo( string id, string name, string description, string color ) {
             Id = id;
@@ -52,6 +68,26 @@ namespace GamemodeCityClient {
             return "[" + string.Join( ",", escaped ) + "]";
         }
 
+        private static string BuildGuideJson( GuideSection guide ) {
+            if( guide == null ) return "null";
+            var roles = new List<string>();
+            if( guide.TeamRoles != null ) {
+                foreach( var role in guide.TeamRoles ) {
+                    roles.Add(
+                        "{\"name\":\"" + EscapeJson( role.Name ) +
+                        "\",\"color\":\"" + EscapeJson( role.Color ) +
+                        "\",\"goal\":\"" + EscapeJson( role.Goal ) +
+                        "\",\"tips\":" + BuildJsonArray( role.Tips ?? new string[0] ) + "}"
+                    );
+                }
+            }
+            return "{\"overview\":\"" + EscapeJson( guide.Overview ?? "" ) +
+                "\",\"howToWin\":\"" + EscapeJson( guide.HowToWin ?? "" ) +
+                "\",\"rules\":" + BuildJsonArray( guide.Rules ?? new string[0] ) +
+                ",\"teamRoles\":[" + string.Join( ",", roles ) + "]" +
+                ",\"tips\":" + BuildJsonArray( guide.Tips ?? new string[0] ) + "}";
+        }
+
         public static string BuildAllGamemodesJson() {
             var entries = new List<string>();
             foreach( var kvp in Registry ) {
@@ -67,7 +103,8 @@ namespace GamemodeCityClient {
                     ",\"maxPlayers\":" + info.MaxPlayers +
                     ",\"tags\":" + BuildJsonArray( info.Tags ) +
                     ",\"teams\":" + BuildJsonArray( info.Teams ) +
-                    ",\"features\":" + BuildJsonArray( info.Features ) + "}"
+                    ",\"features\":" + BuildJsonArray( info.Features ) +
+                    ",\"guide\":" + BuildGuideJson( info.Guide ) + "}"
                 );
             }
             return "[" + string.Join( ",", entries ) + "]";

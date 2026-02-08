@@ -20,6 +20,7 @@ client_scripts {
     'TDMClient.net.dll',
     'ICMClient.net.dll',
     'MVBClient.net.dll',
+    'HPClient.net.dll',
 }
 
 server_scripts {
@@ -29,4 +30,5 @@ server_scripts {
     'TDMServer.net.dll',
     'ICMServer.net.dll',
     'MVBServer.net.dll',
+    'HPServer.net.dll',
 }

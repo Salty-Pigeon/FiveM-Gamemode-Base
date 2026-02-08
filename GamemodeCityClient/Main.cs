@@ -10,7 +10,6 @@ namespace GamemodeCityClient {
     public class Main : BaseScript {
 
         MapVote MapVote;
-        GameVote GameVote;
 
         public Main() {
 
@@ -24,7 +23,9 @@ namespace GamemodeCityClient {
             EventHandlers["salty:Spawn"] += new Action<int, Vector3, uint, float>( Spawn );
             EventHandlers["salty:SetTeam"] += new Action<int>( SetTeam );
             EventHandlers["salty:MapVote"] += new Action<IDictionary<string, object>>( VoteMap );
-            EventHandlers["salty:GameVote"] += new Action<IDictionary<string, object>>( VoteGame );
+            EventHandlers["salty:GameVote"] += new Action<IDictionary<string, object>, float>( VoteGame );
+            EventHandlers["salty:VoteUpdate"] += new Action<string>( VoteUpdate );
+            EventHandlers["salty:VoteEnd"] += new Action<string>( VoteEnd );
             EventHandlers["salty:UpdateTime"] += new Action<float>( UpdateTime );
             EventHandlers["salty:updatePlayerDetail"] += new Action<int, string, object>( UpdateDetail );
 
@@ -77,13 +78,19 @@ namespace GamemodeCityClient {
             MapVote.VoteMenu.OpenMenu();
         }
 
-        private void VoteGame( IDictionary<string, object> gamemodes ) {
-            Dictionary<string, string> Gamemodes = new Dictionary<string, string>();
-            foreach( var kvp in gamemodes ) {
-                Gamemodes[kvp.Key] = kvp.Value.ToString();
+        private void VoteGame( IDictionary<string, object> gamemodes, float durationSeconds ) {
+            if( HubNUI.IsOpen ) {
+                HubNUI.CloseHub();
             }
-            GameVote = new GameVote( Gamemodes );
-            GameVote.VoteMenu.OpenMenu();
+            VoteNUI.OpenVote( durationSeconds );
+        }
+
+        private void VoteUpdate( string votesJson ) {
+            VoteNUI.UpdateVotes( votesJson );
+        }
+
+        private void VoteEnd( string winnerId ) {
+            VoteNUI.ShowWinner( winnerId );
         }
 
         private void PlayerSpawn( object spawnInfo ) {
@@ -132,6 +139,10 @@ namespace GamemodeCityClient {
 
             RegisterCommand( "mvb", new Action<int, List<object>, string>( ( source, args, raw ) => {
                 TriggerServerEvent( "salty:netStartGame", "mvb" );
+            } ), false );
+
+            RegisterCommand( "hp", new Action<int, List<object>, string>( ( source, args, raw ) => {
+                TriggerServerEvent( "salty:netStartGame", "hp" );
             } ), false );
 
             RegisterCommand( "tdm", new Action<int, List<object>, string>( ( source, args, raw ) => {

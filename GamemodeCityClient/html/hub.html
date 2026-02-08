@@ -23,6 +23,11 @@
             <h1>Welcome to Gamemode City</h1>
             <p class="tab-subtitle">Choose a gamemode to get started</p>
             <div class="gamemode-grid" id="gamemodeGrid"></div>
+            <div class="guide-detail hidden" id="guideDetail">
+                <button class="guide-back-btn" id="guideBackBtn">&larr; All Gamemodes</button>
+                <div class="guide-hero" id="guideHero"></div>
+                <div class="guide-content" id="guideContent"></div>
+            </div>
         </div>
         <div class="tab hidden" id="tab-controls">
             <h1>Controls</h1>
@@ -93,6 +98,7 @@
                                     <label class="map-checkbox"><input type="checkbox" value="ttt"><span>TTT</span></label>
                                     <label class="map-checkbox"><input type="checkbox" value="icm"><span>ICM</span></label>
                                     <label class="map-checkbox"><input type="checkbox" value="mvb"><span>MVB</span></label>
+                                    <label class="map-checkbox"><input type="checkbox" value="hp"><span>HP</span></label>
                                 </div>
                             </div>
                             <div class="map-input-group map-inline-group">
@@ -168,6 +174,24 @@
                 </div>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- Vote Overlay -->
+<div class="vote-overlay" id="vote-overlay">
+    <div class="vote-backdrop"></div>
+    <div class="vote-container">
+        <div class="vote-header">
+            <div class="vote-title">VOTE FOR NEXT GAMEMODE</div>
+            <div class="vote-timer-bar">
+                <div class="vote-timer-fill" id="voteTimerFill"></div>
+            </div>
+            <div class="vote-timer-row">
+                <span class="vote-timer-text" id="voteTimerText">30s</span>
+                <span class="vote-count" id="voteCount">0 votes</span>
+            </div>
+        </div>
+        <div class="vote-grid" id="voteGrid"></div>
     </div>
 </div>
 

@@ -98,7 +98,7 @@ namespace GamemodeCityServer {
             else {
                 ServerGlobals.CurrentRound = 0;
                 ServerGlobals.CurrentGame = null;
-                Main.BeginGameVote();
+                Main.ScheduleGameVote( 10000 );
             }
             Dispose();
         }

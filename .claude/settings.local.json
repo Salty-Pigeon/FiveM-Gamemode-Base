@@ -9,7 +9,8 @@
       "Bash(dir:*)",
       "Bash(findstr:*)",
       "Bash(cmd.exe /c \"dir /b \"\"C:\\\\FiveM\\\\txData\\\\FiveMBasicServerCFXDefault_857960.base\\\\resources\\\\[gamemodes]\\\\gamemodecity\"\"\")",
-      "Bash(cmd.exe /c:*)"
+      "Bash(cmd.exe /c:*)",
+      "Bash(del \"C:\\\\Users\\\\jason\\\\Documents\\\\Projects\\\\FiveM-Gamemode-Base\\\\GamemodeCityClient\\\\GameVote.cs\")"
     ]
   }
 }

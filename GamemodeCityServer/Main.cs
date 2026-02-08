@@ -16,6 +16,7 @@ namespace GamemodeCityServer {
         int currentRound = 0;
         static float gameStartTimer = 0;
         static string gameStartID;
+        static long voteScheduleTime = 0;
 
         Dictionary<string, int> GameVotes = new Dictionary<string, int>();
         Dictionary<int, int> MapVotes = new Dictionary<int, int>();
@@ -31,7 +32,7 @@ namespace GamemodeCityServer {
             EventHandlers["salty:netBeginMapVote"] += new Action( BeginMapVote );
             EventHandlers["salty:netBeginGameVote"] += new Action( BeginGameVote );
 
-            EventHandlers["salty:netVote"] += new Action<object>( MakeVote );
+            EventHandlers["salty:netVote"] += new Action<Player, object>( MakeVote );
 
             EventHandlers["salty:netUpdatePlayerDetail"] += new Action<Player, string, object>( UpdateDetail );
 
@@ -51,6 +52,13 @@ namespace GamemodeCityServer {
                     ServerGlobals.CurrentGame.OnTimerEnd();
                 }
             }
+            if( CurrentVote != null ) {
+                CurrentVote.Update();
+            }
+            if( voteScheduleTime > 0 && GetGameTimer() >= voteScheduleTime ) {
+                voteScheduleTime = 0;
+                BeginGameVote();
+            }
             if( gameStartTimer > 0 && gameStartTimer < GetGameTimer() ) {
                 StartGame( gameStartID );
                 gameStartTimer = 0;
@@ -63,8 +71,9 @@ namespace GamemodeCityServer {
             }
         }
 
-        private void MakeVote( object ID ) {
-            CurrentVote.MakeVote( ID );
+        private void MakeVote( [FromSource] Player player, object ID ) {
+            if( CurrentVote != null )
+                CurrentVote.MakeVote( player, ID );
         }
 
         public void BeginMapVote() {
@@ -80,16 +89,28 @@ namespace GamemodeCityServer {
             }
         }
 
+        public static void ScheduleGameVote( int delayMs ) {
+            voteScheduleTime = (long)GetGameTimer() + delayMs;
+        }
+
         public static void BeginGameVote() {
-            CurrentVote = new Vote( EndGameVote );
-            TriggerClientEvent( "salty:GameVote", ServerGlobals.GamemodeList() );
+            CurrentVote = new Vote( EndGameVote, 30000 );
+            TriggerClientEvent( "salty:GameVote", ServerGlobals.GamemodeList(), 30f );
         }
 
         public static void EndGameVote( object id ) {
-            string ID = id.ToString();
-            BaseGamemode.WriteChat( "Game Vote", "Winner is " + ID, 200, 200, 0 );
-            gameStartTimer = GetGameTimer() + (1 * 1000 * 10);
-            gameStartID = ID;
+            string ID = id != null ? id.ToString() : "";
+            if( string.IsNullOrEmpty( ID ) ) {
+                var gamemodes = ServerGlobals.GamemodeList();
+                if( gamemodes.Count > 0 )
+                    ID = gamemodes.Keys.First();
+            }
+            if( !string.IsNullOrEmpty( ID ) ) {
+                BaseGamemode.WriteChat( "Game Vote", "Winner is " + ID, 200, 200, 0 );
+                gameStartTimer = GetGameTimer() + (1 * 1000 * 10);
+                gameStartID = ID;
+            }
+            CurrentVote = null;
         }
 
         private void PlayerKilled( [FromSource] Player ply, int killerID, object deathData ) {

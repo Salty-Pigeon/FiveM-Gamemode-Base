@@ -77,6 +77,38 @@ namespace TTTClient
             gmInfo.Tags = new string[] { "Social Deduction", "FPS" };
             gmInfo.Teams = new string[] { "Innocent", "Traitor", "Detective" };
             gmInfo.Features = new string[] { "Buy Menu", "DNA Scanner", "Disguise", "Teleporter" };
+            gmInfo.Guide = new GuideSection {
+                Overview = "Social deduction FPS. Players are secretly assigned roles \u2014 most are Innocent, but hidden Traitors must eliminate everyone. Detectives have special tools to investigate.",
+                HowToWin = "Innocents win by eliminating all Traitors or surviving until time runs out. Traitors win by killing all Innocents and Detectives.",
+                Rules = new string[] {
+                    "Search dead bodies to discover roles.",
+                    "The game timer extends by 45s when innocents die.",
+                    "Detectives can scan bodies for weapon clues."
+                },
+                TeamRoles = new GuideTeamRole[] {
+                    new GuideTeamRole {
+                        Name = "Innocent", Color = "#4ade80",
+                        Goal = "Survive and identify traitors. No special equipment.",
+                        Tips = new string[] { "Work together and watch for suspicious behavior.", "Check bodies when you find them.", "Stay in groups when possible." }
+                    },
+                    new GuideTeamRole {
+                        Name = "Traitor", Color = "#e94560",
+                        Goal = "Kill innocents without being caught.",
+                        Tips = new string[] { "Access the Buy Menu [M] for Radar, Teleporter, or Disguise.", "Earn coins per kill to buy equipment.", "Use Disguise to hide your name." }
+                    },
+                    new GuideTeamRole {
+                        Name = "Detective", Color = "#60a5fa",
+                        Goal = "Investigate deaths and lead the innocents.",
+                        Tips = new string[] { "Access the Buy Menu [M] and DNA Scanner.", "Scan bodies for weapon clues.", "Share your findings with other players." }
+                    }
+                },
+                Tips = new string[] {
+                    "Watch who goes where alone.",
+                    "Listen for gunshots.",
+                    "Check bodies for clues.",
+                    "Traitors \u2014 use Disguise to hide your name."
+                }
+            };
 
             ControlConfig.RegisterDefaults( "ttt",
                 new Dictionary<string, int>() {

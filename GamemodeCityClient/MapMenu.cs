@@ -10,7 +10,7 @@ namespace GamemodeCityClient {
     public class MapMenu : SaltyMenu {
 
         Dictionary<MenuItem, ClientMap> mapIndex = new Dictionary<MenuItem, ClientMap>();
-        private static readonly string[] AvailableGamemodes = { "tdm", "ttt", "icm", "mvb" };
+        private static readonly string[] AvailableGamemodes = { "tdm", "ttt", "icm", "mvb", "hp" };
 
         public void EditMapMenu( Menu parent, ClientMap map ) {
 
