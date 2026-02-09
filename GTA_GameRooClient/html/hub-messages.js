@@ -21,15 +21,6 @@ document.addEventListener('keydown', function(e) {
             hideGuide();
             return;
         }
-        if (voteIsOpen) {
-            // Release NUI focus but keep overlay visible
-            fetch('https://gta_gameroo/closeVote', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({})
-            });
-            return;
-        }
         if (listeningAction) {
             stopListening();
         } else {
@@ -121,6 +112,13 @@ window.addEventListener('message', function(event) {
         }
 
         updateTabVisibility();
+
+        // Show vote nav button if a vote is active
+        if (data.voteActive) {
+            var voteBtn = document.querySelector('.nav-btn[data-tab="vote"]');
+            if (voteBtn) voteBtn.classList.remove('nav-hidden');
+        }
+
         switchTab(data.tab || currentTab || 'home');
         document.getElementById('hub').classList.add('visible');
 
@@ -388,20 +386,27 @@ window.addEventListener('message', function(event) {
         voteVoters = {};
         voteIsOpen = true;
         renderVoteCards();
-        var overlay = document.getElementById('vote-overlay');
-        overlay.classList.remove('fade-out');
-        overlay.classList.add('active');
         startVoteTimer(data.duration || 30);
+        showVoteTab();
     }
     else if (data.type === 'updateVotes') {
         voteVoters = data.votes || {};
         updateVoteDisplay();
     }
     else if (data.type === 'voteWinner') {
+        // Switch to vote tab so user sees the winner animation
+        if (currentTab !== 'vote') {
+            var voteBtn = document.querySelector('.nav-btn[data-tab="vote"]');
+            if (voteBtn) voteBtn.classList.remove('nav-hidden');
+            switchTab('vote');
+        }
         showVoteWinner(data.winnerId);
     }
     else if (data.type === 'closeVote') {
-        closeVoteOverlay();
+        endVoteSession();
+    }
+    else if (data.type === 'switchToVote') {
+        showVoteTab();
     }
     // Admin panel
     else if (data.type === 'onlinePlayers') {

@@ -51,6 +51,21 @@ function updateTabVisibility() {
     }
 }
 
+// Vote tab management
+function showVoteTab() {
+    var voteBtn = document.querySelector('.nav-btn[data-tab="vote"]');
+    if (voteBtn) voteBtn.classList.remove('nav-hidden');
+    switchTab('vote');
+}
+
+function hideVoteTab() {
+    var voteBtn = document.querySelector('.nav-btn[data-tab="vote"]');
+    if (voteBtn) voteBtn.classList.add('nav-hidden');
+    if (currentTab === 'vote') {
+        switchTab('home');
+    }
+}
+
 // Tab switching
 function switchTab(name) {
     // Guard: prevent switching to restricted tabs

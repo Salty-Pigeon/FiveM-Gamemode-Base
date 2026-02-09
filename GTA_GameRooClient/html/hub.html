@@ -18,6 +18,7 @@
         <div class="logo">GAMEROO</div>
         <nav class="nav">
             <button class="nav-btn active" data-tab="home">Home</button>
+            <button class="nav-btn nav-hidden" data-tab="vote">Vote</button>
             <button class="nav-btn" data-tab="controls">Controls</button>
             <button class="nav-btn" data-tab="debug">Debug</button>
             <button class="nav-btn" data-tab="shop">Shop</button>
@@ -46,6 +47,17 @@
                 <div class="guide-hero" id="guideHero"></div>
                 <div class="guide-content" id="guideContent"></div>
             </div>
+        </div>
+        <div class="tab hidden" id="tab-vote">
+            <div class="vote-tab-header">
+                <h1>VOTE FOR NEXT GAMEMODE</h1>
+                <div class="vote-timer-bar"><div class="vote-timer-fill" id="voteTimerFill"></div></div>
+                <div class="vote-timer-row">
+                    <span class="vote-timer-text" id="voteTimerText">30s</span>
+                    <span class="vote-count" id="voteCount">0 votes</span>
+                </div>
+            </div>
+            <div class="vote-grid" id="voteGrid"></div>
         </div>
         <div class="tab hidden" id="tab-controls">
             <h1>Controls</h1>
@@ -289,24 +301,6 @@
             <p class="welcome-text">Jump into action with a variety of gamemodes, customize your character, and compete with friends. Choose a gamemode from the hub to get started!</p>
             <button class="welcome-btn" id="welcomeStartBtn">Get Started</button>
         </div>
-    </div>
-</div>
-
-<!-- Vote Overlay -->
-<div class="vote-overlay" id="vote-overlay">
-    <div class="vote-backdrop"></div>
-    <div class="vote-container">
-        <div class="vote-header">
-            <div class="vote-title">VOTE FOR NEXT GAMEMODE</div>
-            <div class="vote-timer-bar">
-                <div class="vote-timer-fill" id="voteTimerFill"></div>
-            </div>
-            <div class="vote-timer-row">
-                <span class="vote-timer-text" id="voteTimerText">30s</span>
-                <span class="vote-count" id="voteCount">0 votes</span>
-            </div>
-        </div>
-        <div class="vote-grid" id="voteGrid"></div>
     </div>
 </div>
 

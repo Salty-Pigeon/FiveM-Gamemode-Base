@@ -79,9 +79,6 @@ namespace GTA_GameRooClient {
         }
 
         private void VoteGame( IDictionary<string, object> gamemodes, float durationSeconds ) {
-            if( HubNUI.IsOpen ) {
-                HubNUI.CloseHub();
-            }
             VoteNUI.OpenVote( durationSeconds );
         }
 

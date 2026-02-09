@@ -70,6 +70,9 @@ namespace GTA_GameRooClient {
             RegisterNuiCallbackType( "minimizeHub" );
             EventHandlers["__cfx_nui:minimizeHub"] += new Action<IDictionary<string, object>, CallbackDelegate>( OnMinimizeHub );
 
+            RegisterNuiCallbackType( "castVote" );
+            EventHandlers["__cfx_nui:castVote"] += new Action<IDictionary<string, object>, CallbackDelegate>( OnCastVote );
+
             RegisterCommand( "hub", new Action<int, List<object>, string>( ( source, args, raw ) => {
                 if( isOpen ) {
                     CloseHub();
@@ -213,7 +216,8 @@ namespace GTA_GameRooClient {
             string tabJson = tab == "" ? "\"\"" : "\"" + EscapeJson( tab ) + "\"";
             string progressionJson = PlayerProgression.BuildProgressionJson();
             string pedModelsJson = PlayerProgression.BuildPedModelsJson();
-            string payload = "{\"type\":\"openHub\",\"tab\":" + tabJson + ",\"gamemodes\":" + gamemodes + ",\"debugActions\":" + debugActions + ",\"maps\":" + mapsJson + ",\"progression\":" + progressionJson + ",\"pedModels\":" + pedModelsJson + ",\"isNewPlayer\":" + ( isNewPlayer ? "true" : "false" ) + "}";
+            string voteActiveJson = VoteNUI.IsOpen ? "true" : "false";
+            string payload = "{\"type\":\"openHub\",\"tab\":" + tabJson + ",\"gamemodes\":" + gamemodes + ",\"debugActions\":" + debugActions + ",\"maps\":" + mapsJson + ",\"progression\":" + progressionJson + ",\"pedModels\":" + pedModelsJson + ",\"isNewPlayer\":" + ( isNewPlayer ? "true" : "false" ) + ",\"voteActive\":" + voteActiveJson + "}";
             SendNuiMessage( payload );
             SetNuiFocus( true, true );
         }
@@ -249,8 +253,23 @@ namespace GTA_GameRooClient {
             SendNuiMessage( "{\"type\":\"closeHub\"}" );
         }
 
+        public static void OpenHubToVote() {
+            if( isOpen ) {
+                // Hub already open — just switch to vote tab
+                SendNuiMessage( "{\"type\":\"switchToVote\"}" );
+            } else {
+                OpenHub( "vote" );
+            }
+        }
+
         private void OnMinimizeHub( IDictionary<string, object> data, CallbackDelegate cb ) {
             MinimizeHub();
+            cb( "{\"status\":\"ok\"}" );
+        }
+
+        private void OnCastVote( IDictionary<string, object> data, CallbackDelegate cb ) {
+            string gamemodeId = data["gamemodeId"].ToString();
+            TriggerServerEvent( "salty:netVote", gamemodeId );
             cb( "{\"status\":\"ok\"}" );
         }
 

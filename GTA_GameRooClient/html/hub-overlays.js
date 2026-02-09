@@ -195,25 +195,20 @@ function showVoteWinner(winnerId) {
         }
     });
 
-    // Auto-close after 4s
+    // Auto-hide vote tab after 4s
     setTimeout(function() {
-        closeVoteOverlay();
+        endVoteSession();
     }, 4000);
 }
 
-function closeVoteOverlay() {
-    var overlay = document.getElementById('vote-overlay');
-    overlay.classList.add('fade-out');
+function endVoteSession() {
     clearInterval(voteTimerInterval);
-    setTimeout(function() {
-        overlay.classList.remove('active');
-        overlay.classList.remove('fade-out');
-        // Reset state
-        voteGamemodes = [];
-        voteSelectedId = null;
-        voteVoters = {};
-        voteIsOpen = false;
-    }, 400);
+    // Reset state
+    voteGamemodes = [];
+    voteSelectedId = null;
+    voteVoters = {};
+    voteIsOpen = false;
+    hideVoteTab();
 }
 
 // TTT Overlay utilities

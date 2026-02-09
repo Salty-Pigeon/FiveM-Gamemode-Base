@@ -13,12 +13,6 @@ namespace GTA_GameRooClient {
 
         public VoteNUI() {
             Instance = this;
-
-            RegisterNuiCallbackType( "castVote" );
-            EventHandlers["__cfx_nui:castVote"] += new Action<IDictionary<string, object>, CallbackDelegate>( OnCastVote );
-
-            RegisterNuiCallbackType( "closeVote" );
-            EventHandlers["__cfx_nui:closeVote"] += new Action<IDictionary<string, object>, CallbackDelegate>( OnCloseVote );
         }
 
         private static string EscapeJson( string s ) {
@@ -54,13 +48,14 @@ namespace GTA_GameRooClient {
 
             string payload = "{\"type\":\"openVote\",\"gamemodes\":" + gamemodesJson + ",\"duration\":" + F( durationSeconds ) + "}";
             SendNuiMessage( payload );
-            SetNuiFocus( true, true );
+
+            // Open the hub to the vote tab
+            HubNUI.OpenHubToVote();
         }
 
         public static void CloseVote() {
             isOpen = false;
             SendNuiMessage( "{\"type\":\"closeVote\"}" );
-            SetNuiFocus( false, false );
         }
 
         public static void UpdateVotes( string votesJson ) {
@@ -68,19 +63,8 @@ namespace GTA_GameRooClient {
         }
 
         public static void ShowWinner( string winnerId ) {
+            isOpen = false;
             SendNuiMessage( "{\"type\":\"voteWinner\",\"winnerId\":\"" + EscapeJson( winnerId ) + "\"}" );
-            SetNuiFocus( false, false );
-        }
-
-        private void OnCastVote( IDictionary<string, object> data, CallbackDelegate cb ) {
-            string gamemodeId = data["gamemodeId"].ToString();
-            TriggerServerEvent( "salty:netVote", gamemodeId );
-            cb( "{\"status\":\"ok\"}" );
-        }
-
-        private void OnCloseVote( IDictionary<string, object> data, CallbackDelegate cb ) {
-            SetNuiFocus( false, false );
-            cb( "{\"status\":\"ok\"}" );
         }
     }
 }
