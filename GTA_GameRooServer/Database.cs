@@ -20,6 +20,7 @@ namespace GTA_GameRooServer {
             conn_string.UserID = "root";            // your MySQL user
             conn_string.Password = "Soccerjjno2";   // your MySQL password
             conn_string.Database = "gta_gameroo";    // matches the CREATE DATABASE above
+            conn_string.CharacterSet = "utf8mb4";
 
             Connection = new MySqlConnection( conn_string.ToString() );
             Connection.Open();

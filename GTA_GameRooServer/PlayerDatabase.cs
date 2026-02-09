@@ -41,6 +41,7 @@ namespace GTA_GameRooServer {
             connString.UserID = "root";
             connString.Password = "Soccerjjno2";
             connString.Database = "gta_gameroo";
+            connString.CharacterSet = "utf8mb4";
             connString.ConnectionTimeout = 10;
             connString.DefaultCommandTimeout = 15;
             _connection = new MySqlConnection( connString.ToString() );
