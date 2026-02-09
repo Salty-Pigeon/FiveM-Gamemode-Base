@@ -246,6 +246,20 @@ window.addEventListener('message', function(event) {
                 m2.spawns[data.spawnIndex].posZ = pz;
                 renderSpawnList();
             }
+        } else if (data.context === 'addVertex') {
+            var mv = getSelectedMap();
+            if (mv) {
+                if (!mv.vertices) mv.vertices = [];
+                mv.vertices.push({ x: px, y: py });
+                renderVertexList();
+            }
+        } else if (data.context === 'moveVertex') {
+            var mv2 = getSelectedMap();
+            if (mv2 && mv2.vertices && data.spawnIndex >= 0 && data.spawnIndex < mv2.vertices.length) {
+                mv2.vertices[data.spawnIndex].x = px;
+                mv2.vertices[data.spawnIndex].y = py;
+                renderVertexList();
+            }
         }
     }
     else if (data.type === 'mapCreated') {

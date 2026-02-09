@@ -177,6 +177,11 @@ namespace GTA_GameRooClient {
                 gms.Add( "\"" + EscapeJson( gm ) + "\"" );
             }
 
+            var verts = new List<string>();
+            foreach( var v in map.Vertices ) {
+                verts.Add( "{\"x\":" + F( v.X ) + ",\"y\":" + F( v.Y ) + "}" );
+            }
+
             return "{\"id\":" + map.ID
                 + ",\"name\":\"" + EscapeJson( map.Name ) + "\""
                 + ",\"author\":\"" + EscapeJson( map.Author ) + "\""
@@ -192,7 +197,8 @@ namespace GTA_GameRooClient {
                 + ",\"sizeX\":" + F( map.Size.X )
                 + ",\"sizeY\":" + F( map.Size.Y )
                 + ",\"sizeZ\":" + F( map.Size.Z )
-                + ",\"spawns\":[" + string.Join( ",", spawns ) + "]}";
+                + ",\"spawns\":[" + string.Join( ",", spawns ) + "]"
+                + ",\"vertices\":[" + string.Join( ",", verts ) + "]}";
         }
 
         public static void OpenHub( string tab, bool isNewPlayer = false ) {
@@ -389,6 +395,22 @@ namespace GTA_GameRooClient {
                     }
                 }
 
+                // Vertices
+                if( mapData.ContainsKey( "vertices" ) && mapData["vertices"] is IList<object> vertexList ) {
+                    map.Vertices = new List<Vector2>();
+                    foreach( var vertObj in vertexList ) {
+                        if( vertObj is IDictionary<string, object> v ) {
+                            map.Vertices.Add( new Vector2(
+                                v.ContainsKey( "x" ) ? Convert.ToSingle( v["x"] ) : 0,
+                                v.ContainsKey( "y" ) ? Convert.ToSingle( v["y"] ) : 0
+                            ) );
+                        }
+                    }
+                    if( map.Vertices.Count >= 3 ) {
+                        map.RecalculateCentroid();
+                    }
+                }
+
                 ClientGlobals.SendMap( map );
 
                 // Remove the -1 entry so it doesn't duplicate when server sends back the real ID via CacheMap
@@ -478,6 +500,23 @@ namespace GTA_GameRooClient {
                     Convert.ToSingle( data["sizeZ"] )
                 );
                 map.Rotation = data.ContainsKey( "rotation" ) ? Convert.ToSingle( data["rotation"] ) : map.Rotation;
+
+                // Update vertices from NUI
+                if( data.ContainsKey( "vertices" ) && data["vertices"] is IList<object> vertexList ) {
+                    map.Vertices = new List<Vector2>();
+                    foreach( var vertObj in vertexList ) {
+                        if( vertObj is IDictionary<string, object> v ) {
+                            map.Vertices.Add( new Vector2(
+                                v.ContainsKey( "x" ) ? Convert.ToSingle( v["x"] ) : 0,
+                                v.ContainsKey( "y" ) ? Convert.ToSingle( v["y"] ) : 0
+                            ) );
+                        }
+                    }
+                    if( map.Vertices.Count >= 3 ) {
+                        map.RecalculateCentroid();
+                    }
+                }
+
                 map.Draw = true;
                 map.CreateBlip();
             }

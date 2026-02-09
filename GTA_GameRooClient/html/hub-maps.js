@@ -84,6 +84,10 @@ function selectMap(id) {
     // Update boundaries button text
     document.getElementById('mapBoundaries').textContent = boundariesShown[id] ? 'Hide Boundaries' : 'Show Boundaries';
 
+    // Initialize vertices array if missing
+    map.vertices = map.vertices || [];
+
+    renderVertexList();
     renderSpawnList();
 
     // Notify C# which map is selected for boundary drawing
@@ -122,6 +126,9 @@ function readFormIntoMap(map) {
         if (cb.checked) gms.push(cb.value);
     });
     map.gamemodes = gms;
+
+    // Vertices are managed directly via the list, just ensure the array exists
+    map.vertices = map.vertices || [];
 }
 
 function renderSpawnList() {
@@ -308,7 +315,159 @@ function renderSpawnList() {
     });
 }
 
+function renderVertexList() {
+    var map = getSelectedMap();
+    var container = document.getElementById('mapVertexList');
+    container.innerHTML = '';
+    if (!map || !map.vertices) {
+        document.getElementById('mapVertexCount').textContent = '(0)';
+        return;
+    }
+    document.getElementById('mapVertexCount').textContent = '(' + map.vertices.length + ')';
+
+    map.vertices.forEach(function(vertex, index) {
+        var row = document.createElement('div');
+        row.className = 'map-spawn-row';
+
+        // Index label
+        var idxDiv = document.createElement('div');
+        idxDiv.className = 'map-spawn-type';
+        idxDiv.style.minWidth = '30px';
+        idxDiv.style.fontWeight = 'bold';
+        idxDiv.textContent = '#' + (index + 1);
+        row.appendChild(idxDiv);
+
+        // X input
+        var coordDiv = document.createElement('div');
+        coordDiv.className = 'map-spawn-coords';
+        var xInp = document.createElement('input');
+        xInp.type = 'number';
+        xInp.step = '0.1';
+        xInp.value = round2(vertex.x);
+        xInp.title = 'X';
+        (function(idx) {
+            xInp.addEventListener('change', function() {
+                map.vertices[idx].x = parseFloat(xInp.value) || 0;
+            });
+        })(index);
+        coordDiv.appendChild(xInp);
+
+        var yInp = document.createElement('input');
+        yInp.type = 'number';
+        yInp.step = '0.1';
+        yInp.value = round2(vertex.y);
+        yInp.title = 'Y';
+        (function(idx) {
+            yInp.addEventListener('change', function() {
+                map.vertices[idx].y = parseFloat(yInp.value) || 0;
+            });
+        })(index);
+        coordDiv.appendChild(yInp);
+        row.appendChild(coordDiv);
+
+        // Actions
+        var actDiv = document.createElement('div');
+        actDiv.className = 'map-spawn-actions';
+
+        // TP button
+        var tpBtn = document.createElement('button');
+        tpBtn.className = 'map-spawn-btn';
+        tpBtn.textContent = 'TP';
+        tpBtn.title = 'Teleport to vertex';
+        (function(idx) {
+            tpBtn.addEventListener('click', function() {
+                var posZ = parseFloat(document.getElementById('mapPosZ').value) || 0;
+                fetch('https://gta_gameroo/teleportToSpawn', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ posX: map.vertices[idx].x, posY: map.vertices[idx].y, posZ: posZ })
+                });
+                minimizeHub();
+            });
+        })(index);
+        actDiv.appendChild(tpBtn);
+
+        // Here button
+        var hereBtn = document.createElement('button');
+        hereBtn.className = 'map-spawn-btn';
+        hereBtn.textContent = 'Here';
+        hereBtn.title = 'Move vertex to your position';
+        (function(idx) {
+            hereBtn.addEventListener('click', function() {
+                fetch('https://gta_gameroo/getPlayerPosition', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ context: 'moveVertex', spawnIndex: idx })
+                });
+            });
+        })(index);
+        actDiv.appendChild(hereBtn);
+
+        // Up arrow
+        if (index > 0) {
+            var upBtn = document.createElement('button');
+            upBtn.className = 'map-spawn-btn';
+            upBtn.textContent = '\u25B2';
+            upBtn.title = 'Move up';
+            (function(idx) {
+                upBtn.addEventListener('click', function() {
+                    var tmp = map.vertices[idx];
+                    map.vertices[idx] = map.vertices[idx - 1];
+                    map.vertices[idx - 1] = tmp;
+                    renderVertexList();
+                });
+            })(index);
+            actDiv.appendChild(upBtn);
+        }
+
+        // Down arrow
+        if (index < map.vertices.length - 1) {
+            var downBtn = document.createElement('button');
+            downBtn.className = 'map-spawn-btn';
+            downBtn.textContent = '\u25BC';
+            downBtn.title = 'Move down';
+            (function(idx) {
+                downBtn.addEventListener('click', function() {
+                    var tmp = map.vertices[idx];
+                    map.vertices[idx] = map.vertices[idx + 1];
+                    map.vertices[idx + 1] = tmp;
+                    renderVertexList();
+                });
+            })(index);
+            actDiv.appendChild(downBtn);
+        }
+
+        // Delete button
+        var delBtn = document.createElement('button');
+        delBtn.className = 'map-spawn-btn delete';
+        delBtn.textContent = 'X';
+        delBtn.title = 'Delete vertex';
+        (function(idx) {
+            delBtn.addEventListener('click', function() {
+                map.vertices.splice(idx, 1);
+                renderVertexList();
+            });
+        })(index);
+        actDiv.appendChild(delBtn);
+
+        row.appendChild(actDiv);
+        container.appendChild(row);
+    });
+}
+
 // Map action button handlers
+document.getElementById('mapAddVertex').addEventListener('click', function() {
+    var map = getSelectedMap();
+    if (!map) return;
+    if (!map.vertices) map.vertices = [];
+
+    fetch('https://gta_gameroo/getPlayerPosition', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ context: 'addVertex' })
+    });
+});
+
 document.getElementById('mapCreateBtn').addEventListener('click', function() {
     fetch('https://gta_gameroo/createMap', {
         method: 'POST',
@@ -366,7 +525,7 @@ document.getElementById('mapBoundaries').addEventListener('click', function() {
     fetch('https://gta_gameroo/toggleBoundaries', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mapId: map.id, show: true, posX: map.posX, posY: map.posY, posZ: map.posZ, sizeX: map.sizeX, sizeY: map.sizeY, sizeZ: map.sizeZ, rotation: map.rotation || 0 })
+        body: JSON.stringify({ mapId: map.id, show: true, posX: map.posX, posY: map.posY, posZ: map.posZ, sizeX: map.sizeX, sizeY: map.sizeY, sizeZ: map.sizeZ, rotation: map.rotation || 0, vertices: map.vertices || [] })
     });
     minimizeHub();
 });

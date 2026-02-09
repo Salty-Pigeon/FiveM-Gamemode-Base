@@ -20,10 +20,12 @@ namespace GTA_GameRooShared {
         public int MinPlayers { get; set; }
         public int MaxPlayers { get; set; }
         public List<SpawnData> Spawns { get; set; }
+        public List<VertexData> Vertices { get; set; }
 
         public MapData() {
             Gamemodes = new List<string>();
             Spawns = new List<SpawnData>();
+            Vertices = new List<VertexData>();
             Enabled = true;
             MinPlayers = 2;
             MaxPlayers = 32;
@@ -31,6 +33,11 @@ namespace GTA_GameRooShared {
             Description = "";
             Name = "unnamed";
         }
+    }
+
+    public class VertexData {
+        public float X { get; set; }
+        public float Y { get; set; }
     }
 
     public class SpawnData {

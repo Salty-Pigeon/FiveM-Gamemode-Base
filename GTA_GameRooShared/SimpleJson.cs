@@ -39,6 +39,14 @@ namespace GTA_GameRooShared {
                 if( i > 0 ) sb.Append( "," );
                 sb.Append( SerializeSpawn( map.Spawns[i] ) );
             }
+            sb.Append( "]," );
+
+            // Vertices array
+            sb.Append( "\"Vertices\":[" );
+            for( int i = 0; i < map.Vertices.Count; i++ ) {
+                if( i > 0 ) sb.Append( "," );
+                sb.Append( SerializeVertex( map.Vertices[i] ) );
+            }
             sb.Append( "]" );
 
             sb.Append( "}" );
@@ -56,6 +64,15 @@ namespace GTA_GameRooShared {
             sb.Append( JsonPair( "SpawnType", spawn.SpawnType ) ).Append( "," );
             sb.Append( JsonPair( "Entity", spawn.Entity ) ).Append( "," );
             sb.Append( JsonPair( "Team", spawn.Team ) );
+            sb.Append( "}" );
+            return sb.ToString();
+        }
+
+        private static string SerializeVertex( VertexData vertex ) {
+            var sb = new StringBuilder();
+            sb.Append( "{" );
+            sb.Append( JsonPair( "X", vertex.X ) ).Append( "," );
+            sb.Append( JsonPair( "Y", vertex.Y ) );
             sb.Append( "}" );
             return sb.ToString();
         }
@@ -87,6 +104,10 @@ namespace GTA_GameRooShared {
                 data.Spawns = ParseSpawns( dict["Spawns"] );
             }
 
+            if( dict.ContainsKey( "Vertices" ) ) {
+                data.Vertices = ParseVertices( dict["Vertices"] );
+            }
+
             return data;
         }
 
@@ -109,6 +130,21 @@ namespace GTA_GameRooShared {
                 spawns.Add( spawn );
             }
             return spawns;
+        }
+
+        private static List<VertexData> ParseVertices( string arrayJson ) {
+            var vertices = new List<VertexData>();
+            var items = SplitArray( arrayJson );
+            foreach( var item in items ) {
+                var trimmed = item.Trim();
+                if( trimmed.Length < 2 ) continue;
+                var vDict = ParseObject( trimmed );
+                var vertex = new VertexData();
+                if( vDict.ContainsKey( "X" ) ) vertex.X = ToFloat( vDict["X"] );
+                if( vDict.ContainsKey( "Y" ) ) vertex.Y = ToFloat( vDict["Y"] );
+                vertices.Add( vertex );
+            }
+            return vertices;
         }
 
         private static List<string> ParseStringArray( string arrayJson ) {

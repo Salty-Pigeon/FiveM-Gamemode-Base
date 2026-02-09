@@ -75,7 +75,14 @@ namespace GTA_GameRooServer {
 
         public virtual void Start( ) {
 
-            TriggerClientEvent( "salty:StartGame", Gamemode, Settings.GameLength, Settings.Weapons, Map.Position, Map.Size, Map.Rotation );
+            // Build vertices as flat float list: [x1,y1,x2,y2,...]
+            var vertFloats = new List<float>();
+            foreach( var v in Map.Vertices ) {
+                vertFloats.Add( v.X );
+                vertFloats.Add( v.Y );
+            }
+
+            TriggerClientEvent( "salty:StartGame", Gamemode, Settings.GameLength, Settings.Weapons, Map.Position, Map.Size, Map.Rotation, vertFloats );
 
             foreach( var barrier in Map.GetWinBarriers() ) {
                 uint packedSize = (uint)(((int)(barrier.SizeX * 10f)) << 16 | ((int)(barrier.SizeY * 10f)));

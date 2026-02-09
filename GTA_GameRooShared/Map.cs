@@ -18,6 +18,7 @@ namespace GTA_GameRooShared {
         public int MaxPlayers = 32;
         public List<string> Gamemodes = new List<string>();
         public List<Spawn> Spawns = new List<Spawn>();
+        public List<Vector2> Vertices = new List<Vector2>();
         public bool JustCreated = false;
 
         public Map( int id, string name, List<string> gamemode, Vector3 position, Vector3 size ) {
@@ -29,17 +30,24 @@ namespace GTA_GameRooShared {
         }
 
         public bool IsInZone( Vector3 pos ) {
-            // Rotate the point into local (unrotated) space around the center
-            float rad = -Rotation * ((float)Math.PI / 180f);
-            float cos = (float)Math.Cos( rad );
-            float sin = (float)Math.Sin( rad );
-            float dx = pos.X - Position.X;
-            float dy = pos.Y - Position.Y;
-            float localX = dx * cos - dy * sin;
-            float localY = dx * sin + dy * cos;
+            bool inXY;
 
-            bool inXY = localX > -(Size.X / 2) && localX < (Size.X / 2) &&
-                        localY > -(Size.Y / 2) && localY < (Size.Y / 2);
+            if( Vertices.Count >= 3 ) {
+                // Polygon mode: ray-casting point-in-polygon
+                inXY = PointInPolygon( pos.X, pos.Y );
+            } else {
+                // Rectangle mode: rotate point into local space
+                float rad = -Rotation * ((float)Math.PI / 180f);
+                float cos = (float)Math.Cos( rad );
+                float sin = (float)Math.Sin( rad );
+                float dx = pos.X - Position.X;
+                float dy = pos.Y - Position.Y;
+                float localX = dx * cos - dy * sin;
+                float localY = dx * sin + dy * cos;
+
+                inXY = localX > -(Size.X / 2) && localX < (Size.X / 2) &&
+                            localY > -(Size.Y / 2) && localY < (Size.Y / 2);
+            }
 
             if( Size.Z > 0 ) {
                 return inXY &&
@@ -48,6 +56,20 @@ namespace GTA_GameRooShared {
             }
 
             return inXY;
+        }
+
+        private bool PointInPolygon( float x, float y ) {
+            bool inside = false;
+            int count = Vertices.Count;
+            for( int i = 0, j = count - 1; i < count; j = i++ ) {
+                float xi = Vertices[i].X, yi = Vertices[i].Y;
+                float xj = Vertices[j].X, yj = Vertices[j].Y;
+                if( ((yi > y) != (yj > y)) &&
+                    (x < (xj - xi) * (y - yi) / (yj - yi) + xi) ) {
+                    inside = !inside;
+                }
+            }
+            return inside;
         }
 
         public Spawn GetSpawn( SpawnType type, int team ) {
@@ -92,11 +114,16 @@ namespace GTA_GameRooShared {
                 Gamemodes = new List<string>( Gamemodes ),
                 MinPlayers = MinPlayers,
                 MaxPlayers = MaxPlayers,
-                Spawns = new List<SpawnData>()
+                Spawns = new List<SpawnData>(),
+                Vertices = new List<VertexData>()
             };
 
             foreach( var spawn in Spawns ) {
                 data.Spawns.Add( spawn.ToSpawnData() );
+            }
+
+            foreach( var v in Vertices ) {
+                data.Vertices.Add( new VertexData { X = v.X, Y = v.Y } );
             }
 
             return data;
@@ -119,6 +146,29 @@ namespace GTA_GameRooShared {
             foreach( var spawnData in data.Spawns ) {
                 Spawns.Add( Spawn.FromSpawnData( spawnData ) );
             }
+
+            Vertices = new List<Vector2>();
+            if( data.Vertices != null ) {
+                foreach( var v in data.Vertices ) {
+                    Vertices.Add( new Vector2( v.X, v.Y ) );
+                }
+            }
+
+            if( Vertices.Count >= 3 ) {
+                RecalculateCentroid();
+            }
+        }
+
+        public void RecalculateCentroid() {
+            if( Vertices.Count < 3 ) return;
+            float cx = 0, cy = 0;
+            for( int i = 0; i < Vertices.Count; i++ ) {
+                cx += Vertices[i].X;
+                cy += Vertices[i].Y;
+            }
+            cx /= Vertices.Count;
+            cy /= Vertices.Count;
+            Position = new Vector3( cx, cy, Position.Z );
         }
 
         public string ToJson() {

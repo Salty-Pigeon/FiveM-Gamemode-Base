@@ -37,6 +37,17 @@ namespace GTA_GameRooClient {
                 map.Spawns.Add( Spawn.FromSpawnData( spawnData ) );
             }
 
+            map.Vertices = new List<Vector2>();
+            if( data.Vertices != null ) {
+                foreach( var v in data.Vertices ) {
+                    map.Vertices.Add( new Vector2( v.X, v.Y ) );
+                }
+            }
+
+            if( map.Vertices.Count >= 3 ) {
+                map.RecalculateCentroid();
+            }
+
             return map;
         }
 
@@ -73,42 +84,68 @@ namespace GTA_GameRooClient {
             int b = 30;
             int a = 50;
 
-            float hx = Size.X / 2;
-            float hy = Size.Y / 2;
             float zBot = Position.Z - 50f;
             float zTop = Position.Z + 200f;
 
-            // Four corners in local space, rotated to world
-            Vector3 nw = RotatePoint( -hx, -hy, 0 );
-            Vector3 ne = RotatePoint(  hx, -hy, 0 );
-            Vector3 se = RotatePoint(  hx,  hy, 0 );
-            Vector3 sw = RotatePoint( -hx,  hy, 0 );
+            if( Vertices.Count >= 3 ) {
+                // Polygon mode
+                float postSize = 0.3f;
+                float postBot = Position.Z;
+                float postTop = Position.Z + 40f;
+                int pr = 255; int pg = 255; int pb = 0; int pa = 120;
 
-            // Filled boundary walls (4 walls)
-            DrawWall( nw.X, nw.Y, ne.X, ne.Y, zBot, zTop, r, g, b, a ); // North
-            DrawWall( ne.X, ne.Y, se.X, se.Y, zBot, zTop, r, g, b, a ); // East
-            DrawWall( se.X, se.Y, sw.X, sw.Y, zBot, zTop, r, g, b, a ); // South
-            DrawWall( sw.X, sw.Y, nw.X, nw.Y, zBot, zTop, r, g, b, a ); // West
+                for( int i = 0; i < Vertices.Count; i++ ) {
+                    int next = (i + 1) % Vertices.Count;
+                    DrawWall( Vertices[i].X, Vertices[i].Y, Vertices[next].X, Vertices[next].Y, zBot, zTop, r, g, b, a );
+                    DrawBox( Vertices[i].X - postSize, Vertices[i].Y - postSize, postBot,
+                             Vertices[i].X + postSize, Vertices[i].Y + postSize, postTop, pr, pg, pb, pa );
+                }
 
-            // Corner posts (tall vertical markers)
-            float postSize = 0.3f;
-            float postBot = Position.Z;
-            float postTop = Position.Z + 40f;
-            int pr = 255; int pg = 255; int pb = 0; int pa = 120;
+                // Ceiling polygon using triangle fan from centroid
+                if( Size.Z > 0 ) {
+                    float zCeil = Position.Z + (Size.Z / 2);
+                    float cx = Position.X;
+                    float cy = Position.Y;
+                    for( int i = 0; i < Vertices.Count; i++ ) {
+                        int next = (i + 1) % Vertices.Count;
+                        // Top side
+                        DrawPoly( cx, cy, zCeil, Vertices[i].X, Vertices[i].Y, zCeil, Vertices[next].X, Vertices[next].Y, zCeil, 100, 100, 255, 30 );
+                        // Bottom side (reversed winding)
+                        DrawPoly( Vertices[next].X, Vertices[next].Y, zCeil, Vertices[i].X, Vertices[i].Y, zCeil, cx, cy, zCeil, 100, 100, 255, 30 );
+                    }
+                }
+            } else {
+                // Rectangle mode
+                float hx = Size.X / 2;
+                float hy = Size.Y / 2;
 
-            DrawBox( nw.X - postSize, nw.Y - postSize, postBot, nw.X + postSize, nw.Y + postSize, postTop, pr, pg, pb, pa );
-            DrawBox( ne.X - postSize, ne.Y - postSize, postBot, ne.X + postSize, ne.Y + postSize, postTop, pr, pg, pb, pa );
-            DrawBox( se.X - postSize, se.Y - postSize, postBot, se.X + postSize, se.Y + postSize, postTop, pr, pg, pb, pa );
-            DrawBox( sw.X - postSize, sw.Y - postSize, postBot, sw.X + postSize, sw.Y + postSize, postTop, pr, pg, pb, pa );
+                Vector3 nw = RotatePoint( -hx, -hy, 0 );
+                Vector3 ne = RotatePoint(  hx, -hy, 0 );
+                Vector3 se = RotatePoint(  hx,  hy, 0 );
+                Vector3 sw = RotatePoint( -hx,  hy, 0 );
 
-            // Height ceiling visualization
-            if( Size.Z > 0 ) {
-                float zCeil = Position.Z + (Size.Z / 2);
-                // Ceiling as filled quad (two-sided)
-                DrawPoly( nw.X, nw.Y, zCeil, ne.X, ne.Y, zCeil, se.X, se.Y, zCeil, 100, 100, 255, 30 );
-                DrawPoly( nw.X, nw.Y, zCeil, se.X, se.Y, zCeil, sw.X, sw.Y, zCeil, 100, 100, 255, 30 );
-                DrawPoly( se.X, se.Y, zCeil, ne.X, ne.Y, zCeil, nw.X, nw.Y, zCeil, 100, 100, 255, 30 );
-                DrawPoly( sw.X, sw.Y, zCeil, se.X, se.Y, zCeil, nw.X, nw.Y, zCeil, 100, 100, 255, 30 );
+                DrawWall( nw.X, nw.Y, ne.X, ne.Y, zBot, zTop, r, g, b, a );
+                DrawWall( ne.X, ne.Y, se.X, se.Y, zBot, zTop, r, g, b, a );
+                DrawWall( se.X, se.Y, sw.X, sw.Y, zBot, zTop, r, g, b, a );
+                DrawWall( sw.X, sw.Y, nw.X, nw.Y, zBot, zTop, r, g, b, a );
+
+                float postSize = 0.3f;
+                float postBot = Position.Z;
+                float postTop = Position.Z + 40f;
+                int pr = 255; int pg = 255; int pb = 0; int pa = 120;
+
+                DrawBox( nw.X - postSize, nw.Y - postSize, postBot, nw.X + postSize, nw.Y + postSize, postTop, pr, pg, pb, pa );
+                DrawBox( ne.X - postSize, ne.Y - postSize, postBot, ne.X + postSize, ne.Y + postSize, postTop, pr, pg, pb, pa );
+                DrawBox( se.X - postSize, se.Y - postSize, postBot, se.X + postSize, se.Y + postSize, postTop, pr, pg, pb, pa );
+                DrawBox( sw.X - postSize, sw.Y - postSize, postBot, sw.X + postSize, sw.Y + postSize, postTop, pr, pg, pb, pa );
+
+                if( Size.Z > 0 ) {
+                    float zCeil = Position.Z + (Size.Z / 2);
+                    DrawPoly( nw.X, nw.Y, zCeil, ne.X, ne.Y, zCeil, se.X, se.Y, zCeil, 100, 100, 255, 30 );
+                    DrawPoly( nw.X, nw.Y, zCeil, se.X, se.Y, zCeil, sw.X, sw.Y, zCeil, 100, 100, 255, 30 );
+                    DrawPoly( se.X, se.Y, zCeil, ne.X, ne.Y, zCeil, nw.X, nw.Y, zCeil, 100, 100, 255, 30 );
+                    DrawPoly( sw.X, sw.Y, zCeil, se.X, se.Y, zCeil, nw.X, nw.Y, zCeil, 100, 100, 255, 30 );
+                }
             }
         }
 

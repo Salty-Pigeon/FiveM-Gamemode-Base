@@ -16,7 +16,7 @@ namespace GTA_GameRooClient {
             EventHandlers["onClientResourceStart"] += new Action<string>( OnClientResourceStart );
             EventHandlers["playerSpawned"] += new Action<object>( PlayerSpawn );
 
-            EventHandlers["salty:StartGame"] += new Action<string, float, object, Vector3, Vector3, float>( StartGame );
+            EventHandlers["salty:StartGame"] += new Action<string, float, object, Vector3, Vector3, float, object>( StartGame );
             EventHandlers["salty:EndGame"] += new Action( EndGame );
             EventHandlers["salty:CacheMap"] += new Action<string>( CacheMap );
             EventHandlers["salty:OpenMapGUI"] += new Action( OpenMapGUI );
@@ -218,7 +218,7 @@ namespace GTA_GameRooClient {
             } ), false );
         }
 
-        public void StartGame( string ID, float gameLength, object gameWeps, Vector3 mapPos, Vector3 mapSize, float mapRotation ) {
+        public void StartGame( string ID, float gameLength, object gameWeps, Vector3 mapPos, Vector3 mapSize, float mapRotation, object verticesData ) {
             if( ClientGlobals.CurrentGame != null ) {
                 ClientGlobals.CurrentGame.Map.ClearObjects();
             }
@@ -226,6 +226,18 @@ namespace GTA_GameRooClient {
             ClientGlobals.CurrentGame = (BaseGamemode)Activator.CreateInstance( ClientGlobals.Gamemodes[ID.ToLower()].GetType() );
             ClientGlobals.CurrentGame.Map = new ClientMap( -1, ID, new List<string>(), mapPos, mapSize, false );
             ClientGlobals.CurrentGame.Map.Rotation = mapRotation;
+
+            // Parse vertices from flat float list [x1,y1,x2,y2,...]
+            if( verticesData is IList<object> vertList && vertList.Count >= 6 ) {
+                for( int i = 0; i + 1 < vertList.Count; i += 2 ) {
+                    float vx = Convert.ToSingle( vertList[i] );
+                    float vy = Convert.ToSingle( vertList[i + 1] );
+                    ClientGlobals.CurrentGame.Map.Vertices.Add( new Vector2( vx, vy ) );
+                }
+                if( ClientGlobals.CurrentGame.Map.Vertices.Count >= 3 ) {
+                    ClientGlobals.CurrentGame.Map.RecalculateCentroid();
+                }
+            }
 
             // Convert weapons from network format to List<uint>
             if( gameWeps is IList<object> wepList ) {

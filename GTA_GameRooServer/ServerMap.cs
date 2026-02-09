@@ -31,6 +31,17 @@ namespace GTA_GameRooServer {
                 map.Spawns.Add( Spawn.FromSpawnData( spawnData ) );
             }
 
+            map.Vertices = new List<Vector2>();
+            if( data.Vertices != null ) {
+                foreach( var v in data.Vertices ) {
+                    map.Vertices.Add( new Vector2( v.X, v.Y ) );
+                }
+            }
+
+            if( map.Vertices.Count >= 3 ) {
+                map.RecalculateCentroid();
+            }
+
             return map;
         }
 
