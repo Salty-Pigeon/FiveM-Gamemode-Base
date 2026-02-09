@@ -148,19 +148,57 @@ namespace GTA_GameRooClient {
                 FreezeEntityPosition( Game.PlayerPed.CurrentVehicle.Handle, false );
         }
 
-        public virtual void Start( float gameTime ) {
+        /// <summary>
+        /// Fully resets the local player ped to a clean state.
+        /// Call after model changes or at game start to ensure nothing persists.
+        /// </summary>
+        public static void ResetPlayerState() {
+            int ped = PlayerPedId();
+
+            // Health — use natives directly so model defaults can't interfere.
+            // Native scale: 100 = dead, 200 = full for the default player range.
+            SetPedMaxHealth( ped, 200 );
+            SetEntityHealth( ped, 200 );
+
+            // Armor
+            SetPedArmour( ped, 0 );
+
+            // Weapons
+            RemoveAllPedWeapons( ped, true );
+
+            // Visual damage / effects
+            ClearPedBloodDamage( ped );
+            ResetPedVisibleDamage( ped );
+            ClearPedLastWeaponDamage( ped );
+
+            // Movement / ragdoll
+            SetPedToRagdoll( ped, 0, 0, 0, false, false, false );
+            SetPedCanRagdoll( ped, true );
+            ClearPedTasksImmediately( ped );
+            SetPedMoveRateOverride( ped, 1.0f );
+
+            // Flags
+            Game.PlayerPed.IsInvincible = false;
+            Game.PlayerPed.IsFireProof = false;
+            Game.PlayerPed.IsExplosionProof = false;
+            Game.PlayerPed.IsCollisionProof = false;
+            Game.PlayerPed.IsMeleeProof = false;
+            Game.PlayerPed.Opacity = 255;
+            SetPlayerInvincible( PlayerId(), false );
             SetMaxWantedLevel( 0 );
+            ClearPlayerWantedLevel( PlayerId() );
+        }
+
+        public virtual void Start( float gameTime ) {
             ClientGlobals.SetSpectator( false );
 
             // Resurrect the player to ensure they're alive and not in death state
             Vector3 pos = Game.PlayerPed.Position;
             NetworkResurrectLocalPlayer( pos.X, pos.Y, pos.Z, Game.PlayerPed.Heading, true, false );
-            LocalPlayer.Character.MaxHealth = 100;
-            LocalPlayer.Character.Health = 100;
-            Game.PlayerPed.IsInvincible = false;
+
+            ResetPlayerState();
 
             WriteChat( Gamemode.ToUpper(), "Game started.", 255, 0, 0 );
-            RemoveAllPedWeapons( PlayerPedId(), true );
             GameTimerEnd = GetGameTimer() + gameTime;
             HUD.Start();
         }

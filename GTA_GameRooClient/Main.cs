@@ -306,6 +306,11 @@ namespace GTA_GameRooClient {
                 SetEntityHeading( PlayerPedId(), heading );
                 NewLoadSceneStop();
 
+                // Reset player to a clean state after model change / spawn.
+                // SetPlayerModel creates a new ped with model-default health,
+                // so we must enforce our own values after the fact.
+                BaseGamemode.ResetPlayerState();
+
                 // Small delay then unfreeze (unless a countdown is handling the unfreeze)
                 await Delay( 100 );
                 if( ClientGlobals.CurrentGame == null || !ClientGlobals.CurrentGame.CountdownActive )
