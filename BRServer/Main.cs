@@ -1,0 +1,426 @@
+using GTA_GameRooServer;
+using GTA_GameRooShared;
+using CitizenFX.Core;
+using static CitizenFX.Core.Native.API;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace BRServer {
+
+    public class ZonePhase {
+        public float WaitSeconds;
+        public float ShrinkSeconds;
+        public float RadiusPercent;
+    }
+
+    public class PlaneData {
+        public float StartX, StartY, StartZ;
+        public float EndX, EndY, EndZ;
+        public float Speed;
+        public List<string> AssignedPlayers;
+    }
+
+    public class Main : BaseGamemode {
+
+        Random rand = new Random();
+
+        // Zone state
+        float zoneCenterX, zoneCenterY;
+        float zoneCurrentRadius;
+        float zoneTargetRadius;
+        float zoneShrinkStart;
+        float zoneShrinkEnd;
+        int currentPhase = -1;
+        float phaseWaitUntil = 0;
+        bool isShrinking = false;
+        float initialRadius;
+
+        // Zone damage
+        float zoneDamageTimer = 0;
+        const float ZONE_DAMAGE_INTERVAL = 1000f;
+        const int ZONE_DAMAGE_AMOUNT = 5;
+
+        // Alive tracking
+        List<Player> alivePlayers = new List<Player>();
+        bool gameStarted = false;
+
+        // Plane tracking
+        bool planesLaunched = false;
+        float planeStartTime = 0;
+        float planeDuration = 0;
+        float planeForceJumpTime = 0;
+        bool forceJumpTriggered = false;
+        HashSet<string> jumpedPlayers = new HashSet<string>();
+
+        static readonly ZonePhase[] Phases = new ZonePhase[] {
+            new ZonePhase { WaitSeconds = 60, ShrinkSeconds = 45, RadiusPercent = 0.80f },
+            new ZonePhase { WaitSeconds = 45, ShrinkSeconds = 40, RadiusPercent = 0.55f },
+            new ZonePhase { WaitSeconds = 30, ShrinkSeconds = 35, RadiusPercent = 0.30f },
+            new ZonePhase { WaitSeconds = 20, ShrinkSeconds = 30, RadiusPercent = 0.15f },
+            new ZonePhase { WaitSeconds = 10, ShrinkSeconds = 25, RadiusPercent = 0.02f },
+        };
+
+        // Weapon pools: hash -> group name for spawning
+        static readonly uint[] PistolWeapons = { 453432689, 1593441988, 584646201, 3523564046, 2578377531 };
+        static readonly uint[] SMGWeapons = { 736523883, 4024951519, 3173288789, 3675956304, 171789620 };
+        static readonly uint[] ShotgunWeapons = { 487013001, 3800352039, 984333226, 2640438543 };
+        static readonly uint[] RifleWeapons = { 3220176749, 2210333304, 2937143193, 2132975508, 3231910285 };
+        static readonly uint[] SniperWeapons = { 100416529, 205991906, 3342088282 };
+        static readonly uint[] MeleeWeapons = { 1317494643, 2508868239, 1141786504, 2578778090, 4191993645 };
+
+        public Main() : base( "BR" ) {
+            Settings.Weapons = new List<uint>();
+            // Populate all BR weapons into settings for client weapon tracking
+            Settings.Weapons.AddRange( PistolWeapons );
+            Settings.Weapons.AddRange( SMGWeapons );
+            Settings.Weapons.AddRange( ShotgunWeapons );
+            Settings.Weapons.AddRange( RifleWeapons );
+            Settings.Weapons.AddRange( SniperWeapons );
+            Settings.Weapons.AddRange( MeleeWeapons );
+
+            Settings.GameLength = 15 * 1000 * 60; // 15 minutes max
+            Settings.Name = "Battle Royale";
+            Settings.Rounds = 1;
+
+            EventHandlers["br:playerJumped"] += new Action<Player>( OnPlayerJumped );
+        }
+
+        public override void Start() {
+            base.Start();
+
+            PlayerList playerList = new PlayerList();
+            alivePlayers.Clear();
+            jumpedPlayers.Clear();
+
+            foreach( var player in playerList ) {
+                alivePlayers.Add( player );
+                SetTeam( player, 0 );
+            }
+
+            // Initialize zone
+            initialRadius = Math.Max( Map.Size.X, Map.Size.Y ) / 2f;
+            zoneCenterX = Map.Position.X;
+            zoneCenterY = Map.Position.Y;
+            zoneCurrentRadius = initialRadius;
+            zoneTargetRadius = initialRadius;
+            currentPhase = -1;
+            isShrinking = false;
+
+            // Schedule first phase after plane ride
+            phaseWaitUntil = GetGameTimer() + 30000; // 30s for planes
+
+            // Scatter weapons
+            ScatterWeapons();
+
+            // Launch planes
+            LaunchPlanes( playerList );
+
+            gameStarted = true;
+
+            BroadcastZoneUpdate();
+            BroadcastAliveCount();
+        }
+
+        void ScatterWeapons() {
+            SpawnWeaponGroup( PistolWeapons, rand.Next( 15, 21 ) );
+            SpawnWeaponGroup( SMGWeapons, rand.Next( 10, 16 ) );
+            SpawnWeaponGroup( ShotgunWeapons, rand.Next( 8, 13 ) );
+            SpawnWeaponGroup( RifleWeapons, rand.Next( 6, 11 ) );
+            SpawnWeaponGroup( SniperWeapons, rand.Next( 3, 6 ) );
+            SpawnWeaponGroup( MeleeWeapons, rand.Next( 5, 9 ) );
+        }
+
+        void SpawnWeaponGroup( uint[] weapons, int count ) {
+            for( int i = 0; i < count; i++ ) {
+                uint hash = weapons[rand.Next( weapons.Length )];
+                Vector3 pos = GetRandomPositionInCircle( zoneCenterX, zoneCenterY, Map.Position.Z, initialRadius );
+                SpawnWeapon( pos, hash );
+            }
+        }
+
+        Vector3 GetRandomPositionInCircle( float cx, float cy, float z, float radius ) {
+            float angle = (float)( rand.NextDouble() * Math.PI * 2 );
+            float r = radius * (float)Math.Sqrt( rand.NextDouble() );
+            float x = cx + r * (float)Math.Cos( angle );
+            float y = cy + r * (float)Math.Sin( angle );
+
+            // Clamp to map bounds
+            float halfX = Map.Size.X / 2f;
+            float halfY = Map.Size.Y / 2f;
+            x = Math.Max( Map.Position.X - halfX, Math.Min( Map.Position.X + halfX, x ) );
+            y = Math.Max( Map.Position.Y - halfY, Math.Min( Map.Position.Y + halfY, y ) );
+
+            return new Vector3( x, y, z );
+        }
+
+        void LaunchPlanes( PlayerList playerList ) {
+            var players = playerList.ToList();
+            int playerCount = players.Count;
+            int planeCount = Math.Min( 4, (int)Math.Ceiling( playerCount / 15.0 ) );
+            if( planeCount < 1 ) planeCount = 1;
+
+            float mapHalfX = Map.Size.X / 2f;
+            float mapHalfY = Map.Size.Y / 2f;
+            float altitude = Map.Position.Z + 500f;
+            float speed = 50f;
+
+            var planes = new List<PlaneData>();
+
+            for( int p = 0; p < planeCount; p++ ) {
+                float lerpFactor = planeCount == 1 ? 0.5f : (float)p / ( planeCount - 1 );
+                float offsetX = Map.Position.X - mapHalfX + lerpFactor * Map.Size.X;
+
+                planes.Add( new PlaneData {
+                    StartX = offsetX,
+                    StartY = Map.Position.Y - mapHalfY - 100f,
+                    StartZ = altitude,
+                    EndX = offsetX,
+                    EndY = Map.Position.Y + mapHalfY + 100f,
+                    EndZ = altitude,
+                    Speed = speed,
+                    AssignedPlayers = new List<string>()
+                } );
+            }
+
+            // Round-robin assign players to planes
+            for( int i = 0; i < players.Count; i++ ) {
+                planes[i % planeCount].AssignedPlayers.Add( players[i].Handle );
+            }
+
+            // Calculate flight duration
+            float totalDist = Map.Size.Y + 200f;
+            planeDuration = ( totalDist / speed ) * 1000f;
+            planeStartTime = GetGameTimer();
+            planesLaunched = true;
+            forceJumpTriggered = false;
+
+            // Calculate when the plane reaches the far edge of the zone circle
+            // Planes start 100 units south of map edge, fly north through center
+            // Force jump when plane is about to exit the initial zone radius
+            float distToZoneExit = ( mapHalfY + 100f ) + initialRadius;
+            planeForceJumpTime = planeStartTime + ( distToZoneExit / speed ) * 1000f;
+
+            // Build plane data for network event
+            var planeDataList = new List<object>();
+            foreach( var plane in planes ) {
+                planeDataList.Add( new {
+                    sx = plane.StartX, sy = plane.StartY, sz = plane.StartZ,
+                    ex = plane.EndX, ey = plane.EndY, ez = plane.EndZ,
+                    speed = plane.Speed,
+                    players = plane.AssignedPlayers.ToArray()
+                } );
+            }
+
+            // Send plane data as individual values since FiveM serialization
+            // works better with flat data
+            foreach( var plane in planes ) {
+                foreach( var playerHandle in plane.AssignedPlayers ) {
+                    var ply = GetPlayer( playerHandle );
+                    if( ply != null ) {
+                        ply.TriggerEvent( "br:spawnPlane",
+                            plane.StartX, plane.StartY, plane.StartZ,
+                            plane.EndX, plane.EndY, plane.EndZ,
+                            plane.Speed );
+                    }
+                }
+            }
+        }
+
+        void OnPlayerJumped( [FromSource] Player player ) {
+            if( !jumpedPlayers.Contains( player.Handle ) ) {
+                jumpedPlayers.Add( player.Handle );
+                // Give start weapons after a short delay for landing
+                player.TriggerEvent( "br:giveStartWeapons" );
+            }
+        }
+
+        public override void Update() {
+            base.Update();
+
+            if( !gameStarted ) return;
+
+            float now = GetGameTimer();
+
+            // Force-jump remaining players when plane is about to leave the zone
+            if( planesLaunched && !forceJumpTriggered && now >= planeForceJumpTime ) {
+                forceJumpTriggered = true;
+                foreach( var player in alivePlayers ) {
+                    if( !jumpedPlayers.Contains( player.Handle ) ) {
+                        jumpedPlayers.Add( player.Handle );
+                        player.TriggerEvent( "br:forceJump" );
+                        player.TriggerEvent( "br:giveStartWeapons" );
+                    }
+                }
+            }
+
+            // Clean up plane tracking when flight is over
+            if( planesLaunched && now >= planeStartTime + planeDuration ) {
+                planesLaunched = false;
+            }
+
+            // Zone phase logic
+            if( currentPhase < Phases.Length - 1 ) {
+                if( !isShrinking && now >= phaseWaitUntil ) {
+                    // Start next phase shrink
+                    currentPhase++;
+                    var phase = Phases[currentPhase];
+
+                    zoneTargetRadius = initialRadius * phase.RadiusPercent;
+
+                    // Shift center randomly within current circle
+                    float maxShift = zoneCurrentRadius - zoneTargetRadius;
+                    if( maxShift > 0 ) {
+                        float angle = (float)( rand.NextDouble() * Math.PI * 2 );
+                        float shift = (float)( rand.NextDouble() * maxShift * 0.5f );
+                        float newCX = zoneCenterX + shift * (float)Math.Cos( angle );
+                        float newCY = zoneCenterY + shift * (float)Math.Sin( angle );
+
+                        // Clamp to map bounds
+                        float halfX = Map.Size.X / 2f;
+                        float halfY = Map.Size.Y / 2f;
+                        newCX = Math.Max( Map.Position.X - halfX + zoneTargetRadius,
+                                 Math.Min( Map.Position.X + halfX - zoneTargetRadius, newCX ) );
+                        newCY = Math.Max( Map.Position.Y - halfY + zoneTargetRadius,
+                                 Math.Min( Map.Position.Y + halfY - zoneTargetRadius, newCY ) );
+
+                        zoneCenterX = newCX;
+                        zoneCenterY = newCY;
+                    }
+
+                    zoneShrinkStart = now;
+                    zoneShrinkEnd = now + phase.ShrinkSeconds * 1000f;
+                    isShrinking = true;
+
+                    BroadcastZoneUpdate();
+                    WriteChat( "BR", "Zone shrinking! Phase " + ( currentPhase + 1 ), 255, 165, 0 );
+                }
+
+                if( isShrinking ) {
+                    float elapsed = now - zoneShrinkStart;
+                    float duration = zoneShrinkEnd - zoneShrinkStart;
+                    float t = Math.Min( 1f, elapsed / duration );
+                    float startRadius = currentPhase == 0 ? initialRadius :
+                        initialRadius * Phases[currentPhase - 1].RadiusPercent;
+                    zoneCurrentRadius = startRadius + ( zoneTargetRadius - startRadius ) * t;
+
+                    if( t >= 1f ) {
+                        isShrinking = false;
+                        zoneCurrentRadius = zoneTargetRadius;
+                        phaseWaitUntil = now + ( currentPhase + 1 < Phases.Length ?
+                            Phases[currentPhase + 1].WaitSeconds * 1000f : 999999f );
+                        WriteChat( "BR", "Zone stable. Next shrink incoming...", 255, 200, 0 );
+                    }
+                }
+            }
+
+            // Zone damage check (every 1s)
+            if( now >= zoneDamageTimer + ZONE_DAMAGE_INTERVAL ) {
+                zoneDamageTimer = now;
+                foreach( var player in alivePlayers.ToList() ) {
+                    try {
+                        Vector3 playerPos = player.Character.Position;
+                        float dx = playerPos.X - zoneCenterX;
+                        float dy = playerPos.Y - zoneCenterY;
+                        float distSq = dx * dx + dy * dy;
+                        if( distSq > zoneCurrentRadius * zoneCurrentRadius ) {
+                            player.TriggerEvent( "br:zoneDamage", ZONE_DAMAGE_AMOUNT );
+                        }
+                    } catch {
+                        // Player may have disconnected
+                    }
+                }
+            }
+        }
+
+        public override void OnPlayerKilled( Player victim, Player attacker, Vector3 deathCoords, uint weaponHash ) {
+            if( !gameStarted ) return;
+
+            alivePlayers.RemoveAll( p => p.Handle == victim.Handle );
+            SetTeam( victim, -1 ); // Spectator
+
+            string killerName = attacker != null ? attacker.Name : "The Zone";
+            string victimName = victim.Name;
+
+            // Award kill XP
+            if( attacker != null && attacker.Handle != victim.Handle ) {
+                AddScore( attacker, 1 );
+                WriteChat( "BR", victimName + " was eliminated by " + killerName + "!", 255, 80, 80 );
+            } else {
+                WriteChat( "BR", victimName + " was eliminated!", 255, 80, 80 );
+            }
+
+            TriggerClientEvent( "br:playerEliminated", alivePlayers.Count, victimName, killerName );
+
+            CheckWinCondition();
+        }
+
+        public override void OnPlayerDied( Player victim, int killerType, Vector3 deathCoords ) {
+            if( !gameStarted ) return;
+
+            alivePlayers.RemoveAll( p => p.Handle == victim.Handle );
+            SetTeam( victim, -1 );
+
+            WriteChat( "BR", victim.Name + " was eliminated!", 255, 80, 80 );
+            TriggerClientEvent( "br:playerEliminated", alivePlayers.Count, victim.Name, "The Zone" );
+
+            CheckWinCondition();
+        }
+
+        void CheckWinCondition() {
+            if( alivePlayers.Count <= 1 ) {
+                if( alivePlayers.Count == 1 ) {
+                    Player winner = alivePlayers[0];
+                    WinningPlayers.Add( winner );
+                    WriteChat( "BR", winner.Name + " wins the Battle Royale!", 255, 215, 0 );
+                    TriggerClientEvent( "br:winner", winner.Name );
+                } else {
+                    WriteChat( "BR", "No survivors!", 255, 80, 80 );
+                }
+                gameStarted = false;
+                End();
+            }
+        }
+
+        public override void OnTimerEnd() {
+            if( !gameStarted ) return;
+
+            // Player closest to zone center wins
+            Player closest = null;
+            float closestDist = float.MaxValue;
+            foreach( var player in alivePlayers ) {
+                try {
+                    Vector3 pos = player.Character.Position;
+                    float dx = pos.X - zoneCenterX;
+                    float dy = pos.Y - zoneCenterY;
+                    float dist = dx * dx + dy * dy;
+                    if( dist < closestDist ) {
+                        closestDist = dist;
+                        closest = player;
+                    }
+                } catch { }
+            }
+
+            if( closest != null ) {
+                WinningPlayers.Add( closest );
+                WriteChat( "BR", closest.Name + " wins by zone position!", 255, 215, 0 );
+                TriggerClientEvent( "br:winner", closest.Name );
+            }
+
+            gameStarted = false;
+            End();
+        }
+
+        void BroadcastZoneUpdate() {
+            TriggerClientEvent( "br:zoneUpdate",
+                zoneCenterX, zoneCenterY,
+                zoneCurrentRadius, zoneTargetRadius,
+                zoneShrinkStart, zoneShrinkEnd,
+                currentPhase );
+        }
+
+        void BroadcastAliveCount() {
+            TriggerClientEvent( "br:playerEliminated", alivePlayers.Count, "", "" );
+        }
+    }
+}

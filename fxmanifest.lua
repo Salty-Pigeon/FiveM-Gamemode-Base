@@ -27,6 +27,7 @@ client_scripts {
     'MVBClient.net.dll',
     'HPClient.net.dll',
     'GGClient.net.dll',
+    'BRClient.net.dll',
 }
 
 server_scripts {
@@ -38,4 +39,5 @@ server_scripts {
     'MVBServer.net.dll',
     'HPServer.net.dll',
     'GGServer.net.dll',
+    'BRServer.net.dll',
 }

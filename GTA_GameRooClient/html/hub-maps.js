@@ -2,6 +2,25 @@
 
 var spawnTypeNames = ['PLAYER', 'WEAPON', 'OBJECT', 'WIN_BARRIER'];
 
+function buildGamemodeCheckboxes() {
+    var container = document.getElementById('mapGamemodes');
+    container.innerHTML = '';
+    var gms = (typeof gamemodes !== 'undefined' && gamemodes) ? gamemodes : [];
+    for (var i = 0; i < gms.length; i++) {
+        var gm = gms[i];
+        var label = document.createElement('label');
+        label.className = 'map-checkbox';
+        var cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.value = gm.id;
+        var span = document.createElement('span');
+        span.textContent = gm.id.toUpperCase();
+        label.appendChild(cb);
+        label.appendChild(span);
+        container.appendChild(label);
+    }
+}
+
 function renderMapList() {
     var container = document.getElementById('mapListItems');
     container.innerHTML = '';

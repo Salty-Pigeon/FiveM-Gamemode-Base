@@ -24,7 +24,9 @@
       "Bash(done)",
       "Bash(wc:*)",
       "Bash(ls:*)",
-      "Bash(powershell -Command:*)"
+      "Bash(powershell -Command:*)",
+      "Bash(cmd.exe //c \"dir \"\"C:\\\\Program Files\\\\Microsoft Visual Studio\\\\2019\"\" /b\")",
+      "Bash(cmd //c \"dir /b /s \"\"C:\\\\Program Files\\\\Microsoft Visual Studio\"\" 2>nul\")"
     ]
   }
 }

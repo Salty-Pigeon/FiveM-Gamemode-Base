@@ -59,6 +59,7 @@ window.addEventListener('message', function(event) {
     if (data.type === 'openHub') {
         gamemodes = data.gamemodes || [];
         debugActions = data.debugActions || {};
+        buildGamemodeCheckboxes();
         if (data.progression) {
             progression = data.progression;
         }

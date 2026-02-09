@@ -10,7 +10,17 @@ namespace GTA_GameRooClient {
     public class MapMenu : SaltyMenu {
 
         Dictionary<MenuItem, ClientMap> mapIndex = new Dictionary<MenuItem, ClientMap>();
-        private static readonly string[] AvailableGamemodes = { "tdm", "ttt", "icm", "mvb", "hp" };
+        private static string[] AvailableGamemodes {
+            get {
+                var all = GamemodeRegistry.GetAll();
+                var keys = new string[all.Count];
+                int i = 0;
+                foreach( var kvp in all ) {
+                    keys[i++] = kvp.Key;
+                }
+                return keys;
+            }
+        }
 
         public void EditMapMenu( Menu parent, ClientMap map ) {
 

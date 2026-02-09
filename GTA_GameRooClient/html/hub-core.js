@@ -159,9 +159,10 @@ function switchTab(name) {
 
 function closeHub() {
     stopListening();
-    if (customizeActive) {
-        exitCustomization(true);
-    }
+    // Always attempt to exit customization when closing the hub,
+    // even if customizeActive is false — the C# side will do a safety cleanup
+    // of any orphaned preview ped/camera from a race condition
+    exitCustomization(true);
     document.getElementById('hub').classList.remove('visible');
     document.getElementById('hub').classList.remove('shop-preview-active');
     fetch('https://gta_gameroo/closeHub', {

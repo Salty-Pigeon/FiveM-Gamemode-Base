@@ -257,6 +257,9 @@ namespace GTA_GameRooClient {
             RequestIpl( PreviewIpl );
             await BaseScript.Delay( 500 );
 
+            // Bail out if cancelled during await
+            if( !_customizing ) return;
+
             if( !_previewPosFromServer ) {
                 if( IsIplActive( PreviewIpl ) ) {
                     _previewPos = new Vector3( 121.2738f, -225.2129f, 53.6f );
@@ -276,6 +279,9 @@ namespace GTA_GameRooClient {
             RequestCollisionAtCoord( _previewPos.X, _previewPos.Y, _previewPos.Z );
             await BaseScript.Delay( 500 );
 
+            // Bail out if cancelled during await
+            if( !_customizing ) return;
+
             // Load model and create ped
             string modelName = string.IsNullOrEmpty( SelectedModel ) ? "mp_m_freemode_01" : SelectedModel;
             uint hash = (uint)GetHashKey( modelName );
@@ -285,7 +291,12 @@ namespace GTA_GameRooClient {
             while( !HasModelLoaded( hash ) && timeout < 100 ) {
                 await BaseScript.Delay( 50 );
                 timeout++;
+                // Bail out if cancelled while loading model
+                if( !_customizing ) return;
             }
+
+            // Final check before creating ped
+            if( !_customizing ) return;
 
             if( HasModelLoaded( hash ) ) {
                 _previewPed = CreatePed( 4, hash, _previewPos.X, _previewPos.Y, _previewPos.Z, _previewHeading, false, false );
@@ -319,8 +330,16 @@ namespace GTA_GameRooClient {
         }
 
         public static async void StopCustomization( bool cancelled ) {
-            if( !_customizing ) return;
+            // Always clear the flag first to prevent in-flight StartCustomization from continuing
+            bool wasCustomizing = _customizing;
             _customizing = false;
+
+            // If we weren't customizing, still do a safety cleanup of camera/ped
+            // in case StartCustomization created them after a race condition
+            if( !wasCustomizing ) {
+                ForceCleanupPreview();
+                return;
+            }
 
             int playerPed = PlayerPedId();
 
@@ -373,6 +392,25 @@ namespace GTA_GameRooClient {
 
             _savedAppearance = null;
             _savedModel = null;
+        }
+
+        /// <summary>
+        /// Emergency cleanup — destroys any orphaned preview ped/camera and resets script cam.
+        /// Called when StopCustomization detects it wasn't in customizing state but resources may exist.
+        /// </summary>
+        private static void ForceCleanupPreview() {
+            if( _previewPed != 0 && DoesEntityExist( _previewPed ) ) {
+                DeletePed( ref _previewPed );
+            }
+            _previewPed = 0;
+
+            if( _previewCam != 0 && DoesCamExist( _previewCam ) ) {
+                SetCamActive( _previewCam, false );
+                DestroyCam( _previewCam, false );
+            }
+            _previewCam = 0;
+            RenderScriptCams( false, false, 0, true, false );
+            ClearFocus();
         }
 
         // ==================== Appearance Natives ====================
@@ -631,9 +669,22 @@ namespace GTA_GameRooClient {
                 while( ( _previewPed == 0 || !DoesEntityExist( _previewPed ) ) && timeout < 100 ) {
                     await Delay( 50 );
                     timeout++;
+                    // Bail out if user exited customization while we were waiting
+                    if( !_customizing ) {
+                        Debug.WriteLine( "[GameRoo] customizeStart: cancelled during ped wait" );
+                        cb( "{\"status\":\"error\",\"reason\":\"cancelled\"}" );
+                        return;
+                    }
                 }
 
                 Debug.WriteLine( "[GameRoo] customizeStart: waited " + timeout + " ticks, _previewPed=" + _previewPed + " exists=" + ( _previewPed != 0 && DoesEntityExist( _previewPed ) ) );
+
+                // Final check — user may have exited right after ped spawned
+                if( !_customizing ) {
+                    Debug.WriteLine( "[GameRoo] customizeStart: cancelled after ped wait" );
+                    cb( "{\"status\":\"error\",\"reason\":\"cancelled\"}" );
+                    return;
+                }
 
                 if( _previewPed == 0 || !DoesEntityExist( _previewPed ) ) {
                     Debug.WriteLine( "[GameRoo] customizeStart: FAILED - ped not spawned" );

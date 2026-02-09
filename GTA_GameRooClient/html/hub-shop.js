@@ -4,6 +4,7 @@ var settingsVersion = 0; // Track which settings response is latest
 
 function changePreviewModel(hash) {
     settingsVersion++;
+    var myVersion = settingsVersion;
     console.log('[shop] changePreviewModel:', hash);
     fetch('https://gta_gameroo/changeModel', {
         method: 'POST',
@@ -11,6 +12,9 @@ function changePreviewModel(hash) {
         body: JSON.stringify({ modelHash: hash })
     }).then(nuiResp).then(function(data) {
         console.log('[shop] changeModel response:', JSON.stringify(data));
+        // Ignore stale responses if user exited customization
+        if (!customizeActive) return;
+        if (settingsVersion !== myVersion) return;
         if (data.status === 'ok') {
             customizeSettings = data.settings;
             currentAppearance = data.appearance;
@@ -43,6 +47,8 @@ function enterCustomization() {
         body: JSON.stringify({})
     }).then(nuiResp).then(function(data) {
         console.log('[shop] customizeStart response:', JSON.stringify(data), 'myVersion:', myVersion, 'settingsVersion:', settingsVersion);
+        // If user already exited the shop before the response arrived, ignore it
+        if (!customizeActive) return;
         if (data.status !== 'ok') {
             if (data.reason === 'in_game') {
                 customizeActive = false;
@@ -65,18 +71,20 @@ function enterCustomization() {
 }
 
 function exitCustomization(cancelled) {
-    if (!customizeActive) return;
+    var wasActive = customizeActive;
     customizeActive = false;
     previewingModelHash = null;
     purchaseConfirmHash = null;
+    customizeSettings = null;
+    currentAppearance = null;
+    // Always send the cancel/save to C# — even if JS didn't think customization
+    // was active, the C# side will do a safety cleanup of any orphaned preview ped/camera
     var endpoint = cancelled ? 'customizeCancel' : 'customizeSave';
     fetch('https://gta_gameroo/' + endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({})
     });
-    customizeSettings = null;
-    currentAppearance = null;
 }
 
 function updateSubTabStates() {

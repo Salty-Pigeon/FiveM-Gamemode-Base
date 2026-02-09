@@ -155,6 +155,10 @@ namespace GTA_GameRooClient {
                 TriggerServerEvent( "salty:netStartGame", "tdm" );
             } ), false );
 
+            RegisterCommand( "br", new Action<int, List<object>, string>( ( source, args, raw ) => {
+                TriggerServerEvent( "salty:netStartGame", "br" );
+            } ), false );
+
             RegisterCommand( "noclip", new Action<int, List<object>, string>( ( source, args, raw ) => {
                 ClientGlobals.SetNoClip( !ClientGlobals.isNoclip );
             } ), false );
