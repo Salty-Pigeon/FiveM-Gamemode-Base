@@ -250,9 +250,39 @@ namespace GTA_GameRooClient {
                         Game.Player.Character.Kill();
                         deathTimer = 0;
                     }
-                    ClientGlobals.CurrentGame.HUD.BoundText.Colour = System.Drawing.Color.FromArgb( 255, 0, 0 );
-                    ClientGlobals.CurrentGame.HUD.BoundText.Caption = "You have " + Math.Round( secondsLeft / 1000 ) + " seconds to return or you will die.";
-                    ClientGlobals.CurrentGame.HUD.BoundText.Draw();
+                    // Polished out-of-bounds warning banner
+                    var hud = ClientGlobals.CurrentGame.HUD;
+                    float bannerW = 0.22f;
+                    float bannerH = 0.038f;
+                    float bannerX = 0.5f - bannerW / 2f;
+                    float bannerY = 0.06f;
+
+                    // Urgency ramps from 0 (full time) to 1 (dead)
+                    float urgency = 1f - Math.Max( 0, secondsLeft ) / gracePeriod;
+
+                    // Background — darkens and reddens as time runs out
+                    int bgR = (int)( 15 + urgency * 50 );
+                    int bgA = (int)( 190 + urgency * 55 );
+                    hud.DrawRectangle( bannerX, bannerY, bannerW, bannerH, bgR, 8, 8, bgA );
+
+                    // Depleting fill bar — shows remaining time visually
+                    float fillPct = Math.Max( 0, secondsLeft ) / gracePeriod;
+                    hud.DrawRectangle( bannerX, bannerY, fillPct * bannerW, bannerH, 200, 40, 40, 40 );
+
+                    // Left accent
+                    hud.DrawRectangle( bannerX, bannerY, 0.004f, bannerH, 200, 40, 40, 255 );
+
+                    // Warning text with countdown
+                    int secDisplay = Math.Max( 0, (int)Math.Ceiling( secondsLeft / 1000 ) );
+                    string warnText = "RETURN TO PLAY AREA   " + secDisplay + "s";
+
+                    // Pulse when critical (<=2s)
+                    int textA = 255;
+                    if( secDisplay <= 2 ) {
+                        float pulse = (float)( Math.Sin( GetGameTimer() / 150.0 ) * 0.5 + 0.5 );
+                        textA = 180 + (int)( 75 * pulse );
+                    }
+                    hud.DrawText2D( 0.5f, bannerY + 0.008f, warnText, 0.32f, 255, 255, 255, textA, true );
                 }
 
 

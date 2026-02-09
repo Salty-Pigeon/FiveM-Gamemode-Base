@@ -26,97 +26,163 @@ namespace TTTClient {
         public Vector3 DNALastPos;
         public float DNALastScanAt = 0f;
 
+        private bool nuiTimerHidden = false;
+
         public override void Draw() {
+            if( !nuiTimerHidden ) {
+                HideGameTimer();
+                nuiTimerHidden = true;
+            }
 
-            DrawRectangle( 0.025f, 0.878f, 0.12f, 0.093f, 122, 127, 140, 255 );;
-
-            DrawHealth();
+            HideReticle();
+            DrawPanel();
             ShowNames();
-            TeamText.Draw();
-            
-            DrawTeam();
             DrawGoal();
-            DrawRectangle( 0.098f, 0.87824f, 0.007f, 0.025f, 68, 74, 96, 255 );
 
-            if( isRadarActive )
-                ShowRadar();
+            // Ability bars — stack dynamically above the main panel
+            float nextBarY = 0.922f;
+            float barStep = 0.025f;
 
-            if( DetectiveTracing != -1 )
-                ShowDNA();
-
-            if( Main.CanTeleport )
-                ShowTeleport();
-
-            if( Main.CanDisguise )
-                ShowDisguise();
+            if( isRadarActive ) {
+                nextBarY -= barStep;
+                ShowRadar( nextBarY );
+            }
+            if( DetectiveTracing != -1 ) {
+                nextBarY -= barStep;
+                ShowDNA( nextBarY );
+            }
+            if( Main.CanTeleport ) {
+                nextBarY -= barStep;
+                ShowTeleport( nextBarY );
+            }
+            if( Main.CanDisguise ) {
+                nextBarY -= barStep;
+                ShowDisguise( nextBarY );
+            }
 
             ShowTalking();
 
             if( lastLooked + 300 > GetGameTimer() ) {
                 HUDText.Draw();
             }
-
-            base.Draw();
         }
 
+        private void DrawPanel() {
+            // Layout
+            float px = 0.015f;
+            float py = 0.922f;
+            float pw = 0.155f;
+            float accentW = 0.004f;
+            float topH = 0.025f;
+            float sep = 0.002f;
+            float botH = 0.027f;
+            float ph = topH + sep + botH;
 
-        public void DrawHealth() {
+            float innerX = px + accentW;
+            float innerW = pw - accentW;
+            float botY = py + topH + sep;
 
-            //HideHudAndRadarThisFrame();
+            // Team color
+            int tcR, tcG, tcB;
+            GetTeamColor( out tcR, out tcG, out tcB );
 
-            HideReticle();
+            // Accent strip — team color, full height
+            DrawRectangle( px, py, accentW, ph, tcR, tcG, tcB, 255 );
 
-            HealthText.Caption = Game.Player.Character.Health.ToString();
+            // Top row — role + timer
+            DrawRectangle( innerX, py, innerW, topH, 22, 24, 35, 215 );
 
+            string role = GetRoleName();
+            DrawText2D( innerX + 0.006f, py + 0.004f, role, 0.28f, tcR, tcG, tcB, 255, false );
 
-            AmmoText.Caption = Game.PlayerPed.Weapons.Current.AmmoInClip.ToString() + " + " + latestAmmo;
+            // Timer
+            float msLeft = 0;
+            if( ClientGlobals.CurrentGame != null )
+                msLeft = ClientGlobals.CurrentGame.GameTimerEnd - GetGameTimer();
+            if( msLeft < 0 ) msLeft = 0;
+            int totalSec = (int)Math.Ceiling( msLeft / 1000 );
+            int mins = totalSec / 60;
+            int secs = totalSec % 60;
+            string timer = mins + ":" + secs.ToString( "00" );
+            bool urgent = totalSec <= 30 && totalSec > 0;
 
-            if( Game.PlayerPed.IsReloading ) {
-                latestAmmo = Game.PlayerPed.Weapons.Current.Ammo - Game.PlayerPed.Weapons.Current.AmmoInClip;
+            if( urgent ) {
+                float pulse = (float)( Math.Sin( GetGameTimer() / 300.0 ) * 0.5 + 0.5 );
+                int tA = 180 + (int)( 75 * pulse );
+                DrawText2D( px + pw - 0.042f, py + 0.004f, timer, 0.28f, 239, 68, 68, tA, false );
+            } else {
+                DrawText2D( px + pw - 0.042f, py + 0.004f, timer, 0.28f, 200, 200, 200, 180, false );
             }
 
-            DrawRectangle( 0.025f, 0.9038f, 0.12f, 0.035f, 0, 0, 0, 200 );
-            float healthPercent = (float)Game.Player.Character.Health / Game.Player.Character.MaxHealth;
-            if( healthPercent < 0 )
-                healthPercent = 0;
-            if( healthPercent > 1 )
-                healthPercent = 1;
-            DrawRectangle( 0.025f, 0.9038f, healthPercent * 0.12f, 0.035f, 200, 46, 48, 255 );
-            DrawRectangle( 0.025f, 0.9038f, 0.007f, 0.035f, 150, 1, 3, 255 );
+            // Separator
+            DrawRectangle( innerX, py + topH, innerW, sep, 35, 38, 52, 120 );
 
-            float ammoPercent = (float)Game.PlayerPed.Weapons.Current.AmmoInClip / Game.PlayerPed.Weapons.Current.MaxAmmoInClip;
+            // Health bar — background
+            DrawRectangle( innerX, botY, innerW, botH, 12, 12, 20, 225 );
 
-            DrawRectangle( 0.025f, 0.94f, 0.12f, 0.03f, 0, 0, 0, 200 );
-            DrawRectangle( 0.025f, 0.94f, ammoPercent * 0.12f, 0.03f, 206, 155, 1, 200 );
-            DrawRectangle( 0.025f, 0.94f, 0.007f, 0.03f, 160, 106, 0, 255 );
+            // Health bar — fill
+            float health = (float)Game.Player.Character.Health;
+            float maxHealth = (float)Game.Player.Character.MaxHealth;
+            float pct = maxHealth > 0 ? health / maxHealth : 0;
+            pct = Math.Max( 0, Math.Min( 1, pct ) );
 
-            HealthText.Draw();
-            AmmoText.Draw();
+            if( pct > 0 ) {
+                DrawRectangle( innerX, botY, pct * innerW, botH, 200, 46, 48, 220 );
+                DrawRectangle( innerX, botY, 0.003f, botH, 230, 60, 62, 255 );
+            }
 
+            // Low health warning pulse
+            if( pct > 0 && pct < 0.25f ) {
+                float pulse = (float)( Math.Sin( GetGameTimer() / 200.0 ) * 0.5 + 0.5 );
+                DrawRectangle( innerX, botY, innerW, botH, 255, 0, 0, (int)( 40 * pulse ) );
+            }
+
+            // Health number
+            string healthStr = Math.Max( 0, (int)health ).ToString();
+            DrawText2D( innerX + 0.006f, botY + 0.005f, healthStr, 0.28f, 255, 255, 255, 240, false );
         }
 
-        public void DrawTeam() {
+        private void GetTeamColor( out int r, out int g, out int b ) {
             switch( Main.Team ) {
-                case 0:
-                    DrawRectangle( 0.025f, 0.8782425f, 0.073f, 0.025f, 0, 200, 0, 255 );
-                    DrawRectangle( 0.025f, 0.8782425f, 0.007f, 0.025f, 0, 150, 0, 255 );
-                    break;
-                case 1:
-                    DrawRectangle( 0.025f, 0.8782425f, 0.073f, 0.025f, 200, 0, 0, 255 );
-                    DrawRectangle( 0.025f, 0.8782425f, 0.007f, 0.025f, 150, 0, 0, 255 );
-                    break;
-                case 2:
-                    DrawRectangle( 0.025f, 0.8782425f, 0.073f, 0.025f, 0, 0, 200, 255 );
-                    DrawRectangle( 0.025f, 0.8782425f, 0.007f, 0.025f, 0, 0, 150, 255 );
-                    break;
-                default:
-                    DrawRectangle( 0.025f, 0.8782425f, 0.073f, 0.025f, 200, 200, 0, 255 );
-                    DrawRectangle( 0.025f, 0.8782425f, 0.007f, 0.025f, 150, 150, 0, 255 );
-                    break;
+                case 0:  r = 34;  g = 197; b = 94;  return; // Innocent
+                case 1:  r = 239; g = 68;  b = 68;  return; // Traitor
+                case 2:  r = 59;  g = 130; b = 246; return; // Detective
+                default: r = 200; g = 200; b = 60;  return;
             }
         }
 
-        public void ShowRadar() {
+        private string GetRoleName() {
+            switch( Main.Team ) {
+                case 0:  return "INNOCENT";
+                case 1:  return "TRAITOR";
+                case 2:  return "DETECTIVE";
+                default: return "UNKNOWN";
+            }
+        }
+
+        private void DrawAbilityBar( float barY, string label, float progress, int acR, int acG, int acB, int textAlpha ) {
+            float px = 0.015f;
+            float pw = 0.155f;
+            float accentW = 0.004f;
+            float barH = 0.022f;
+            float innerX = px + accentW;
+            float innerW = pw - accentW;
+
+            // Background
+            DrawRectangle( innerX, barY, innerW, barH, 22, 24, 35, 200 );
+
+            // Progress fill
+            if( progress > 0 )
+                DrawRectangle( innerX, barY, Math.Min( progress, 1f ) * innerW, barH, acR, acG, acB, 50 );
+
+            // Accent strip
+            DrawRectangle( px, barY, accentW, barH, acR, acG, acB, 255 );
+
+            // Label
+            DrawText2D( innerX + 0.006f, barY + 0.003f, label, 0.25f, 255, 255, 255, textAlpha, false );
+        }
+
+        public void ShowRadar( float barY ) {
 
             if( RadarTime < GetGameTimer() ) {
                 RadarTime += RadarScanTime;
@@ -168,25 +234,9 @@ namespace TTTClient {
                 DrawText2D( x - 0.013f, labelY - 0.007f, Math.Round( dist ) + "m", 0.28f, 255, 255, 255, 220, false );
             }
 
-            // Status bar — bottom-left above HUD bars
-            float barX = 0.025f;
-            float barY = 0.835f;
-            float barW = 0.12f;
-            float barH = 0.022f;
-
-            // Dark background
-            DrawRectangle( barX, barY, barW, barH, 0, 0, 0, 180 );
-
-            // Progress fill — depletes as timer counts down
             float progress = Math.Max( remaining / RadarScanTime, 0f );
-            DrawRectangle( barX, barY, progress * barW, barH, 34, 197, 94, 80 );
-
-            // Accent edge
-            DrawRectangle( barX, barY, 0.004f, barH, 34, 197, 94, 200 );
-
-            // Label + countdown
             float secs = (float)Math.Ceiling( remaining / 1000 );
-            DrawText2D( barX + 0.007f, barY + 0.002f, "RADAR  " + secs + "s", 0.27f, 255, 255, 255, 220, false );
+            DrawAbilityBar( barY, "RADAR  " + secs + "s", progress, 34, 197, 94, 220 );
 
         }
 
@@ -282,7 +332,7 @@ namespace TTTClient {
             }
         }
 
-        public void ShowDNA() {
+        public void ShowDNA( float barY ) {
 
             if( DNATime < GetGameTimer() ) {
                 DNATime += DNAScanTime;
@@ -324,25 +374,9 @@ namespace TTTClient {
                 }
             }
 
-            // Status bar — positioned below radar bar if both active, otherwise same spot
-            float barX = 0.025f;
-            float barY = isRadarActive ? 0.860f : 0.835f;
-            float barW = 0.12f;
-            float barH = 0.022f;
-
-            // Dark background
-            DrawRectangle( barX, barY, barW, barH, 0, 0, 0, 180 );
-
-            // Progress fill
             float progress = Math.Max( remaining / DNAScanTime, 0f );
-            DrawRectangle( barX, barY, progress * barW, barH, 59, 130, 246, 80 );
-
-            // Accent edge
-            DrawRectangle( barX, barY, 0.004f, barH, 59, 130, 246, 200 );
-
-            // Label + countdown
             float secs = (float)Math.Ceiling( remaining / 1000 );
-            DrawText2D( barX + 0.007f, barY + 0.002f, "DNA TRACE  " + secs + "s", 0.27f, 255, 255, 255, 220, false );
+            DrawAbilityBar( barY, "DNA TRACE  " + secs + "s", progress, 59, 130, 246, 220 );
 
         }
 
@@ -354,7 +388,7 @@ namespace TTTClient {
             }
         }
 
-        public void ShowTeleport() {
+        public void ShowTeleport( float barY ) {
             bool isTraitor = Main.Team == (int)Teams.Traitor;
             int tcR, tcG, tcB;
             if( isTraitor ) { tcR = 239; tcG = 68; tcB = 68; }
@@ -367,15 +401,11 @@ namespace TTTClient {
                 float sx = 0, sy = 0;
                 var offscreen = Get_2dCoordFrom_3dCoord( Main.SavedTeleport.X, Main.SavedTeleport.Y, Main.SavedTeleport.Z, ref sx, ref sy );
                 if( !offscreen ) {
-                    // Outer glow — pulsing alpha via sine wave
                     float pulse = (float)Math.Sin( gameTime / 400.0 );
-                    int glowAlpha = 40 + (int)(20 * pulse); // 20–60
+                    int glowAlpha = 40 + (int)(20 * pulse);
                     DrawRect( sx, sy, 0.016f, 0.010f, tcR, tcG, tcB, glowAlpha );
-
-                    // Inner dot
                     DrawRect( sx, sy, 0.006f, 0.0035f, tcR, tcG, tcB, 180 );
 
-                    // Distance label
                     Vector3 camPos = GetGameplayCamCoords();
                     float dist = GetDistanceBetweenCoords( Main.SavedTeleport.X, Main.SavedTeleport.Y, Main.SavedTeleport.Z, camPos.X, camPos.Y, camPos.Z, true );
                     float labelY = sy + 0.018f;
@@ -384,47 +414,26 @@ namespace TTTClient {
                 }
             }
 
-            // Status bar — stacks above radar and DNA bars
-            float barX = 0.025f;
-            float barY = 0.835f;
-            if( isRadarActive ) barY -= 0.025f;
-            if( DetectiveTracing != -1 ) barY -= 0.025f;
-            float barW = 0.12f;
-            float barH = 0.022f;
-
-            // Dark background
-            DrawRectangle( barX, barY, barW, barH, 0, 0, 0, 180 );
-
-            // Accent edge
-            DrawRectangle( barX, barY, 0.004f, barH, tcR, tcG, tcB, 200 );
-
+            // Status bar
             if( Main.isTeleporting ) {
-                // Teleporting — progress bar fills over the duration
                 float remaining = Main.teleportTime - gameTime;
                 float progress = 1f - Math.Max( remaining / Main.teleportLength, 0f );
-                DrawRectangle( barX, barY, progress * barW, barH, tcR, tcG, tcB, 80 );
-                DrawText2D( barX + 0.007f, barY + 0.002f, "TELEPORT", 0.27f, 255, 255, 255, 220, false );
+                DrawAbilityBar( barY, "TELEPORT", progress, tcR, tcG, tcB, 220 );
             } else if( Main.teleportWait > gameTime ) {
-                // Cooldown — depleting bar
                 float remaining = Main.teleportWait - gameTime;
                 float progress = Math.Max( remaining / Main.teleportDelay, 0f );
-                DrawRectangle( barX, barY, progress * barW, barH, tcR, tcG, tcB, 80 );
                 float secs = (float)Math.Ceiling( remaining / 1000 );
-                DrawText2D( barX + 0.007f, barY + 0.002f, "COOLDOWN  " + secs + "s", 0.27f, 255, 255, 255, 220, false );
+                DrawAbilityBar( barY, "COOLDOWN  " + secs + "s", progress, tcR, tcG, tcB, 220 );
             } else if( Main.teleportStatus != "" && gameTime - Main.teleportStatusTime < 2000f ) {
-                // Status text — fades out over 2s
                 float elapsed = gameTime - Main.teleportStatusTime;
-                int textAlpha = (int)(220 * (1f - elapsed / 2000f));
-                int bgAlpha = (int)(80 * (1f - elapsed / 2000f));
-                DrawRectangle( barX, barY, barW, barH, tcR, tcG, tcB, bgAlpha );
-                DrawText2D( barX + 0.007f, barY + 0.002f, Main.teleportStatus, 0.27f, 255, 255, 255, textAlpha, false );
+                int textAlpha = (int)( 220 * ( 1f - elapsed / 2000f ) );
+                DrawAbilityBar( barY, Main.teleportStatus, 0, tcR, tcG, tcB, textAlpha );
             } else {
-                // Idle — just show "TELEPORT" label
-                DrawText2D( barX + 0.007f, barY + 0.002f, "TELEPORT", 0.27f, 255, 255, 255, 120, false );
+                DrawAbilityBar( barY, "TELEPORT", 0, tcR, tcG, tcB, 120 );
             }
         }
 
-        public void ShowDisguise() {
+        public void ShowDisguise( float barY ) {
             bool isTraitor = Main.Team == (int)Teams.Traitor;
             int tcR, tcG, tcB;
             if( isTraitor ) { tcR = 239; tcG = 68; tcB = 68; }
@@ -432,45 +441,18 @@ namespace TTTClient {
 
             float gameTime = GetGameTimer();
 
-            // Status bar — stacks above radar, DNA, and teleport bars
-            float barX = 0.025f;
-            float barY = 0.835f;
-            if( isRadarActive ) barY -= 0.025f;
-            if( DetectiveTracing != -1 ) barY -= 0.025f;
-            if( Main.CanTeleport ) barY -= 0.025f;
-            float barW = 0.12f;
-            float barH = 0.022f;
-
-            // Dark background
-            DrawRectangle( barX, barY, barW, barH, 0, 0, 0, 180 );
-
-            // Accent edge
-            DrawRectangle( barX, barY, 0.004f, barH, tcR, tcG, tcB, 200 );
-
-            // Toggle flash — brief highlight when status changes (within 2000ms)
-            bool recentToggle = Main.disguiseStatus != "" && gameTime - Main.disguiseStatusTime < 2000f;
-
             if( Main.isDisguised ) {
-                // Active — team-colored fill across the bar
-                DrawRectangle( barX, barY, barW, barH, tcR, tcG, tcB, 80 );
-
-                if( recentToggle ) {
-                    float elapsed = gameTime - Main.disguiseStatusTime;
-                    int flashAlpha = (int)(60 * (1f - elapsed / 2000f));
-                    DrawRectangle( barX, barY, barW, barH, tcR, tcG, tcB, flashAlpha );
-                }
-
-                DrawText2D( barX + 0.007f, barY + 0.002f, "DISGUISE  ON", 0.27f, 255, 255, 255, 220, false );
+                DrawAbilityBar( barY, "DISGUISE  ON", 1f, tcR, tcG, tcB, 220 );
             } else {
-                // Inactive — dimmed label
+                DrawAbilityBar( barY, "DISGUISE  OFF", 0, tcR, tcG, tcB, 120 );
+            }
 
-                if( recentToggle ) {
-                    float elapsed = gameTime - Main.disguiseStatusTime;
-                    int flashAlpha = (int)(60 * (1f - elapsed / 2000f));
-                    DrawRectangle( barX, barY, barW, barH, tcR, tcG, tcB, flashAlpha );
-                }
-
-                DrawText2D( barX + 0.007f, barY + 0.002f, "DISGUISE  OFF", 0.27f, 255, 255, 255, 120, false );
+            // Toggle flash overlay
+            bool recentToggle = Main.disguiseStatus != "" && gameTime - Main.disguiseStatusTime < 2000f;
+            if( recentToggle ) {
+                float elapsed = gameTime - Main.disguiseStatusTime;
+                int flashAlpha = (int)( 40 * ( 1f - elapsed / 2000f ) );
+                DrawRectangle( 0.019f, barY, 0.151f, 0.022f, tcR, tcG, tcB, flashAlpha );
             }
         }
 

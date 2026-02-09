@@ -90,7 +90,7 @@ namespace GTA_GameRooClient {
             if( Vertices.Count >= 3 ) {
                 // Polygon mode
                 float postSize = 0.3f;
-                float postBot = Position.Z;
+                float postBot = Position.Z - 50f;
                 float postTop = Position.Z + 40f;
                 int pr = 255; int pg = 255; int pb = 0; int pa = 120;
 
@@ -130,7 +130,7 @@ namespace GTA_GameRooClient {
                 DrawWall( sw.X, sw.Y, nw.X, nw.Y, zBot, zTop, r, g, b, a );
 
                 float postSize = 0.3f;
-                float postBot = Position.Z;
+                float postBot = Position.Z - 50f;
                 float postTop = Position.Z + 40f;
                 int pr = 255; int pg = 255; int pb = 0; int pa = 120;
 
