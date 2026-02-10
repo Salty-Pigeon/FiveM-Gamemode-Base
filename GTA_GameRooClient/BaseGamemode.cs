@@ -29,7 +29,7 @@ namespace GTA_GameRooClient {
         float gracePeriod = 1000 * 5;
 
         public List<uint> GameWeapons = new List<uint>();
-        IList<uint> PlayerWeapons = new List<uint>();
+        protected IList<uint> PlayerWeapons = new List<uint>();
         uint lastWep = 0;
 
         public const int SPECTATOR = -1;
@@ -385,7 +385,7 @@ namespace GTA_GameRooClient {
             }
         }
 
-        public void DropWeapon() {
+        public virtual void DropWeapon() {
 
             if( Game.PlayerPed.Weapons.Current.Hash.ToString() == "Unarmed" )
                 return;
@@ -447,7 +447,7 @@ namespace GTA_GameRooClient {
             }
         }
 
-        public bool CanPickupWeapon( uint hash ) {
+        public virtual bool CanPickupWeapon( uint hash ) {
             foreach( var wep in PlayerWeapons ) {
                 if( GetWeapontypeGroup(hash) == GetWeapontypeGroup( wep ) ) {
                     return false;

@@ -65,6 +65,16 @@ namespace BRClient {
         HashSet<string> searchedContainers = new HashSet<string>();
         bool containerDebug = false;
 
+        // Inventory
+        BRInventory inventory = new BRInventory();
+
+        // Static state for BRHUD to read inventory
+        public static uint[] InventorySlots = new uint[3];
+        public static int InventoryActiveSlot = 0;
+        public static int[] SlotAmmoClip = new int[3];
+        public static int[] SlotAmmoReserve = new int[3];
+        public static float InventoryTotalWeight = 0f;
+
         // Static state for BRHUD to read (TTT body pattern)
         public static bool NearContainerFound = false;
         public static Vector3 NearContainerPos;
@@ -209,12 +219,15 @@ namespace BRClient {
             isSearching = false;
             searchVehicle = 0;
             searchedContainers.Clear();
+            inventory.Clear();
+            SetPedMoveRateOverride( PlayerPedId(), 1.0f );
         }
 
         public override void End() {
             CleanupPlane();
             RemoveZoneBlip();
             isSearching = false;
+            SetPedMoveRateOverride( PlayerPedId(), 1.0f );
             base.End();
         }
 
@@ -332,9 +345,147 @@ namespace BRClient {
         // ===================== WEAPONS =====================
 
         void OnGiveStartWeapons() {
+            var game = ClientGlobals.CurrentGame as Main;
+            if( game == null ) return;
+            if( this != game ) { game.OnGiveStartWeapons(); return; }
+
             int ped = PlayerPedId();
             GiveWeaponToPed( ped, 0x99B507EA, 0, false, false );  // WEAPON_KNIFE
-            GiveWeaponToPed( ped, 0x1B06D571, 12, false, false ); // WEAPON_PISTOL (1 clip)
+            inventory.Add( 0x99B507EA ); // Knife → melee slot 2
+            inventory.SelectSlot( 2 );
+            SetCurrentPedWeapon( ped, 0x99B507EA, true );
+        }
+
+        public override bool CanPickupWeapon( uint hash ) {
+            // If already have this exact weapon, allow (will add ammo)
+            for( int i = 0; i < 3; i++ ) {
+                if( inventory.Slots[i] == hash ) return true;
+            }
+            if( inventory.CanAdd( hash ) ) return true;
+            HUD.ShowPopup( "Inventory full - drop a weapon first (F)", 200, 160, 30 );
+            return false;
+        }
+
+        public override void OnWeaponPickup( uint hash ) {
+            // If already in inventory, let base handle ammo display
+            for( int i = 0; i < 3; i++ ) {
+                if( inventory.Slots[i] == hash ) {
+                    base.OnWeaponPickup( hash );
+                    return;
+                }
+            }
+            int slot = inventory.Add( hash );
+            if( slot >= 0 ) {
+                inventory.SelectSlot( slot );
+                SetCurrentPedWeapon( PlayerPedId(), hash, true );
+                PlayerWeapons.Add( hash );
+            }
+        }
+
+        public override void DropWeapon() {
+            uint hash = inventory.GetActive();
+            if( hash == 0 ) return;
+
+            int slot = inventory.ActiveSlot;
+            if( slot == 2 ) {
+                HUD.ShowPopup( "Can't drop melee weapon", 200, 160, 30 );
+                return;
+            }
+            inventory.Remove( slot );
+
+            SaltyWeapon weapon = new SaltyWeapon( SpawnType.WEAPON, hash, LocalPlayer.Character.Position );
+            weapon.AmmoCount = GetAmmoInPedWeapon( PlayerPedId(), hash );
+            Map.Weapons.Add( weapon );
+            PlayerWeapons.Remove( hash );
+            RemoveWeaponFromPed( PlayerPedId(), hash );
+
+            // Switch to next occupied slot
+            if( inventory.GetActive() != 0 ) {
+                SetCurrentPedWeapon( PlayerPedId(), inventory.GetActive(), true );
+            } else {
+                // Find any occupied slot
+                inventory.CycleNext();
+                if( inventory.GetActive() != 0 ) {
+                    SetCurrentPedWeapon( PlayerPedId(), inventory.GetActive(), true );
+                } else {
+                    SetCurrentPedWeapon( PlayerPedId(), 0xA2719263, true ); // Unarmed
+                }
+            }
+        }
+
+        public override void Controls() {
+            // Drop weapon key (from base Controls logic)
+            int dropKey = GTA_GameRooClient.ControlConfig.GetControl( "br", "DropWeapon" );
+            if( dropKey > 0 && IsControlJustReleased( 0, dropKey ) ) {
+                DropWeapon();
+            } else if( dropKey <= 0 && IsControlJustReleased( 0, (int)eControl.ControlEnter ) ) {
+                DropWeapon();
+            }
+
+            // Disable weapon wheel & default cycling
+            DisableControlAction( 0, 12, true );  // WeaponWheelUpDown
+            DisableControlAction( 0, 13, true );  // WeaponWheelLeftRight
+            DisableControlAction( 0, 14, true );  // WeaponWheelNext
+            DisableControlAction( 0, 15, true );  // WeaponWheelPrev
+            DisableControlAction( 0, 16, true );  // SelectNextWeapon
+            DisableControlAction( 0, 17, true );  // SelectPrevWeapon
+            DisableControlAction( 0, 37, true );  // SelectWeapon (Tab)
+            // Disable category selects (1-9 keys)
+            for( int i = 157; i <= 165; i++ ) DisableControlAction( 0, i, true );
+
+            // Scroll wheel: cycle through occupied slots
+            if( IsDisabledControlJustReleased( 0, 16 ) ) { // SelectNextWeapon (scroll down)
+                inventory.CycleNext();
+                uint active = inventory.GetActive();
+                if( active != 0 ) SetCurrentPedWeapon( PlayerPedId(), active, true );
+            }
+            if( IsDisabledControlJustReleased( 0, 17 ) ) { // SelectPrevWeapon (scroll up)
+                inventory.CyclePrev();
+                uint active = inventory.GetActive();
+                if( active != 0 ) SetCurrentPedWeapon( PlayerPedId(), active, true );
+            }
+
+            // Number keys: 1=Gun1, 2=Gun2, 3=Melee
+            if( IsDisabledControlJustReleased( 0, 157 ) ) { // Key 1 (SelectWeaponUnarmed)
+                inventory.SelectSlot( 0 );
+                uint active = inventory.GetActive();
+                if( active != 0 ) SetCurrentPedWeapon( PlayerPedId(), active, true );
+                else SetCurrentPedWeapon( PlayerPedId(), 0xA2719263, true ); // Unarmed
+            }
+            if( IsDisabledControlJustReleased( 0, 158 ) ) { // Key 2 (SelectWeaponMelee)
+                inventory.SelectSlot( 1 );
+                uint active = inventory.GetActive();
+                if( active != 0 ) SetCurrentPedWeapon( PlayerPedId(), active, true );
+                else SetCurrentPedWeapon( PlayerPedId(), 0xA2719263, true );
+            }
+            if( IsDisabledControlJustReleased( 0, 159 ) ) { // Key 3 (SelectWeaponHandgun)
+                inventory.SelectSlot( 2 );
+                uint active = inventory.GetActive();
+                if( active != 0 ) SetCurrentPedWeapon( PlayerPedId(), active, true );
+                else SetCurrentPedWeapon( PlayerPedId(), 0xA2719263, true );
+            }
+
+            // Apply movement speed override every frame
+            SetPedMoveRateOverride( PlayerPedId(), inventory.GetMoveRate() );
+        }
+
+        public override void Events() {
+            // Update ammo info for HUD (don't run base Events - it tracks weapons by group differently)
+            int ped = PlayerPedId();
+            for( int i = 0; i < 3; i++ ) {
+                InventorySlots[i] = inventory.Slots[i];
+                if( inventory.Slots[i] != 0 && inventory.IsGunSlot( i ) ) {
+                    int clip = 0;
+                    GetAmmoInClip( ped, inventory.Slots[i], ref clip );
+                    SlotAmmoClip[i] = clip;
+                    SlotAmmoReserve[i] = GetAmmoInPedWeapon( ped, inventory.Slots[i] ) - clip;
+                } else {
+                    SlotAmmoClip[i] = 0;
+                    SlotAmmoReserve[i] = 0;
+                }
+            }
+            InventoryActiveSlot = inventory.ActiveSlot;
+            InventoryTotalWeight = inventory.GetTotalWeight();
         }
 
         // ===================== ZONE =====================
@@ -484,7 +635,7 @@ namespace BRClient {
 
             // Plane: detect when player exits the vehicle naturally (F key)
             if( inPlane && !hasJumped ) {
-                string exitKey = GetControlInstructionalButton( 2, 75, true );
+                string exitKey = GetControlInstructionalButton( 2, 75, 1 );
                 if( exitKey.StartsWith( "t_" ) ) exitKey = exitKey.Substring( 2 );
                 brHUD.DrawText2D( 0.5f, 0.85f, "Press " + exitKey + " to JUMP", 0.5f, 255, 255, 255, 255, true );
 

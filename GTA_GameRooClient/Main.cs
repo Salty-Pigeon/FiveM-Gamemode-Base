@@ -138,8 +138,8 @@ namespace GTA_GameRooClient {
                 TriggerServerEvent( "salty:netStartSoloICM" );
             } ), false );
 
-            // End current TTT game (useful for solo testing)
-            RegisterCommand( "endttt", new Action<int, List<object>, string>( ( source, args, raw ) => {
+            // End any current game
+            RegisterCommand( "end", new Action<int, List<object>, string>( ( source, args, raw ) => {
                 if( PlayerProgression.AdminLevel < 1 ) return;
                 TriggerServerEvent( "salty:netEndGame" );
             } ), false );

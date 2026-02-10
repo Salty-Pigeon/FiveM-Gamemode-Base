@@ -46,6 +46,7 @@
   <ItemGroup>
     <Compile Include="Main.cs" />
     <Compile Include="BRHUD.cs" />
+    <Compile Include="BRInventory.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
