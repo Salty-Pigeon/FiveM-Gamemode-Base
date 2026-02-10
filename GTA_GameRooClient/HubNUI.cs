@@ -14,6 +14,7 @@ namespace GTA_GameRooClient {
         private static bool isOpen = false;
         public static bool IsOpen => isOpen;
         private static bool isMapTabActive = false;
+        private static bool keyCodeDebug = false;
 
         public HubNUI() {
             Instance = this;
@@ -98,6 +99,11 @@ namespace GTA_GameRooClient {
                 }
             } ), false );
 
+            DebugRegistry.Register( "general", "key_code_sniffer", "Key Code Sniffer", "Tools", () => {
+                keyCodeDebug = !keyCodeDebug;
+                BaseGamemode.WriteChat( "Debug", "Key code sniffer: " + ( keyCodeDebug ? "ON - press any key" : "OFF" ), 30, 200, 30 );
+            } );
+
             Tick += OnTick;
         }
 
@@ -109,6 +115,19 @@ namespace GTA_GameRooClient {
                     if( !MenuAPI.MenuController.IsAnyMenuOpen() ) {
                         // If we were editing a map (hub minimized for boundary preview), reopen to maps tab
                         OpenHub( ClientGlobals.IsEditingMap ? "maps" : "" );
+                    }
+                }
+            }
+
+            // Key code sniffer — scan all control IDs for presses
+            if( keyCodeDebug && !isOpen ) {
+                for( int i = 0; i <= 360; i++ ) {
+                    if( IsControlJustPressed( 0, i ) || IsDisabledControlJustPressed( 0, i ) ) {
+                        string name = ControlConfig.GetControlName( i );
+                        string msg = "Control ID: " + i;
+                        if( !string.IsNullOrEmpty( name ) ) msg += " (" + name + ")";
+                        BaseGamemode.WriteChat( "KeyCode", msg, 230, 160, 30 );
+                        Debug.WriteLine( "[KeyCode] " + msg );
                     }
                 }
             }

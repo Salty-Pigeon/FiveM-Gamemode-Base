@@ -38,6 +38,10 @@ namespace GTA_GameRooClient {
         public List<WinBarrierData> WinBarriers = new List<WinBarrierData>();
 
         public static int Team = 0;
+        public static bool SuppressWeaponPickup = false;
+
+        // Client-side death detection fallback (NPC kills don't fire baseevents)
+        bool deathReported = false;
 
         public Dictionary<int, Dictionary<string, object>> PlayerDetails = new Dictionary<int, Dictionary<string, object>>();
 
@@ -220,6 +224,7 @@ namespace GTA_GameRooClient {
             NetworkResurrectLocalPlayer( pos.X, pos.Y, pos.Z, Game.PlayerPed.Heading, true, false );
 
             ResetPlayerState();
+            deathReported = false;
 
             WriteChat( Gamemode.ToUpper(), "Game started.", 255, 0, 0 );
             GameTimerEnd = GetGameTimer() + gameTime;
@@ -318,6 +323,12 @@ namespace GTA_GameRooClient {
                 }
             }
 
+            // Client-side death detection fallback (NPC kills don't fire baseevents)
+            if( !deathReported && Team != SPECTATOR && IsEntityDead( PlayerPedId() ) ) {
+                deathReported = true;
+                TriggerServerEvent( "gameroo:clientDeath" );
+            }
+
             Events();
             Controls();
         }
@@ -394,6 +405,7 @@ namespace GTA_GameRooClient {
                 if( (uint)LocalPlayer.Character.Weapons.Current.Hash == wep ) {
                     SaltyWeapon weapon = new SaltyWeapon( SpawnType.WEAPON, wep, LocalPlayer.Character.Position );
                     weapon.AmmoCount = LocalPlayer.Character.Weapons.Current.Ammo;
+                    weapon.AmmoInClip = LocalPlayer.Character.Weapons.Current.AmmoInClip;
                     Map.Weapons.Add( weapon );
                     PlayerWeapons.Remove( wep );
                     RemoveWeaponFromPed( PlayerPedId(), wep );
@@ -418,7 +430,7 @@ namespace GTA_GameRooClient {
         }
 
         public virtual void PlayerSpawn() {
-
+            deathReported = false;
         }
 
         public virtual void OnWeaponChanged(  ) {

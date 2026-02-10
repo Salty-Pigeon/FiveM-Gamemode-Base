@@ -2,7 +2,12 @@
 function renderDebugGamemodeList() {
     var list = document.getElementById('debugGamemodeList');
     list.innerHTML = '';
+
+    // Track which debug action keys are covered by gamemodes
+    var coveredIds = {};
+
     gamemodes.forEach(function(gm) {
+        coveredIds[gm.id] = true;
         var btn = document.createElement('button');
         btn.className = 'debug-gm-btn';
         btn.textContent = gm.name;
@@ -32,6 +37,38 @@ function renderDebugGamemodeList() {
 
         list.appendChild(btn);
     });
+
+    // Add buttons for debug action keys not tied to a registered gamemode (e.g. "general")
+    var extraNames = { 'general': 'General' };
+    for (var key in debugActions) {
+        if (coveredIds[key]) continue;
+        if (!debugActions[key] || Object.keys(debugActions[key]).length === 0) continue;
+
+        var btn = document.createElement('button');
+        btn.className = 'debug-gm-btn';
+        btn.textContent = extraNames[key] || key;
+
+        (function(id) {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.debug-gm-btn').forEach(function(el) {
+                    el.classList.remove('active');
+                });
+                btn.classList.add('active');
+                selectedDebugGamemodeId = id;
+                debugEntities = [];
+                selectedEntityId = null;
+                renderDebugActions(id);
+
+                fetch('https://gta_gameroo/selectDebugGamemode', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ gamemodeId: id })
+                });
+            });
+        })(key);
+
+        list.appendChild(btn);
+    }
 }
 
 // Render debug entities list

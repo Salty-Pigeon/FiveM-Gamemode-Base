@@ -10,7 +10,7 @@ using GTA_GameRooShared;
 namespace GTA_GameRooClient {
     public class SaltyWeapon : SaltyEntity {
 
-        int AmmoInClip = -1;
+        public int AmmoInClip = -1;
         public int AmmoCount = 30;
 
 
@@ -33,7 +33,7 @@ namespace GTA_GameRooClient {
                         ClientGlobals.CurrentGame.AddAmmo( Hash, AmmoCount );
                         Destroy();
                     }
-                    else if( IsControlJustReleased( 1, (int)eControl.ControlPickup ) ) {
+                    else if( !BaseGamemode.SuppressWeaponPickup && IsControlJustReleased( 1, (int)eControl.ControlPickup ) ) {
                         if( ClientGlobals.CurrentGame.CanPickupWeapon( Hash ) ) {
                             Equip();
                         } else {

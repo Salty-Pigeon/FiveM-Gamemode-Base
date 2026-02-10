@@ -753,3 +753,54 @@
     color: #8888aa;
     margin-top: 8px;
 }
+
+/* ==================== BR Panel ==================== */
+
+.br-panel {
+    position: fixed;
+    top: 58px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 900;
+    pointer-events: none;
+    display: none;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+
+.br-panel.active {
+    display: block;
+    opacity: 1;
+}
+
+.br-panel-inner {
+    background: rgba(10, 10, 15, 0.85);
+    border-left: 3px solid #e6a01e;
+    border-radius: 0 4px 4px 0;
+    padding: 6px 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.br-panel-alive {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.92);
+    letter-spacing: 1px;
+}
+
+.br-panel-separator {
+    width: 1px;
+    height: 14px;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.br-panel-phase {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(200, 200, 200, 0.85);
+    letter-spacing: 1px;
+}

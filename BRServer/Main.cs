@@ -41,6 +41,10 @@ namespace BRServer {
         const float ZONE_DAMAGE_INTERVAL = 1000f;
         static readonly int[] ZONE_DAMAGE_PER_PHASE = { 5, 8, 12, 18, 25 };
 
+        // Periodic zone sync
+        float lastZoneBroadcast = 0;
+        const float ZONE_BROADCAST_INTERVAL = 5000f;
+
         // Alive tracking
         List<Player> alivePlayers = new List<Player>();
         bool gameStarted = false;
@@ -87,7 +91,7 @@ namespace BRServer {
             EventHandlers["br:playerJumped"] += new Action<Player>( OnPlayerJumped );
             EventHandlers["br:searchContainer"] += new Action<Player, float, float, float>( OnSearchContainer );
             EventHandlers["br:debugSpawnWeapon"] += new Action<Player, float, float, float>( OnDebugSpawnWeapon );
-            EventHandlers["br:dropWeapon"] += new Action<Player, string, float, float, float, int>( OnDropWeapon );
+            EventHandlers["br:dropWeapon"] += new Action<Player, string, float, float, float, int, int>( OnDropWeapon );
         }
 
         public override void Start() {
@@ -104,6 +108,8 @@ namespace BRServer {
             }
 
             // Initialize zone
+            zoneDamageTimer = 0;
+            lastZoneBroadcast = 0;
             initialRadius = Math.Max( Map.Size.X, Map.Size.Y ) / 2f;
             zoneCenterX = Map.Position.X;
             zoneCenterY = Map.Position.Y;
@@ -251,12 +257,12 @@ namespace BRServer {
             }
         }
 
-        void OnDropWeapon( [FromSource] Player player, string hashStr, float x, float y, float z, int ammo ) {
+        void OnDropWeapon( [FromSource] Player player, string hashStr, float x, float y, float z, int ammo, int clipAmmo ) {
             var game = ServerGlobals.CurrentGame as Main;
             if( game == null ) return;
             if( !game.gameStarted ) return;
             // Broadcast to all clients so everyone sees the dropped weapon
-            TriggerClientEvent( "br:weaponDropped", hashStr, x, y, z, ammo );
+            TriggerClientEvent( "br:weaponDropped", hashStr, x, y, z, ammo, clipAmmo );
         }
 
         // ===================== CONTAINER SEARCH =====================
@@ -417,6 +423,12 @@ namespace BRServer {
                         initialRadius * Phases[currentPhase - 1].RadiusPercent;
                     zoneCurrentRadius = startRadius + ( zoneTargetRadius - startRadius ) * t;
 
+                    // Periodic broadcast during shrinking so clients stay synced
+                    if( now >= lastZoneBroadcast + ZONE_BROADCAST_INTERVAL ) {
+                        lastZoneBroadcast = now;
+                        BroadcastZoneUpdate();
+                    }
+
                     if( t >= 1f ) {
                         isShrinking = false;
                         zoneCurrentRadius = zoneTargetRadius;
@@ -424,6 +436,7 @@ namespace BRServer {
                             Phases[currentPhase + 1].WaitSeconds * 1000f : 999999f );
                         float nextWait = currentPhase + 1 < Phases.Length ? Phases[currentPhase + 1].WaitSeconds * 1000f : 10000f;
                         TriggerClientEvent( "salty:popup", "Zone stable - Next shrink incoming", 230, 160, 30, Math.Min( nextWait, 10000f ) );
+                        BroadcastZoneUpdate();
                     }
                 }
             }
@@ -531,10 +544,19 @@ namespace BRServer {
         }
 
         void BroadcastZoneUpdate() {
+            // Send remaining duration rather than absolute server timestamps
+            // Client converts these to its own clock in OnZoneUpdate
+            float now = GetGameTimer();
+            float remainingStart = 0;
+            float remainingEnd = 0;
+            if( isShrinking && zoneShrinkEnd > now ) {
+                remainingStart = 0;
+                remainingEnd = zoneShrinkEnd - now;
+            }
             TriggerClientEvent( "br:zoneUpdate",
                 zoneCenterX, zoneCenterY,
                 zoneCurrentRadius, zoneTargetRadius,
-                zoneShrinkStart, zoneShrinkEnd,
+                remainingStart, remainingEnd,
                 currentPhase );
         }
 

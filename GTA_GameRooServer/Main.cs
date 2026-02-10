@@ -21,6 +21,9 @@ namespace GTA_GameRooServer {
         Dictionary<string, int> GameVotes = new Dictionary<string, int>();
         Dictionary<int, int> MapVotes = new Dictionary<int, int>();
 
+        // Prevents duplicate death processing (baseevents + client fallback can both fire)
+        static HashSet<string> processedDeaths = new HashSet<string>();
+
         public Main() {
 
             MapManager = new MapManager();
@@ -41,6 +44,7 @@ namespace GTA_GameRooServer {
 
             EventHandlers["baseevents:onPlayerKilled"] += new Action<Player, int, object>( PlayerKilled );
             EventHandlers["baseevents:onPlayerDied"] += new Action<Player, int, IList<object>>( PlayerDied );
+            EventHandlers["gameroo:clientDeath"] += new Action<Player>( ClientDeathFallback );
             EventHandlers["salty:spawnReady"] += new Action<Player>( OnSpawnReady );
 
             base.Tick += Tick;
@@ -115,6 +119,7 @@ namespace GTA_GameRooServer {
         }
 
         private void OnSpawnReady( [FromSource] Player player ) {
+            processedDeaths.Remove( player.Handle );
             if( ServerGlobals.CurrentGame != null ) {
                 ServerGlobals.CurrentGame.SpawnProtectedPlayers.Remove( player.Handle );
             }
@@ -122,11 +127,11 @@ namespace GTA_GameRooServer {
 
         private void PlayerKilled( [FromSource] Player ply, int killerID, object deathData ) {
             try {
-                // Ignore deaths from players mid-spawn (model change kills old ped)
                 if( ServerGlobals.CurrentGame != null && ServerGlobals.CurrentGame.SpawnProtectedPlayers.Contains( ply.Handle ) ) {
                     Debug.WriteLine( "[GameRoo] Ignored PlayerKilled for " + ply.Name + " (spawn protected)" );
                     return;
                 }
+                if( !processedDeaths.Add( ply.Handle ) ) return;
 
                 int killerType = 0;
                 IList<object> deathCoords = null;
@@ -139,7 +144,7 @@ namespace GTA_GameRooServer {
                     if( deathDict.ContainsKey( "killerpos" ) )
                         deathCoords = deathDict["killerpos"] as IList<object>;
                     if( deathDict.ContainsKey( "weaponhash" ) )
-                        weaponHash = Convert.ToUInt32( deathDict["weaponhash"] );
+                        weaponHash = unchecked( (uint)Convert.ToInt64( deathDict["weaponhash"] ) );
                 }
 
                 Vector3 DeathCoords = new Vector3( 0, 0, 0 );
@@ -161,17 +166,31 @@ namespace GTA_GameRooServer {
 
         private void PlayerDied( [FromSource] Player ply, int killerType, IList<object> deathcords ) {
             try {
-                // Ignore deaths from players mid-spawn (model change kills old ped)
                 if( ServerGlobals.CurrentGame != null && ServerGlobals.CurrentGame.SpawnProtectedPlayers.Contains( ply.Handle ) ) {
                     Debug.WriteLine( "[GameRoo] Ignored PlayerDied for " + ply.Name + " (spawn protected)" );
                     return;
                 }
+                if( !processedDeaths.Add( ply.Handle ) ) return;
 
                 Vector3 coords = new Vector3( Convert.ToSingle( deathcords[0] ), Convert.ToSingle( deathcords[1] ), Convert.ToSingle( deathcords[2] ) );
                 if( ServerGlobals.CurrentGame != null )
                     ServerGlobals.CurrentGame.OnPlayerDied( ply, killerType, coords );
             } catch( Exception ex ) {
                 Debug.WriteLine( $"[GameRoo] Error in PlayerDied: {ex.Message}" );
+            }
+        }
+
+        private void ClientDeathFallback( [FromSource] Player ply ) {
+            try {
+                if( ServerGlobals.CurrentGame != null && ServerGlobals.CurrentGame.SpawnProtectedPlayers.Contains( ply.Handle ) )
+                    return;
+                if( !processedDeaths.Add( ply.Handle ) ) return;
+
+                Vector3 coords = GetEntityCoords( GetPlayerPed( ply.Handle ) );
+                if( ServerGlobals.CurrentGame != null )
+                    ServerGlobals.CurrentGame.OnPlayerDied( ply, 0, new Vector3( coords.X, coords.Y, coords.Z ) );
+            } catch( Exception ex ) {
+                Debug.WriteLine( $"[GameRoo] Error in ClientDeathFallback: {ex.Message}" );
             }
         }
 
@@ -215,6 +234,7 @@ namespace GTA_GameRooServer {
                 return;
             }
 
+            processedDeaths.Clear();
             ServerGlobals.CurrentGame = (BaseGamemode)Activator.CreateInstance( ServerGlobals.Gamemodes[ID.ToLower()].GetType() );
             ServerGlobals.CurrentGame.GameTime = GetGameTimer() + ServerGlobals.CurrentGame.Settings.GameLength;
             ServerGlobals.CurrentGame.Map = map;

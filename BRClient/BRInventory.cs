@@ -36,6 +36,59 @@ namespace BRClient {
             return group == "GROUP_MELEE" || group == "GROUP_UNARMED";
         }
 
+        /// <summary>
+        /// Can this weapon be used while in a vehicle? Only pistols and SMGs work.
+        /// </summary>
+        public bool CanUseInVehicle( uint hash ) {
+            return CanUseInVehicleStatic( hash );
+        }
+
+        public static bool CanUseInVehicleStatic( uint hash ) {
+            if( hash == 0 ) return false;
+            if( !Globals.Weapons.ContainsKey( hash ) ) return false;
+            string group = Globals.Weapons[hash]["Group"];
+            return group == "GROUP_PISTOL" || group == "GROUP_SMG";
+        }
+
+        /// <summary>
+        /// Cycle to next occupied slot, optionally filtering to vehicle-usable weapons.
+        /// </summary>
+        public void CycleNextFiltered( bool vehicleOnly ) {
+            for( int i = 1; i <= 3; i++ ) {
+                int next = ( ActiveSlot + i ) % 3;
+                if( Slots[next] != 0 && ( !vehicleOnly || CanUseInVehicle( Slots[next] ) ) ) {
+                    ActiveSlot = next;
+                    return;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Cycle to previous occupied slot, optionally filtering to vehicle-usable weapons.
+        /// </summary>
+        public void CyclePrevFiltered( bool vehicleOnly ) {
+            for( int i = 1; i <= 3; i++ ) {
+                int prev = ( ActiveSlot - i + 3 ) % 3;
+                if( Slots[prev] != 0 && ( !vehicleOnly || CanUseInVehicle( Slots[prev] ) ) ) {
+                    ActiveSlot = prev;
+                    return;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Find the best vehicle-usable slot. Returns -1 if none available.
+        /// </summary>
+        public int FindBestVehicleSlot() {
+            // Prefer current slot if usable
+            if( Slots[ActiveSlot] != 0 && CanUseInVehicle( Slots[ActiveSlot] ) ) return ActiveSlot;
+            // Then check gun slots in order
+            for( int i = 0; i < 2; i++ ) {
+                if( Slots[i] != 0 && CanUseInVehicle( Slots[i] ) ) return i;
+            }
+            return -1;
+        }
+
         public bool IsGunSlot( int slot ) {
             return slot < 2;
         }

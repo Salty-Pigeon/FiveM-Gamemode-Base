@@ -307,6 +307,17 @@ window.addEventListener('message', function(event) {
         timerEl.classList.remove('urgent');
         hideGGLevelHud();
     }
+    // BR Panel
+    else if (data.type === 'brUpdatePanel') {
+        var brPanel = document.getElementById('br-panel');
+        document.getElementById('brPanelAlive').textContent = data.alive + ' Alive';
+        document.getElementById('brPanelPhase').textContent = data.phase;
+        brPanel.classList.add('active');
+    }
+    else if (data.type === 'brHidePanel') {
+        var brPanel = document.getElementById('br-panel');
+        brPanel.classList.remove('active');
+    }
     // TTT Overlays
     else if (data.type === 'tttRoleReveal') {
         document.getElementById('tttRoleName').textContent = data.team;

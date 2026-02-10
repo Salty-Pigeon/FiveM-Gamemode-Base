@@ -58,8 +58,8 @@ namespace BRClient {
         bool isSearching = false;
         float searchStartTime = 0;
         const float SEARCH_DURATION = 3000f;
-        const float SEARCH_RANGE = 2.5f;
-        const float VEHICLE_SEARCH_RANGE = 2.5f;
+        const float SEARCH_RANGE = 1f;
+        const float VEHICLE_SEARCH_RANGE = 1f;
         Vector3 searchContainerPos;
         int searchVehicle = 0;
         HashSet<string> searchedContainers = new HashSet<string>();
@@ -85,6 +85,21 @@ namespace BRClient {
         float adrenalineEndTime = 0;
         static bool nuiCallbacksRegistered = false;
 
+        // Consumable use timer
+        bool isUsingConsumable = false;
+        float consumableStartTime = 0;
+        const float CONSUMABLE_DURATION = 2000f;
+        string consumableType = "";
+        bool searchAnimPlaying = false;
+
+        // Weapon bar auto-hide
+        public static float LastWeaponChangeTime = 0;
+
+        // Static state for BRHUD consumable progress bar
+        public static bool IsUsingConsumable = false;
+        public static float ConsumableProgress = 0f;
+        public static string ConsumableLabel = "";
+
         // Static state for BRHUD to read (TTT body pattern)
         public static bool NearContainerFound = false;
         public static Vector3 NearContainerPos;
@@ -93,6 +108,14 @@ namespace BRClient {
         public static float SearchProgress = 0f;
         public static bool ContainerDebugActive = false;
         public static string ContainerDebugText = "";
+
+        // Vehicle weapon sync
+        bool wasInVehicle = false;
+        public static bool InVehicle = false;
+
+        // Interact priority
+        enum InteractTarget { None, Weapon, Container }
+        InteractTarget currentInteractTarget = InteractTarget.None;
 
         public Main() : base( "BR" ) {
             brHUD = new BRHUD();
@@ -128,9 +151,9 @@ namespace BRClient {
                 new Dictionary<string, int>() {
                     { "PrimaryWeapon", 157 },
                     { "SecondaryWeapon", 158 },
-                    { "MeleeWeapon", 159 },
-                    { "QuickHealth", 160 },
-                    { "QuickAdrenaline", 161 },
+                    { "MeleeWeapon", 160 },
+                    { "QuickHealth", 164 },
+                    { "QuickAdrenaline", 165 },
                     { "Inventory", 37 },
                 },
                 new Dictionary<string, string>() {
@@ -166,7 +189,7 @@ namespace BRClient {
             EventHandlers["br:containerEmpty"] += new Action( OnContainerEmpty );
             EventHandlers["br:giveConsumable"] += new Action<string>( OnGiveConsumable );
             EventHandlers["br:giveWeapon"] += new Action<string>( OnGiveWeapon );
-            EventHandlers["br:weaponDropped"] += new Action<string, float, float, float, int>( OnWeaponDropped );
+            EventHandlers["br:weaponDropped"] += new Action<string, float, float, float, int, int>( OnWeaponDropped );
 
             containerHashes = new uint[ContainerModelNames.Length];
             for( int i = 0; i < ContainerModelNames.Length; i++ ) {
@@ -264,6 +287,9 @@ namespace BRClient {
             searchVehicle = 0;
             searchedContainers.Clear();
             inventory.Clear();
+            wasInVehicle = false;
+            InVehicle = false;
+            LastWeaponChangeTime = GetGameTimer();
             inventoryOpen = false;
             adrenalineEndTime = 0;
             SetPedMoveRateOverride( PlayerPedId(), 1.0f );
@@ -275,6 +301,9 @@ namespace BRClient {
             isSearching = false;
             CloseInventory();
             SetPedMoveRateOverride( PlayerPedId(), 1.0f );
+            BaseGamemode.SuppressWeaponPickup = false;
+            InVehicle = false;
+            brHUD.HideBRPanel();
             base.End();
         }
 
@@ -400,6 +429,7 @@ namespace BRClient {
             GiveWeaponToPed( ped, 0x99B507EA, 0, false, false );  // WEAPON_KNIFE
             inventory.Add( 0x99B507EA ); // Knife → melee slot 2
             inventory.SelectSlot( 2 );
+            LastWeaponChangeTime = GetGameTimer();
             SetCurrentPedWeapon( ped, 0x99B507EA, true );
 
             // Starting consumables
@@ -414,7 +444,10 @@ namespace BRClient {
                 if( inventory.Slots[i] == hash ) return true;
             }
             if( inventory.CanAdd( hash ) ) return true;
-            HUD.ShowPopup( "Inventory full - drop a weapon first", 200, 160, 30 );
+            // Allow swap if it's a gun and both gun slots are full
+            if( !inventory.IsMeleeGroup( hash ) && inventory.Slots[0] != 0 && inventory.Slots[1] != 0 )
+                return true;
+            HUD.ShowPopup( "Inventory full", 200, 160, 30 );
             return false;
         }
 
@@ -429,8 +462,36 @@ namespace BRClient {
             int slot = inventory.Add( hash );
             if( slot >= 0 ) {
                 inventory.SelectSlot( slot );
+                LastWeaponChangeTime = GetGameTimer();
                 SetCurrentPedWeapon( PlayerPedId(), hash, true );
                 PlayerWeapons.Add( hash );
+            } else if( !inventory.IsMeleeGroup( hash ) ) {
+                // Swap: drop current active gun, equip new one
+                int swapSlot = inventory.ActiveSlot < 2 ? inventory.ActiveSlot : 0;
+                uint oldHash = inventory.Slots[swapSlot];
+                int ped = PlayerPedId();
+                int oldAmmo = GetAmmoInPedWeapon( ped, oldHash );
+                int oldClipAmmo = 0;
+                GetAmmoInClip( ped, oldHash, ref oldClipAmmo );
+                Vector3 dropPos = LocalPlayer.Character.Position + LocalPlayer.Character.ForwardVector * 1.5f;
+
+                // Drop old weapon
+                inventory.Remove( swapSlot );
+                PlayerWeapons.Remove( oldHash );
+                RemoveWeaponFromPed( ped, oldHash );
+                TriggerServerEvent( "br:dropWeapon", oldHash.ToString(), dropPos.X, dropPos.Y, dropPos.Z, oldAmmo, oldClipAmmo );
+
+                // Equip new weapon in freed slot
+                inventory.Slots[swapSlot] = hash;
+                inventory.SelectSlot( swapSlot );
+                LastWeaponChangeTime = GetGameTimer();
+                SetCurrentPedWeapon( PlayerPedId(), hash, true );
+                PlayerWeapons.Add( hash );
+
+                string weaponName = "";
+                if( GTA_GameRooShared.Globals.Weapons.ContainsKey( hash ) )
+                    weaponName = GTA_GameRooShared.Globals.Weapons[hash]["Name"];
+                HUD.ShowPopup( "Swapped to " + weaponName, 230, 160, 30 );
             }
         }
 
@@ -444,15 +505,19 @@ namespace BRClient {
                 return;
             }
 
-            int ammo = GetAmmoInPedWeapon( PlayerPedId(), hash );
+            int ped = PlayerPedId();
+            int ammo = GetAmmoInPedWeapon( ped, hash );
+            int clipAmmo = 0;
+            GetAmmoInClip( ped, hash, ref clipAmmo );
             Vector3 dropPos = LocalPlayer.Character.Position + LocalPlayer.Character.ForwardVector * 1.5f;
             inventory.Remove( slot );
             PlayerWeapons.Remove( hash );
-            RemoveWeaponFromPed( PlayerPedId(), hash );
+            RemoveWeaponFromPed( ped, hash );
 
             // Broadcast drop to all players via server
-            TriggerServerEvent( "br:dropWeapon", hash.ToString(), dropPos.X, dropPos.Y, dropPos.Z, ammo );
+            TriggerServerEvent( "br:dropWeapon", hash.ToString(), dropPos.X, dropPos.Y, dropPos.Z, ammo, clipAmmo );
 
+            LastWeaponChangeTime = GetGameTimer();
             // Switch to next occupied slot
             if( inventory.GetActive() != 0 ) {
                 SetCurrentPedWeapon( PlayerPedId(), inventory.GetActive(), true );
@@ -475,15 +540,19 @@ namespace BRClient {
             uint hash = inventory.Slots[slot];
             if( hash == 0 ) return;
 
-            int ammo = GetAmmoInPedWeapon( PlayerPedId(), hash );
+            int ped = PlayerPedId();
+            int ammo = GetAmmoInPedWeapon( ped, hash );
+            int clipAmmo = 0;
+            GetAmmoInClip( ped, hash, ref clipAmmo );
             Vector3 dropPos = LocalPlayer.Character.Position + LocalPlayer.Character.ForwardVector * 1.5f;
             inventory.Remove( slot );
             PlayerWeapons.Remove( hash );
-            RemoveWeaponFromPed( PlayerPedId(), hash );
+            RemoveWeaponFromPed( ped, hash );
 
             // Broadcast drop to all players via server
-            TriggerServerEvent( "br:dropWeapon", hash.ToString(), dropPos.X, dropPos.Y, dropPos.Z, ammo );
+            TriggerServerEvent( "br:dropWeapon", hash.ToString(), dropPos.X, dropPos.Y, dropPos.Z, ammo, clipAmmo );
 
+            LastWeaponChangeTime = GetGameTimer();
             // Switch to next occupied slot
             if( inventory.GetActive() != 0 ) {
                 SetCurrentPedWeapon( PlayerPedId(), inventory.GetActive(), true );
@@ -500,26 +569,104 @@ namespace BRClient {
         }
 
         void UseBandage() {
-            if( !inventory.UseBandage() ) {
+            if( isUsingConsumable ) return;
+            if( isSearching ) return;
+            if( inventory.BandageCount <= 0 ) {
                 HUD.ShowPopup( "No bandages", 200, 160, 30 );
                 return;
             }
-            int ped = PlayerPedId();
-            int health = GetEntityHealth( ped );
-            int newHealth = Math.Min( 200, health + 50 );
-            SetEntityHealth( ped, newHealth );
-            HUD.ShowPopup( "Bandage used (+50 HP)", 30, 200, 80 );
-            if( inventoryOpen ) SendInventoryToNUI();
+            isUsingConsumable = true;
+            consumableStartTime = GetGameTimer();
+            consumableType = "bandage";
+            SetCurrentPedWeapon( PlayerPedId(), 0xA2719263, true ); // Unarmed so anim isn't blocked by weapon IK
+            PlayConsumableAnim();
         }
 
         void UseAdrenaline() {
-            if( !inventory.UseAdrenaline() ) {
+            if( isUsingConsumable ) return;
+            if( isSearching ) return;
+            if( inventory.AdrenalineCount <= 0 ) {
                 HUD.ShowPopup( "No adrenaline", 200, 160, 30 );
                 return;
             }
-            adrenalineEndTime = GetGameTimer() + 10000;
-            HUD.ShowPopup( "Adrenaline active (10s)", 230, 160, 30 );
+            isUsingConsumable = true;
+            consumableStartTime = GetGameTimer();
+            consumableType = "adrenaline";
+            SetCurrentPedWeapon( PlayerPedId(), 0xA2719263, true ); // Unarmed so anim isn't blocked by weapon IK
+            PlayConsumableAnim();
+        }
+
+        async void PlayConsumableAnim() {
+            int ped = PlayerPedId();
+            string dict = "anim@heists@narcotics@funding@gang_idle";
+            RequestAnimDict( dict );
+            int timeout = 0;
+            while( !HasAnimDictLoaded( dict ) && timeout < 50 ) {
+                await Delay( 50 );
+                timeout++;
+            }
+            if( HasAnimDictLoaded( dict ) && isUsingConsumable ) {
+                TaskPlayAnim( ped, dict, "idle_a", 4.0f, -4.0f, -1, 49, 0, false, false, false );
+            }
+        }
+
+        void ApplyConsumable() {
+            isUsingConsumable = false;
+            ClearPedTasks( PlayerPedId() );
+
+            // Restore weapon after animation
+            uint activeWeapon = inventory.GetActive();
+            if( activeWeapon != 0 ) SetCurrentPedWeapon( PlayerPedId(), activeWeapon, true );
+
+            if( consumableType == "bandage" ) {
+                if( inventory.UseBandage() ) {
+                    int ped = PlayerPedId();
+                    int health = GetEntityHealth( ped );
+                    int newHealth = Math.Min( 200, health + 50 );
+                    SetEntityHealth( ped, newHealth );
+                    HUD.ShowPopup( "Bandage used (+50 HP)", 30, 200, 80 );
+                }
+            } else if( consumableType == "adrenaline" ) {
+                if( inventory.UseAdrenaline() ) {
+                    adrenalineEndTime = GetGameTimer() + 10000;
+                    HUD.ShowPopup( "Adrenaline active (10s)", 230, 160, 30 );
+                }
+            }
+
             if( inventoryOpen ) SendInventoryToNUI();
+        }
+
+        void CancelConsumable() {
+            isUsingConsumable = false;
+            ClearPedTasks( PlayerPedId() );
+
+            // Restore weapon after animation
+            uint activeWeapon = inventory.GetActive();
+            if( activeWeapon != 0 ) SetCurrentPedWeapon( PlayerPedId(), activeWeapon, true );
+
+            HUD.ShowPopup( "Cancelled", 200, 160, 30 );
+        }
+
+        async void PlaySearchAnim() {
+            int ped = PlayerPedId();
+            string dict = "mini@repair";
+            RequestAnimDict( dict );
+            int timeout = 0;
+            while( !HasAnimDictLoaded( dict ) && timeout < 50 ) {
+                await Delay( 50 );
+                timeout++;
+            }
+            if( HasAnimDictLoaded( dict ) && isSearching ) {
+                TaskPlayAnim( ped, dict, "fixing_a_ped", 4.0f, -4.0f, -1, 1, 0, false, false, false );
+                searchAnimPlaying = true;
+            }
+        }
+
+        void StopSearchAnim() {
+            if( searchAnimPlaying ) {
+                ClearPedTasks( PlayerPedId() );
+                searchAnimPlaying = false;
+            }
         }
 
         void OnGiveConsumable( string type ) {
@@ -567,6 +714,7 @@ namespace BRClient {
                 if( slot >= 0 ) {
                     GiveWeaponToPed( ped, hash, 30, false, false );
                     inventory.SelectSlot( slot );
+                    LastWeaponChangeTime = GetGameTimer();
                     SetCurrentPedWeapon( ped, hash, true );
                     PlayerWeapons.Add( hash );
                     string name = inventory.GetWeaponName( slot );
@@ -575,15 +723,15 @@ namespace BRClient {
             } else {
                 // Inventory full — drop on ground as fallback, broadcast to all
                 Vector3 dropPos = Game.PlayerPed.Position + Game.PlayerPed.ForwardVector * 1.5f;
-                TriggerServerEvent( "br:dropWeapon", hash.ToString(), dropPos.X, dropPos.Y, dropPos.Z, 30 );
+                TriggerServerEvent( "br:dropWeapon", hash.ToString(), dropPos.X, dropPos.Y, dropPos.Z, 30, -1 );
                 HUD.ShowPopup( "Inventory full - weapon dropped", 200, 160, 30 );
             }
         }
 
-        async void OnWeaponDropped( string hashStr, float x, float y, float z, int ammo ) {
+        async void OnWeaponDropped( string hashStr, float x, float y, float z, int ammo, int clipAmmo ) {
             var game = ClientGlobals.CurrentGame as Main;
             if( game == null ) return;
-            if( this != game ) { game.OnWeaponDropped( hashStr, x, y, z, ammo ); return; }
+            if( this != game ) { game.OnWeaponDropped( hashStr, x, y, z, ammo, clipAmmo ); return; }
 
             uint hash;
             if( !uint.TryParse( hashStr, out hash ) ) return;
@@ -604,6 +752,7 @@ namespace BRClient {
 
             SaltyWeapon weapon = new SaltyWeapon( SpawnType.WEAPON, hash, new Vector3( x, y, z ) );
             weapon.AmmoCount = ammo;
+            weapon.AmmoInClip = clipAmmo;
             Map.Weapons.Add( weapon );
         }
 
@@ -701,49 +850,94 @@ namespace BRClient {
             // If inventory open, skip game controls (NUI handles input)
             if( inventoryOpen ) return;
 
-            // Weapon slot selection
-            if( JustReleased( primaryKey ) ) {
-                inventory.SelectSlot( 0 );
-                uint active = inventory.GetActive();
-                if( active != 0 ) SetCurrentPedWeapon( PlayerPedId(), active, true );
-                else SetCurrentPedWeapon( PlayerPedId(), 0xA2719263, true );
-            }
-            if( JustReleased( secondaryKey ) ) {
-                inventory.SelectSlot( 1 );
-                uint active = inventory.GetActive();
-                if( active != 0 ) SetCurrentPedWeapon( PlayerPedId(), active, true );
-                else SetCurrentPedWeapon( PlayerPedId(), 0xA2719263, true );
-            }
-            if( JustReleased( meleeKey ) ) {
-                inventory.SelectSlot( 2 );
-                uint active = inventory.GetActive();
-                if( active != 0 ) SetCurrentPedWeapon( PlayerPedId(), active, true );
-                else SetCurrentPedWeapon( PlayerPedId(), 0xA2719263, true );
+            // Consumable use timer (2s channel)
+            if( isUsingConsumable ) {
+                float elapsed = GetGameTimer() - consumableStartTime;
+                float progress = Math.Min( 1f, elapsed / CONSUMABLE_DURATION );
+
+                IsUsingConsumable = true;
+                ConsumableProgress = progress;
+                ConsumableLabel = consumableType == "bandage" ? "Using Bandage..." : "Using Adrenaline...";
+
+                DisablePlayerFiring( PlayerId(), true );
+
+                // Cancel: fire, sprint, weapon switch, scroll
+                if( IsControlJustPressed( 0, 24 ) || IsControlJustPressed( 0, 25 ) ||
+                    IsDisabledControlJustPressed( 0, 24 ) || IsDisabledControlJustPressed( 0, 25 ) ||
+                    IsControlJustPressed( 0, 21 ) ||
+                    JustReleased( primaryKey ) || JustReleased( secondaryKey ) || JustReleased( meleeKey ) ) {
+                    CancelConsumable();
+                } else if( elapsed >= CONSUMABLE_DURATION ) {
+                    ApplyConsumable();
+                }
+            } else {
+                IsUsingConsumable = false;
+                ConsumableProgress = 0f;
             }
 
-            // Quick use consumables
-            if( JustReleased( healthKey ) ) {
-                UseBandage();
-            }
-            if( JustReleased( adrenalineKey ) ) {
-                UseAdrenaline();
-            }
+            if( !isUsingConsumable ) {
+                bool inVeh = IsPedInAnyVehicle( PlayerPedId(), false );
 
-            // Scroll wheel: cycle through occupied slots
-            if( IsDisabledControlJustReleased( 0, 16 ) ) {
-                inventory.CycleNext();
-                uint active = inventory.GetActive();
-                if( active != 0 ) SetCurrentPedWeapon( PlayerPedId(), active, true );
-            }
-            if( IsDisabledControlJustReleased( 0, 17 ) ) {
-                inventory.CyclePrev();
-                uint active = inventory.GetActive();
-                if( active != 0 ) SetCurrentPedWeapon( PlayerPedId(), active, true );
+                // Weapon slot selection (block non-vehicle-usable slots while driving)
+                if( JustReleased( primaryKey ) ) {
+                    if( !inVeh || inventory.CanUseInVehicle( inventory.Slots[0] ) ) {
+                        inventory.SelectSlot( 0 );
+                        LastWeaponChangeTime = GetGameTimer();
+                        uint active = inventory.GetActive();
+                        if( active != 0 ) SetCurrentPedWeapon( PlayerPedId(), active, true );
+                        else SetCurrentPedWeapon( PlayerPedId(), 0xA2719263, true );
+                    }
+                }
+                if( JustReleased( secondaryKey ) ) {
+                    if( !inVeh || inventory.CanUseInVehicle( inventory.Slots[1] ) ) {
+                        inventory.SelectSlot( 1 );
+                        LastWeaponChangeTime = GetGameTimer();
+                        uint active = inventory.GetActive();
+                        if( active != 0 ) SetCurrentPedWeapon( PlayerPedId(), active, true );
+                        else SetCurrentPedWeapon( PlayerPedId(), 0xA2719263, true );
+                    }
+                }
+                if( JustReleased( meleeKey ) ) {
+                    if( !inVeh ) {
+                        inventory.SelectSlot( 2 );
+                        LastWeaponChangeTime = GetGameTimer();
+                        uint active = inventory.GetActive();
+                        if( active != 0 ) SetCurrentPedWeapon( PlayerPedId(), active, true );
+                        else SetCurrentPedWeapon( PlayerPedId(), 0xA2719263, true );
+                    }
+                }
+
+                // Quick use consumables
+                if( JustReleased( healthKey ) ) {
+                    UseBandage();
+                }
+                if( JustReleased( adrenalineKey ) ) {
+                    UseAdrenaline();
+                }
+
+                // Scroll wheel: cycle through occupied slots (vehicle-filtered when driving)
+                if( IsDisabledControlJustReleased( 0, 16 ) ) {
+                    inventory.CycleNextFiltered( inVeh );
+                    LastWeaponChangeTime = GetGameTimer();
+                    uint active = inventory.GetActive();
+                    if( active != 0 ) SetCurrentPedWeapon( PlayerPedId(), active, true );
+                }
+                if( IsDisabledControlJustReleased( 0, 17 ) ) {
+                    inventory.CyclePrevFiltered( inVeh );
+                    LastWeaponChangeTime = GetGameTimer();
+                    uint active = inventory.GetActive();
+                    if( active != 0 ) SetCurrentPedWeapon( PlayerPedId(), active, true );
+                }
             }
 
             // Adrenaline expiry check
             if( adrenalineEndTime > 0 && GetGameTimer() >= adrenalineEndTime ) {
                 adrenalineEndTime = 0;
+            }
+
+            // Adrenaline: unlimited stamina while active
+            if( adrenalineEndTime > 0 ) {
+                RestorePlayerStamina( PlayerId(), 1.0f );
             }
 
             // Movement speed: weight + adrenaline bonus
@@ -785,10 +979,20 @@ namespace BRClient {
             game.zoneCenterY = cy;
             game.zoneCurrentRadius = currentR;
             game.zoneTargetRadius = targetR;
-            game.zoneShrinkStart = shrinkStart;
-            game.zoneShrinkEnd = shrinkEnd;
-            game.zonePhase = phase;
 
+            // Convert server timestamps to client-relative time
+            // Server and client GetGameTimer() return different values (different start times)
+            float shrinkDuration = shrinkEnd - shrinkStart;
+            if( shrinkDuration > 0 ) {
+                float clientNow = GetGameTimer();
+                game.zoneShrinkStart = clientNow;
+                game.zoneShrinkEnd = clientNow + shrinkDuration;
+            } else {
+                game.zoneShrinkStart = 0;
+                game.zoneShrinkEnd = 0;
+            }
+
+            game.zonePhase = phase;
             game.brHUD.ZonePhase = phase;
             game.UpdateZoneBlip();
         }
@@ -927,13 +1131,142 @@ namespace BRClient {
                         brHUD.DrawText3D( new Vector3( wep.Position.X, wep.Position.Y, textZ ),
                             weaponName, 0.30f, 255, 255, 255, 220, 10f );
 
-                        // Pickup hint when very close
-                        if( dist < 5f ) {
-                            brHUD.DrawText3D( new Vector3( wep.Position.X, wep.Position.Y, textZ - 0.18f ),
-                                "[E] Pick up", 0.24f, 230, 160, 30, 200, 6f );
+                        // Pickup hint visible from a reasonable distance (hidden when container has priority)
+                        if( dist < 5f && currentInteractTarget != InteractTarget.Container ) {
+                            // Check if player already has this weapon (ammo pickup - no hint needed)
+                            bool alreadyHas = false;
+                            for( int si = 0; si < 3; si++ ) {
+                                if( inventory.Slots[si] == wep.Hash ) { alreadyHas = true; break; }
+                            }
+                            if( !alreadyHas ) {
+                                bool wouldSwap = !inventory.CanAdd( wep.Hash ) && !inventory.IsMeleeGroup( wep.Hash );
+                                string hintText = wouldSwap ? "[E] to switch" : "[E] Pick up";
+                                brHUD.DrawText3D( new Vector3( wep.Position.X, wep.Position.Y, textZ - 0.18f ),
+                                    hintText, 0.24f, 230, 160, 30, 200, 6f );
+                            }
                         }
                     }
                 }
+            }
+        }
+
+        // ===================== INTERACT PRIORITY =====================
+
+        static Vector3 RotationToDirection( Vector3 rotation ) {
+            float radX = rotation.X * (float)Math.PI / 180f;
+            float radZ = rotation.Z * (float)Math.PI / 180f;
+            float absX = (float)Math.Abs( Math.Cos( radX ) );
+            return new Vector3( (float)( -Math.Sin( radZ ) ) * absX, (float)( Math.Cos( radZ ) ) * absX, (float)Math.Sin( radX ) );
+        }
+
+        void UpdateInteractPriority() {
+            // While actively searching, always suppress weapon pickup
+            if( isSearching ) {
+                currentInteractTarget = InteractTarget.Container;
+                BaseGamemode.SuppressWeaponPickup = true;
+                return;
+            }
+
+            Vector3 camPos = GetGameplayCamCoords();
+            Vector3 camRot = GetGameplayCamRot( 2 );
+            Vector3 camDir = RotationToDirection( camRot );
+
+            float bestWeaponScore = -1f;
+            float bestContainerScore = -1f;
+
+            // Score nearby weapons (pickupRange is squared distance = 5, so real range ~2.24u)
+            float weaponRange = 2.24f;
+            foreach( var wep in Map.Weapons ) {
+                if( wep.Equipped ) continue;
+                // Skip weapons that would auto-pickup (already owned = ammo pickup)
+                if( LocalPlayer.Character.Weapons.HasWeapon( (WeaponHash)wep.Hash ) ) continue;
+
+                float dist = GetDistanceBetweenCoords( camPos.X, camPos.Y, camPos.Z,
+                    wep.Position.X, wep.Position.Y, wep.Position.Z, true );
+                if( dist > weaponRange ) continue;
+
+                // Camera alignment
+                float dx = wep.Position.X - camPos.X;
+                float dy = wep.Position.Y - camPos.Y;
+                float dz = wep.Position.Z - camPos.Z;
+                float len = (float)Math.Sqrt( dx * dx + dy * dy + dz * dz );
+                if( len < 0.01f ) continue;
+                float dot = ( dx / len ) * camDir.X + ( dy / len ) * camDir.Y + ( dz / len ) * camDir.Z;
+                float alignScore = Math.Max( 0f, dot );
+                float distScore = 1f - Math.Min( dist / weaponRange, 1f );
+                float score = alignScore * 0.65f + distScore * 0.35f;
+                if( score > bestWeaponScore ) bestWeaponScore = score;
+            }
+
+            // Score nearby containers (prop containers)
+            Vector3 playerPos = Game.PlayerPed.Position;
+            foreach( uint hash in containerHashes ) {
+                int obj = GetClosestObjectOfType( playerPos.X, playerPos.Y, playerPos.Z,
+                    SEARCH_RANGE, hash, false, false, false );
+                if( obj == 0 ) continue;
+                Vector3 objPos = GetEntityCoords( obj, true );
+                string key = GetPosKey( objPos.X, objPos.Y, objPos.Z );
+                if( searchedContainers.Contains( key ) ) continue;
+
+                float dist = GetDistanceBetweenCoords( camPos.X, camPos.Y, camPos.Z,
+                    objPos.X, objPos.Y, objPos.Z, true );
+
+                float dx = objPos.X - camPos.X;
+                float dy = objPos.Y - camPos.Y;
+                float dz = objPos.Z - camPos.Z;
+                float len = (float)Math.Sqrt( dx * dx + dy * dy + dz * dz );
+                if( len < 0.01f ) continue;
+                float dot = ( dx / len ) * camDir.X + ( dy / len ) * camDir.Y + ( dz / len ) * camDir.Z;
+                float alignScore = Math.Max( 0f, dot );
+                float distScore = 1f - Math.Min( dist / ( SEARCH_RANGE + 2f ), 1f );
+                float score = alignScore * 0.65f + distScore * 0.35f;
+                if( score > bestContainerScore ) bestContainerScore = score;
+            }
+
+            // Score vehicle boots
+            if( !IsPedInAnyVehicle( PlayerPedId(), false ) ) {
+                int vehicle = GetClosestVehicle( playerPos.X, playerPos.Y, playerPos.Z, 8f, 0, 0 );
+                if( vehicle != 0 && IsVehicleSeatFree( vehicle, -1 ) ) {
+                    Vector3 vMin = new Vector3(), vMax = new Vector3();
+                    GetModelDimensions( (uint)GetEntityModel( vehicle ), ref vMin, ref vMax );
+                    Vector3 trunkPos = GetOffsetFromEntityInWorldCoords( vehicle, 0f, vMin.Y - 0.5f, 0f );
+                    float trunkDist = GetDistanceBetweenCoords( playerPos.X, playerPos.Y, playerPos.Z,
+                        trunkPos.X, trunkPos.Y, trunkPos.Z, true );
+                    if( trunkDist <= VEHICLE_SEARCH_RANGE ) {
+                        string key = GetPosKey( trunkPos.X, trunkPos.Y, trunkPos.Z );
+                        if( !searchedContainers.Contains( key ) ) {
+                            float dx = trunkPos.X - camPos.X;
+                            float dy = trunkPos.Y - camPos.Y;
+                            float dz = trunkPos.Z - camPos.Z;
+                            float len = (float)Math.Sqrt( dx * dx + dy * dy + dz * dz );
+                            if( len >= 0.01f ) {
+                                float dot = ( dx / len ) * camDir.X + ( dy / len ) * camDir.Y + ( dz / len ) * camDir.Z;
+                                float alignScore = Math.Max( 0f, dot );
+                                float distScore = 1f - Math.Min( trunkDist / ( VEHICLE_SEARCH_RANGE + 2f ), 1f );
+                                float score = alignScore * 0.65f + distScore * 0.35f;
+                                if( score > bestContainerScore ) bestContainerScore = score;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Determine winner
+            if( bestWeaponScore < 0 && bestContainerScore < 0 ) {
+                currentInteractTarget = InteractTarget.None;
+                BaseGamemode.SuppressWeaponPickup = false;
+            } else if( bestContainerScore < 0 ) {
+                currentInteractTarget = InteractTarget.Weapon;
+                BaseGamemode.SuppressWeaponPickup = false;
+            } else if( bestWeaponScore < 0 ) {
+                currentInteractTarget = InteractTarget.Container;
+                BaseGamemode.SuppressWeaponPickup = true;
+            } else if( bestWeaponScore >= bestContainerScore ) {
+                currentInteractTarget = InteractTarget.Weapon;
+                BaseGamemode.SuppressWeaponPickup = false;
+            } else {
+                currentInteractTarget = InteractTarget.Container;
+                BaseGamemode.SuppressWeaponPickup = true;
             }
         }
 
@@ -944,6 +1277,29 @@ namespace BRClient {
             if( HUD != null ) {
                 HUD.Draw();
             }
+
+            // Interact priority — decide weapon vs container before either system runs
+            UpdateInteractPriority();
+
+            // Vehicle weapon sync
+            bool inVehicleNow = IsPedInAnyVehicle( PlayerPedId(), false );
+            InVehicle = inVehicleNow;
+            if( !wasInVehicle && inVehicleNow ) {
+                // Entering vehicle — auto-switch to a vehicle-usable weapon
+                int vSlot = inventory.FindBestVehicleSlot();
+                if( vSlot >= 0 ) {
+                    inventory.SelectSlot( vSlot );
+                    LastWeaponChangeTime = GetGameTimer();
+                    SetCurrentPedWeapon( PlayerPedId(), inventory.Slots[vSlot], true );
+                } else {
+                    SetCurrentPedWeapon( PlayerPedId(), 0xA2719263, true ); // unarmed
+                }
+            } else if( wasInVehicle && !inVehicleNow ) {
+                // Exiting vehicle — restore inventory weapon
+                uint activeWeapon = inventory.GetActive();
+                if( activeWeapon != 0 ) SetCurrentPedWeapon( PlayerPedId(), activeWeapon, true );
+            }
+            wasInVehicle = inVehicleNow;
 
             // Weapon updates
             foreach( var wep in Map.Weapons.ToList() ) {
@@ -993,6 +1349,7 @@ namespace BRClient {
                     zoneDeathTimer = 0;
                 }
             }
+
         }
 
         // ===================== CONTAINER SEARCH =====================
@@ -1022,6 +1379,7 @@ namespace BRClient {
                 if( searchedContainers.Contains( activeKey ) ) {
                     Debug.WriteLine( "[BR-Search] CANCELLED: already searched key=" + activeKey );
                     isSearching = false;
+                    StopSearchAnim();
                     WriteChat( "BR", "Already searched.", 200, 200, 200 );
                     return;
                 }
@@ -1034,6 +1392,7 @@ namespace BRClient {
                     bool releasedE = !IsControlPressed( 0, (int)eControl.ControlPickup );
                     Debug.WriteLine( "[BR-Search] CANCELLED: tooFar=" + tooFar + " (dist=" + dist.ToString("F1") + ") releasedE=" + releasedE );
                     isSearching = false;
+                    StopSearchAnim();
                     return;
                 }
 
@@ -1050,6 +1409,7 @@ namespace BRClient {
 
                 if( elapsed >= SEARCH_DURATION ) {
                     isSearching = false;
+                    StopSearchAnim();
                     searchedContainers.Add( activeKey );
                     Debug.WriteLine( "[BR-Search] COMPLETE! key=" + activeKey + " pos=" + searchContainerPos.X.ToString("F1") + "," + searchContainerPos.Y.ToString("F1") + "," + searchContainerPos.Z.ToString("F1") );
 
@@ -1066,8 +1426,11 @@ namespace BRClient {
                 return;
             }
 
-            // Detection phase - check prop containers
+            // Detection phase - find the CLOSEST prop container across all types
             string debugInfo = "";
+            int closestObj = 0;
+            float closestDist = float.MaxValue;
+            Vector3 closestPos = new Vector3();
 
             foreach( uint hash in containerHashes ) {
                 int obj = GetClosestObjectOfType( playerPos.X, playerPos.Y, playerPos.Z,
@@ -1076,21 +1439,32 @@ namespace BRClient {
                     Vector3 objPos = GetEntityCoords( obj, true );
                     string key = GetPosKey( objPos.X, objPos.Y, objPos.Z );
                     if( !searchedContainers.Contains( key ) ) {
-                        // Set static state for BRHUD to draw 3D prompt
-                        NearContainerFound = true;
-                        NearContainerPos = objPos;
-                        NearContainerIsVehicle = false;
-
-                        if( IsControlPressed( 0, (int)eControl.ControlPickup ) ) {
-                            isSearching = true;
-                            searchStartTime = GetGameTimer();
-                            searchContainerPos = objPos;
-                            searchVehicle = 0;
-                            Debug.WriteLine( "[BR-Search] START searching container at " + objPos.X.ToString("F1") + "," + objPos.Y.ToString("F1") + "," + objPos.Z.ToString("F1") + " key=" + key );
+                        float d = GetDistanceBetweenCoords( playerPos.X, playerPos.Y, playerPos.Z,
+                            objPos.X, objPos.Y, objPos.Z, true );
+                        if( d < closestDist ) {
+                            closestDist = d;
+                            closestObj = obj;
+                            closestPos = objPos;
                         }
-                        return;
                     }
                 }
+            }
+
+            if( closestObj != 0 ) {
+                NearContainerFound = true;
+                NearContainerPos = closestPos;
+                NearContainerIsVehicle = false;
+
+                if( currentInteractTarget != InteractTarget.Weapon && IsControlPressed( 0, (int)eControl.ControlPickup ) ) {
+                    string key = GetPosKey( closestPos.X, closestPos.Y, closestPos.Z );
+                    isSearching = true;
+                    searchStartTime = GetGameTimer();
+                    searchContainerPos = closestPos;
+                    searchVehicle = 0;
+                    PlaySearchAnim();
+                    Debug.WriteLine( "[BR-Search] START searching container at " + closestPos.X.ToString("F1") + "," + closestPos.Y.ToString("F1") + "," + closestPos.Z.ToString("F1") + " key=" + key );
+                }
+                return;
             }
 
             // Build debug info for overlay
@@ -1132,11 +1506,12 @@ namespace BRClient {
                         NearContainerPos = trunkPos;
                         NearContainerIsVehicle = true;
 
-                        if( IsControlPressed( 0, (int)eControl.ControlPickup ) ) {
+                        if( currentInteractTarget != InteractTarget.Weapon && IsControlPressed( 0, (int)eControl.ControlPickup ) ) {
                             isSearching = true;
                             searchStartTime = GetGameTimer();
                             searchContainerPos = trunkPos;
                             searchVehicle = vehicle;
+                            PlaySearchAnim();
                             Debug.WriteLine( "[BR-Search] START searching vehicle boot at " + trunkPos.X.ToString("F1") + "," + trunkPos.Y.ToString("F1") + "," + trunkPos.Z.ToString("F1") );
                         }
                         return;

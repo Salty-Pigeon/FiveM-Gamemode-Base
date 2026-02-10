@@ -15,6 +15,10 @@ namespace BRClient {
         const int ACCENT_G = 160;
         const int ACCENT_B = 30;
 
+        // NUI panel change tracking
+        int lastSentAlive = -1;
+        string lastSentPhase = null;
+
         public override void Start() {
             base.Start();
             DisplayRadar( true );
@@ -25,6 +29,7 @@ namespace BRClient {
             DrawBRPanel();
             DrawInventoryBar();
             ShowContainerPrompt();
+            DrawConsumableProgress();
         }
 
         void ShowContainerPrompt() {
@@ -65,13 +70,25 @@ namespace BRClient {
             }
         }
 
+        int FA( int baseAlpha, float fade ) {
+            return (int)( baseAlpha * fade );
+        }
+
         void DrawInventoryBar() {
-            float slotW = 0.065f;
-            float slotH = 0.065f;
-            float gap = 0.005f;
+            // Auto-hide fade logic
+            float now = GetGameTimer();
+            float elapsed = now - Main.LastWeaponChangeTime;
+            float fadeAlpha;
+            if( elapsed < 3000f ) fadeAlpha = 1.0f;
+            else if( elapsed < 3500f ) fadeAlpha = 1.0f - ( elapsed - 3000f ) / 500f;
+            else return; // Fully hidden
+
+            float slotW = 0.055f;
+            float slotH = 0.050f;
+            float gap = 0.004f;
             float totalW = slotW * 3 + gap * 2;
             float startX = 0.5f - totalW / 2f;
-            float startY = 0.88f;
+            float startY = 0.90f;
 
             for( int i = 0; i < 3; i++ ) {
                 float x = startX + i * ( slotW + gap );
@@ -79,103 +96,124 @@ namespace BRClient {
                 uint hash = Main.InventorySlots[i];
                 bool isEmpty = hash == 0;
 
-                // Background
-                int bgR = isActive ? 30 : 15;
-                int bgG = isActive ? 25 : 15;
-                int bgB = isActive ? 20 : 15;
-                int bgA = isActive ? 220 : 190;
-                DrawRectangle( x, startY, slotW, slotH, bgR, bgG, bgB, bgA );
+                // Dim slots that can't be used in vehicles
+                bool dimmed = Main.InVehicle && hash != 0 && !BRInventory.CanUseInVehicleStatic( hash );
+                float dimMul = dimmed ? 0.35f : 1.0f;
 
-                // Border - orange for active, dark for inactive
-                if( isActive ) {
-                    // Top
-                    DrawRectangle( x, startY, slotW, 0.003f, ACCENT_R, ACCENT_G, ACCENT_B, 255 );
-                    // Bottom
-                    DrawRectangle( x, startY + slotH - 0.003f, slotW, 0.003f, ACCENT_R, ACCENT_G, ACCENT_B, 255 );
-                    // Left
-                    DrawRectangle( x, startY, 0.002f, slotH, ACCENT_R, ACCENT_G, ACCENT_B, 255 );
-                    // Right
-                    DrawRectangle( x + slotW - 0.002f, startY, 0.002f, slotH, ACCENT_R, ACCENT_G, ACCENT_B, 255 );
+                // Darker backgrounds
+                int bgR = isActive ? 20 : 10;
+                int bgG = isActive ? 18 : 10;
+                int bgB = isActive ? 15 : 15;
+                int bgA = isActive ? 220 : 190;
+                DrawRectangle( x, startY, slotW, slotH, bgR, bgG, bgB, FA( (int)( bgA * dimMul ), fadeAlpha ) );
+
+                // Bottom-only accent line for active slot
+                if( isActive && !dimmed ) {
+                    DrawRectangle( x, startY + slotH - 0.003f, slotW, 0.003f, ACCENT_R, ACCENT_G, ACCENT_B, FA( 255, fadeAlpha ) );
                 }
 
                 // Slot number
                 float centerX = x + slotW / 2f;
                 string slotNum = ( i + 1 ).ToString();
-                DrawText2D( x + 0.005f, startY + 0.003f, slotNum, 0.22f,
-                    isActive ? ACCENT_R : 150, isActive ? ACCENT_G : 150, isActive ? ACCENT_B : 150,
-                    isActive ? 255 : 180, false );
+                DrawText2D( x + 0.004f, startY + 0.002f, slotNum, 0.20f,
+                    isActive && !dimmed ? ACCENT_R : 150, isActive && !dimmed ? ACCENT_G : 150, isActive && !dimmed ? ACCENT_B : 150,
+                    FA( (int)( ( isActive ? 255 : 180 ) * dimMul ), fadeAlpha ), false );
 
                 if( isEmpty ) {
-                    DrawText2D( centerX, startY + 0.022f, "Empty", 0.22f, 100, 100, 100, 140, true );
+                    DrawText2D( centerX, startY + 0.016f, "---", 0.20f, 100, 100, 100, FA( 140, fadeAlpha ), true );
                 } else {
                     // Weapon name
                     string name = "";
                     if( GTA_GameRooShared.Globals.Weapons.ContainsKey( hash ) ) {
                         name = GTA_GameRooShared.Globals.Weapons[hash]["Name"];
                     }
-                    // Truncate long names
                     if( name.Length > 10 ) name = name.Substring( 0, 9 ) + ".";
                     int nameA = isActive ? 255 : 200;
-                    DrawText2D( centerX, startY + 0.018f, name, 0.22f, 255, 255, 255, nameA, true );
+                    DrawText2D( centerX, startY + 0.013f, name, 0.20f, 255, 255, 255, FA( (int)( nameA * dimMul ), fadeAlpha ), true );
 
                     // Ammo (gun slots only)
                     if( i < 2 ) {
                         string ammo = Main.SlotAmmoClip[i] + "/" + Main.SlotAmmoReserve[i];
-                        DrawText2D( centerX, startY + 0.038f, ammo, 0.20f, 200, 200, 200, 180, true );
+                        DrawText2D( centerX, startY + 0.030f, ammo, 0.18f, 200, 200, 200, FA( (int)( 180 * dimMul ), fadeAlpha ), true );
                     }
                 }
             }
 
-            // Consumable counters after weapon slots
+            // Consumable icons after weapon slots
             float consX = startX + totalW + 0.008f;
-            float consY = startY + 0.010f;
+            float consY = startY + 0.006f;
+            float iconW = 0.008f;
+            float iconH = 0.014f;
 
-            // Bandage counter
-            string bandageStr = "B:" + Main.BandageCount;
-            DrawText2D( consX, consY, bandageStr, 0.24f, 30, 200, 80, 220, false );
+            // Bandage: green rectangle + count
+            DrawRectangle( consX, consY, iconW, iconH, 30, 200, 80, FA( 220, fadeAlpha ) );
+            DrawText2D( consX + iconW + 0.004f, consY, Main.BandageCount.ToString(), 0.22f, 255, 255, 255, FA( 220, fadeAlpha ), false );
 
-            // Adrenaline counter
-            float adrenY = consY + 0.028f;
-            string adrenStr = "A:" + Main.AdrenalineCount;
+            // Adrenaline: orange rectangle + count (with pulse when active)
+            float adrenY = consY + 0.022f;
             if( Main.AdrenalineActive ) {
                 float pulse = (float)( Math.Sin( GetGameTimer() / 200.0 ) * 0.5 + 0.5 );
                 int aA = 160 + (int)( 95 * pulse );
-                DrawText2D( consX, adrenY, adrenStr, 0.24f, ACCENT_R, ACCENT_G, ACCENT_B, aA, false );
+                DrawRectangle( consX, adrenY, iconW, iconH, ACCENT_R, ACCENT_G, ACCENT_B, FA( aA, fadeAlpha ) );
+                DrawText2D( consX + iconW + 0.004f, adrenY, Main.AdrenalineCount.ToString(), 0.22f, ACCENT_R, ACCENT_G, ACCENT_B, FA( aA, fadeAlpha ), false );
             } else {
-                DrawText2D( consX, adrenY, adrenStr, 0.24f, 200, 200, 200, 180, false );
+                DrawRectangle( consX, adrenY, iconW, iconH, ACCENT_R, ACCENT_G, ACCENT_B, FA( 180, fadeAlpha ) );
+                DrawText2D( consX + iconW + 0.004f, adrenY, Main.AdrenalineCount.ToString(), 0.22f, 200, 200, 200, FA( 180, fadeAlpha ), false );
             }
 
             // Weight indicator below slots
-            float weightY = startY + slotH + 0.005f;
+            float weightY = startY + slotH + 0.004f;
             float weight = Main.InventoryTotalWeight;
             string weightStr = "Weight: " + weight.ToString( "F0" ) + "/" + BRInventory.MAX_WEIGHT.ToString( "F0" );
             int wR = weight > 12 ? 200 : ( weight > 8 ? ACCENT_R : 200 );
             int wG = weight > 12 ? 80 : ( weight > 8 ? ACCENT_G : 200 );
             int wB = weight > 12 ? 80 : ( weight > 8 ? ACCENT_B : 200 );
-            DrawText2D( 0.5f, weightY, weightStr, 0.22f, wR, wG, wB, 180, true );
+            DrawText2D( 0.5f, weightY, weightStr, 0.20f, wR, wG, wB, FA( 180, fadeAlpha ), true );
         }
 
         void DrawBRPanel() {
-            float panelW = 0.18f;
-            float panelH = 0.065f;
-            float panelX = 0.5f - panelW / 2f;
-            float panelY = 0.015f;
+            string phaseStr = ZonePhase >= 0 ? "Phase " + ( ZonePhase + 1 ) : "--";
+            if( AliveCount != lastSentAlive || phaseStr != lastSentPhase ) {
+                lastSentAlive = AliveCount;
+                lastSentPhase = phaseStr;
+                SendNuiMessage( "{\"type\":\"brUpdatePanel\",\"alive\":" + AliveCount + ",\"phase\":\"" + phaseStr + "\"}" );
+            }
+        }
+
+        public void HideBRPanel() {
+            lastSentAlive = -1;
+            lastSentPhase = null;
+            SendNuiMessage( "{\"type\":\"brHidePanel\"}" );
+        }
+
+        void DrawConsumableProgress() {
+            if( !Main.IsUsingConsumable ) return;
+
+            float barW = 0.16f;
+            float barH = 0.018f;
+            float barX = 0.5f - barW / 2f;
+            float barY = 0.76f;
 
             // Dark background
-            DrawRectangle( panelX, panelY, panelW, panelH, 15, 15, 15, 200 );
-
+            DrawRectangle( barX - 0.004f, barY - 0.022f, barW + 0.008f, barH + 0.032f, 15, 15, 15, 200 );
             // Left accent strip
-            DrawRectangle( panelX, panelY, 0.004f, panelH, ACCENT_R, ACCENT_G, ACCENT_B, 255 );
+            DrawRectangle( barX - 0.004f, barY - 0.022f, 0.003f, barH + 0.032f, ACCENT_R, ACCENT_G, ACCENT_B, 255 );
 
-            // Top row: "BATTLE ROYALE" label
-            DrawText2D( 0.5f, panelY + 0.006f, "BATTLE ROYALE", 0.28f, ACCENT_R, ACCENT_G, ACCENT_B, 255, true );
+            // Label text
+            DrawText2D( 0.5f, barY - 0.019f, Main.ConsumableLabel, 0.26f, 255, 255, 255, 240, true );
 
-            // Bottom row: alive count + zone phase
-            string aliveStr = "Alive: " + AliveCount;
-            DrawText2D( 0.5f - 0.04f, panelY + 0.032f, aliveStr, 0.30f, 255, 255, 255, 255, true );
+            // Bar background
+            DrawRectangle( barX, barY, barW, barH, 30, 30, 30, 220 );
+            // Bar fill
+            bool isBandage = Main.ConsumableLabel.Contains( "Bandage" );
+            int fillR = isBandage ? 30 : ACCENT_R;
+            int fillG = isBandage ? 200 : ACCENT_G;
+            int fillB = isBandage ? 80 : ACCENT_B;
+            DrawRectangle( barX, barY, barW * Main.ConsumableProgress, barH, fillR, fillG, fillB, 230 );
 
-            string phaseStr = ZonePhase >= 0 ? "P" + ( ZonePhase + 1 ) : "--";
-            DrawText2D( 0.5f + 0.055f, panelY + 0.032f, phaseStr, 0.28f, 200, 200, 200, 220, true );
+            // Percentage
+            string pct = ((int)( Main.ConsumableProgress * 100 )) + "%";
+            DrawText2D( 0.5f, barY + 0.001f, pct, 0.24f, 255, 255, 255, 255, true );
         }
 
         public void DrawZoneWarning( float secondsLeft, float gracePeriod ) {
