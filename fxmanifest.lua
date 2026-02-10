@@ -15,6 +15,7 @@ files {
     'html/hub-controls.js', 'html/hub-debug.js', 'html/hub-shop.js',
     'html/hub-maps.js', 'html/hub-admin.js', 'html/hub-overlays.js',
     'html/hub-messages.js',
+    'html/br-inventory.css', 'html/br-inventory.js',
     'MenuAPI.dll',
 }
 

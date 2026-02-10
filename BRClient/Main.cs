@@ -75,6 +75,16 @@ namespace BRClient {
         public static int[] SlotAmmoReserve = new int[3];
         public static float InventoryTotalWeight = 0f;
 
+        // Static consumable state for BRHUD
+        public static int BandageCount = 0;
+        public static int AdrenalineCount = 0;
+        public static bool AdrenalineActive = false;
+
+        // NUI inventory state
+        bool inventoryOpen = false;
+        float adrenalineEndTime = 0;
+        static bool nuiCallbacksRegistered = false;
+
         // Static state for BRHUD to read (TTT body pattern)
         public static bool NearContainerFound = false;
         public static Vector3 NearContainerPos;
@@ -113,6 +123,37 @@ namespace BRClient {
                 }
             };
 
+            // Register BR control defaults
+            GTA_GameRooClient.ControlConfig.RegisterDefaults( "br",
+                new Dictionary<string, int>() {
+                    { "PrimaryWeapon", 157 },
+                    { "SecondaryWeapon", 158 },
+                    { "MeleeWeapon", 159 },
+                    { "QuickHealth", 160 },
+                    { "QuickAdrenaline", 161 },
+                    { "Inventory", 37 },
+                },
+                new Dictionary<string, string>() {
+                    { "PrimaryWeapon", "Primary Weapon (1)" },
+                    { "SecondaryWeapon", "Secondary Weapon (2)" },
+                    { "MeleeWeapon", "Melee Weapon (3)" },
+                    { "QuickHealth", "Quick Bandage (4)" },
+                    { "QuickAdrenaline", "Quick Adrenaline (5)" },
+                    { "Inventory", "Open Inventory (Tab)" },
+                }
+            );
+
+            // Register NUI callbacks (once only)
+            if( !nuiCallbacksRegistered ) {
+                nuiCallbacksRegistered = true;
+                RegisterNuiCallbackType( "brCloseInventory" );
+                EventHandlers["__cfx_nui:brCloseInventory"] += new Action<IDictionary<string, object>, CallbackDelegate>( OnNuiCloseInventory );
+                RegisterNuiCallbackType( "brDropWeapon" );
+                EventHandlers["__cfx_nui:brDropWeapon"] += new Action<IDictionary<string, object>, CallbackDelegate>( OnNuiDropWeapon );
+                RegisterNuiCallbackType( "brUseConsumable" );
+                EventHandlers["__cfx_nui:brUseConsumable"] += new Action<IDictionary<string, object>, CallbackDelegate>( OnNuiUseConsumable );
+            }
+
             // BR-specific events
             EventHandlers["br:spawnPlane"] += new Action<float, float, float, float, float, float, float>( OnSpawnPlane );
             EventHandlers["br:forceJump"] += new Action( OnForceJump );
@@ -123,6 +164,9 @@ namespace BRClient {
             EventHandlers["br:winner"] += new Action<string>( OnWinner );
             EventHandlers["br:containerSearched"] += new Action<float, float, float>( OnContainerSearched );
             EventHandlers["br:containerEmpty"] += new Action( OnContainerEmpty );
+            EventHandlers["br:giveConsumable"] += new Action<string>( OnGiveConsumable );
+            EventHandlers["br:giveWeapon"] += new Action<string>( OnGiveWeapon );
+            EventHandlers["br:weaponDropped"] += new Action<string, float, float, float, int>( OnWeaponDropped );
 
             containerHashes = new uint[ContainerModelNames.Length];
             for( int i = 0; i < ContainerModelNames.Length; i++ ) {
@@ -220,6 +264,8 @@ namespace BRClient {
             searchVehicle = 0;
             searchedContainers.Clear();
             inventory.Clear();
+            inventoryOpen = false;
+            adrenalineEndTime = 0;
             SetPedMoveRateOverride( PlayerPedId(), 1.0f );
         }
 
@@ -227,6 +273,7 @@ namespace BRClient {
             CleanupPlane();
             RemoveZoneBlip();
             isSearching = false;
+            CloseInventory();
             SetPedMoveRateOverride( PlayerPedId(), 1.0f );
             base.End();
         }
@@ -354,6 +401,11 @@ namespace BRClient {
             inventory.Add( 0x99B507EA ); // Knife → melee slot 2
             inventory.SelectSlot( 2 );
             SetCurrentPedWeapon( ped, 0x99B507EA, true );
+
+            // Starting consumables
+            inventory.AddBandage();
+            inventory.AddBandage();
+            inventory.AddAdrenaline();
         }
 
         public override bool CanPickupWeapon( uint hash ) {
@@ -362,7 +414,7 @@ namespace BRClient {
                 if( inventory.Slots[i] == hash ) return true;
             }
             if( inventory.CanAdd( hash ) ) return true;
-            HUD.ShowPopup( "Inventory full - drop a weapon first (F)", 200, 160, 30 );
+            HUD.ShowPopup( "Inventory full - drop a weapon first", 200, 160, 30 );
             return false;
         }
 
@@ -391,38 +443,238 @@ namespace BRClient {
                 HUD.ShowPopup( "Can't drop melee weapon", 200, 160, 30 );
                 return;
             }
-            inventory.Remove( slot );
 
-            SaltyWeapon weapon = new SaltyWeapon( SpawnType.WEAPON, hash, LocalPlayer.Character.Position );
-            weapon.AmmoCount = GetAmmoInPedWeapon( PlayerPedId(), hash );
-            Map.Weapons.Add( weapon );
+            int ammo = GetAmmoInPedWeapon( PlayerPedId(), hash );
+            Vector3 dropPos = LocalPlayer.Character.Position + LocalPlayer.Character.ForwardVector * 1.5f;
+            inventory.Remove( slot );
             PlayerWeapons.Remove( hash );
             RemoveWeaponFromPed( PlayerPedId(), hash );
+
+            // Broadcast drop to all players via server
+            TriggerServerEvent( "br:dropWeapon", hash.ToString(), dropPos.X, dropPos.Y, dropPos.Z, ammo );
 
             // Switch to next occupied slot
             if( inventory.GetActive() != 0 ) {
                 SetCurrentPedWeapon( PlayerPedId(), inventory.GetActive(), true );
             } else {
-                // Find any occupied slot
                 inventory.CycleNext();
                 if( inventory.GetActive() != 0 ) {
                     SetCurrentPedWeapon( PlayerPedId(), inventory.GetActive(), true );
                 } else {
-                    SetCurrentPedWeapon( PlayerPedId(), 0xA2719263, true ); // Unarmed
+                    SetCurrentPedWeapon( PlayerPedId(), 0xA2719263, true );
                 }
             }
         }
 
-        public override void Controls() {
-            // Drop weapon key (from base Controls logic)
-            int dropKey = GTA_GameRooClient.ControlConfig.GetControl( "br", "DropWeapon" );
-            if( dropKey > 0 && IsControlJustReleased( 0, dropKey ) ) {
-                DropWeapon();
-            } else if( dropKey <= 0 && IsControlJustReleased( 0, (int)eControl.ControlEnter ) ) {
-                DropWeapon();
+        void DropWeaponFromSlot( int slot ) {
+            if( slot == 2 ) {
+                HUD.ShowPopup( "Can't drop melee weapon", 200, 160, 30 );
+                return;
+            }
+            if( slot < 0 || slot > 1 ) return;
+            uint hash = inventory.Slots[slot];
+            if( hash == 0 ) return;
+
+            int ammo = GetAmmoInPedWeapon( PlayerPedId(), hash );
+            Vector3 dropPos = LocalPlayer.Character.Position + LocalPlayer.Character.ForwardVector * 1.5f;
+            inventory.Remove( slot );
+            PlayerWeapons.Remove( hash );
+            RemoveWeaponFromPed( PlayerPedId(), hash );
+
+            // Broadcast drop to all players via server
+            TriggerServerEvent( "br:dropWeapon", hash.ToString(), dropPos.X, dropPos.Y, dropPos.Z, ammo );
+
+            // Switch to next occupied slot
+            if( inventory.GetActive() != 0 ) {
+                SetCurrentPedWeapon( PlayerPedId(), inventory.GetActive(), true );
+            } else {
+                inventory.CycleNext();
+                if( inventory.GetActive() != 0 ) {
+                    SetCurrentPedWeapon( PlayerPedId(), inventory.GetActive(), true );
+                } else {
+                    SetCurrentPedWeapon( PlayerPedId(), 0xA2719263, true );
+                }
             }
 
-            // Disable weapon wheel & default cycling
+            if( inventoryOpen ) SendInventoryToNUI();
+        }
+
+        void UseBandage() {
+            if( !inventory.UseBandage() ) {
+                HUD.ShowPopup( "No bandages", 200, 160, 30 );
+                return;
+            }
+            int ped = PlayerPedId();
+            int health = GetEntityHealth( ped );
+            int newHealth = Math.Min( 200, health + 50 );
+            SetEntityHealth( ped, newHealth );
+            HUD.ShowPopup( "Bandage used (+50 HP)", 30, 200, 80 );
+            if( inventoryOpen ) SendInventoryToNUI();
+        }
+
+        void UseAdrenaline() {
+            if( !inventory.UseAdrenaline() ) {
+                HUD.ShowPopup( "No adrenaline", 200, 160, 30 );
+                return;
+            }
+            adrenalineEndTime = GetGameTimer() + 10000;
+            HUD.ShowPopup( "Adrenaline active (10s)", 230, 160, 30 );
+            if( inventoryOpen ) SendInventoryToNUI();
+        }
+
+        void OnGiveConsumable( string type ) {
+            var game = ClientGlobals.CurrentGame as Main;
+            if( game == null ) return;
+            if( this != game ) { game.OnGiveConsumable( type ); return; }
+
+            if( type == "bandage" ) {
+                if( !inventory.AddBandage() ) {
+                    HUD.ShowPopup( "Bandages full", 200, 160, 30 );
+                } else {
+                    HUD.ShowPopup( "Found bandage", 30, 200, 80 );
+                }
+            } else if( type == "adrenaline" ) {
+                if( !inventory.AddAdrenaline() ) {
+                    HUD.ShowPopup( "Adrenaline full", 200, 160, 30 );
+                } else {
+                    HUD.ShowPopup( "Found adrenaline", 230, 160, 30 );
+                }
+            }
+        }
+
+        void OnGiveWeapon( string hashStr ) {
+            var game = ClientGlobals.CurrentGame as Main;
+            if( game == null ) return;
+            if( this != game ) { game.OnGiveWeapon( hashStr ); return; }
+
+            uint hash;
+            if( !uint.TryParse( hashStr, out hash ) ) return;
+
+            int ped = PlayerPedId();
+
+            // Already have this weapon — just add ammo
+            for( int i = 0; i < 3; i++ ) {
+                if( inventory.Slots[i] == hash ) {
+                    GiveWeaponToPed( ped, hash, 30, false, false );
+                    string ammoName = inventory.GetWeaponName( i );
+                    HUD.ShowPopup( "Found ammo for " + ammoName, 30, 200, 80 );
+                    return;
+                }
+            }
+
+            if( inventory.CanAdd( hash ) ) {
+                int slot = inventory.Add( hash );
+                if( slot >= 0 ) {
+                    GiveWeaponToPed( ped, hash, 30, false, false );
+                    inventory.SelectSlot( slot );
+                    SetCurrentPedWeapon( ped, hash, true );
+                    PlayerWeapons.Add( hash );
+                    string name = inventory.GetWeaponName( slot );
+                    HUD.ShowPopup( "Found " + name, 30, 200, 80 );
+                }
+            } else {
+                // Inventory full — drop on ground as fallback, broadcast to all
+                Vector3 dropPos = Game.PlayerPed.Position + Game.PlayerPed.ForwardVector * 1.5f;
+                TriggerServerEvent( "br:dropWeapon", hash.ToString(), dropPos.X, dropPos.Y, dropPos.Z, 30 );
+                HUD.ShowPopup( "Inventory full - weapon dropped", 200, 160, 30 );
+            }
+        }
+
+        async void OnWeaponDropped( string hashStr, float x, float y, float z, int ammo ) {
+            var game = ClientGlobals.CurrentGame as Main;
+            if( game == null ) return;
+            if( this != game ) { game.OnWeaponDropped( hashStr, x, y, z, ammo ); return; }
+
+            uint hash;
+            if( !uint.TryParse( hashStr, out hash ) ) return;
+
+            // Pre-load weapon model
+            if( GTA_GameRooShared.Globals.Weapons.ContainsKey( hash ) ) {
+                string model = GTA_GameRooShared.Globals.Weapons[hash]["ModelHashKey"];
+                if( !string.IsNullOrEmpty( model ) ) {
+                    uint modelHash = (uint)GetHashKey( model );
+                    RequestModel( modelHash );
+                    int timeout = 0;
+                    while( !HasModelLoaded( modelHash ) && timeout < 50 ) {
+                        await Delay( 50 );
+                        timeout++;
+                    }
+                }
+            }
+
+            SaltyWeapon weapon = new SaltyWeapon( SpawnType.WEAPON, hash, new Vector3( x, y, z ) );
+            weapon.AmmoCount = ammo;
+            Map.Weapons.Add( weapon );
+        }
+
+        void SendInventoryToNUI() {
+            int ped = PlayerPedId();
+            string slots = "[";
+            for( int i = 0; i < 3; i++ ) {
+                if( i > 0 ) slots += ",";
+                uint hash = inventory.Slots[i];
+                string name = inventory.GetWeaponName( i );
+                int clip = 0, reserve = 0;
+                if( hash != 0 && inventory.IsGunSlot( i ) ) {
+                    GetAmmoInClip( ped, hash, ref clip );
+                    reserve = GetAmmoInPedWeapon( ped, hash ) - clip;
+                }
+                slots += "{\"hash\":" + hash + ",\"name\":\"" + name + "\",\"clip\":" + clip + ",\"reserve\":" + reserve + "}";
+            }
+            slots += "]";
+            string json = "{\"type\":\"brOpenInventory\",\"activeSlot\":" + inventory.ActiveSlot
+                + ",\"slots\":" + slots
+                + ",\"bandages\":" + inventory.BandageCount
+                + ",\"adrenaline\":" + inventory.AdrenalineCount + "}";
+            SendNuiMessage( json );
+        }
+
+        void OpenInventory() {
+            if( inventoryOpen ) return;
+            inventoryOpen = true;
+            SendInventoryToNUI();
+            SetNuiFocus( true, true );
+        }
+
+        void CloseInventory() {
+            if( !inventoryOpen ) return;
+            inventoryOpen = false;
+            SendNuiMessage( "{\"type\":\"brCloseInventory\"}" );
+            SetNuiFocus( false, false );
+        }
+
+        // NUI Callbacks
+        static void OnNuiCloseInventory( IDictionary<string, object> data, CallbackDelegate cb ) {
+            var game = ClientGlobals.CurrentGame as Main;
+            if( game != null ) game.CloseInventory();
+            cb( "{\"status\":\"ok\"}" );
+        }
+
+        static void OnNuiDropWeapon( IDictionary<string, object> data, CallbackDelegate cb ) {
+            var game = ClientGlobals.CurrentGame as Main;
+            if( game != null && data.ContainsKey( "slot" ) ) {
+                int slot = Convert.ToInt32( data["slot"] );
+                game.DropWeaponFromSlot( slot );
+            }
+            cb( "{\"status\":\"ok\"}" );
+        }
+
+        static void OnNuiUseConsumable( IDictionary<string, object> data, CallbackDelegate cb ) {
+            var game = ClientGlobals.CurrentGame as Main;
+            if( game != null && data.ContainsKey( "type" ) ) {
+                string type = data["type"].ToString();
+                if( type == "bandage" ) game.UseBandage();
+                else if( type == "adrenaline" ) game.UseAdrenaline();
+            }
+            cb( "{\"status\":\"ok\"}" );
+        }
+
+        bool JustReleased( int c ) {
+            return IsControlJustReleased( 0, c ) || IsDisabledControlJustReleased( 0, c );
+        }
+
+        public override void Controls() {
+            // Disable weapon wheel & default cycling every frame
             DisableControlAction( 0, 12, true );  // WeaponWheelUpDown
             DisableControlAction( 0, 13, true );  // WeaponWheelLeftRight
             DisableControlAction( 0, 14, true );  // WeaponWheelNext
@@ -430,43 +682,76 @@ namespace BRClient {
             DisableControlAction( 0, 16, true );  // SelectNextWeapon
             DisableControlAction( 0, 17, true );  // SelectPrevWeapon
             DisableControlAction( 0, 37, true );  // SelectWeapon (Tab)
-            // Disable category selects (1-9 keys)
             for( int i = 157; i <= 165; i++ ) DisableControlAction( 0, i, true );
 
-            // Scroll wheel: cycle through occupied slots
-            if( IsDisabledControlJustReleased( 0, 16 ) ) { // SelectNextWeapon (scroll down)
-                inventory.CycleNext();
-                uint active = inventory.GetActive();
-                if( active != 0 ) SetCurrentPedWeapon( PlayerPedId(), active, true );
-            }
-            if( IsDisabledControlJustReleased( 0, 17 ) ) { // SelectPrevWeapon (scroll up)
-                inventory.CyclePrev();
-                uint active = inventory.GetActive();
-                if( active != 0 ) SetCurrentPedWeapon( PlayerPedId(), active, true );
+            // Read configurable keybinds
+            int invKey = GTA_GameRooClient.ControlConfig.GetControl( "br", "Inventory" );
+            int primaryKey = GTA_GameRooClient.ControlConfig.GetControl( "br", "PrimaryWeapon" );
+            int secondaryKey = GTA_GameRooClient.ControlConfig.GetControl( "br", "SecondaryWeapon" );
+            int meleeKey = GTA_GameRooClient.ControlConfig.GetControl( "br", "MeleeWeapon" );
+            int healthKey = GTA_GameRooClient.ControlConfig.GetControl( "br", "QuickHealth" );
+            int adrenalineKey = GTA_GameRooClient.ControlConfig.GetControl( "br", "QuickAdrenaline" );
+
+            // Tab → toggle inventory NUI
+            if( JustReleased( invKey ) ) {
+                if( inventoryOpen ) CloseInventory();
+                else OpenInventory();
             }
 
-            // Number keys: 1=Gun1, 2=Gun2, 3=Melee
-            if( IsDisabledControlJustReleased( 0, 157 ) ) { // Key 1 (SelectWeaponUnarmed)
+            // If inventory open, skip game controls (NUI handles input)
+            if( inventoryOpen ) return;
+
+            // Weapon slot selection
+            if( JustReleased( primaryKey ) ) {
                 inventory.SelectSlot( 0 );
                 uint active = inventory.GetActive();
                 if( active != 0 ) SetCurrentPedWeapon( PlayerPedId(), active, true );
-                else SetCurrentPedWeapon( PlayerPedId(), 0xA2719263, true ); // Unarmed
+                else SetCurrentPedWeapon( PlayerPedId(), 0xA2719263, true );
             }
-            if( IsDisabledControlJustReleased( 0, 158 ) ) { // Key 2 (SelectWeaponMelee)
+            if( JustReleased( secondaryKey ) ) {
                 inventory.SelectSlot( 1 );
                 uint active = inventory.GetActive();
                 if( active != 0 ) SetCurrentPedWeapon( PlayerPedId(), active, true );
                 else SetCurrentPedWeapon( PlayerPedId(), 0xA2719263, true );
             }
-            if( IsDisabledControlJustReleased( 0, 159 ) ) { // Key 3 (SelectWeaponHandgun)
+            if( JustReleased( meleeKey ) ) {
                 inventory.SelectSlot( 2 );
                 uint active = inventory.GetActive();
                 if( active != 0 ) SetCurrentPedWeapon( PlayerPedId(), active, true );
                 else SetCurrentPedWeapon( PlayerPedId(), 0xA2719263, true );
             }
 
-            // Apply movement speed override every frame
-            SetPedMoveRateOverride( PlayerPedId(), inventory.GetMoveRate() );
+            // Quick use consumables
+            if( JustReleased( healthKey ) ) {
+                UseBandage();
+            }
+            if( JustReleased( adrenalineKey ) ) {
+                UseAdrenaline();
+            }
+
+            // Scroll wheel: cycle through occupied slots
+            if( IsDisabledControlJustReleased( 0, 16 ) ) {
+                inventory.CycleNext();
+                uint active = inventory.GetActive();
+                if( active != 0 ) SetCurrentPedWeapon( PlayerPedId(), active, true );
+            }
+            if( IsDisabledControlJustReleased( 0, 17 ) ) {
+                inventory.CyclePrev();
+                uint active = inventory.GetActive();
+                if( active != 0 ) SetCurrentPedWeapon( PlayerPedId(), active, true );
+            }
+
+            // Adrenaline expiry check
+            if( adrenalineEndTime > 0 && GetGameTimer() >= adrenalineEndTime ) {
+                adrenalineEndTime = 0;
+            }
+
+            // Movement speed: weight + adrenaline bonus
+            float moveRate = inventory.GetMoveRate();
+            if( adrenalineEndTime > 0 ) {
+                moveRate = Math.Min( 1.0f, moveRate + 0.15f );
+            }
+            SetPedMoveRateOverride( PlayerPedId(), moveRate );
         }
 
         public override void Events() {
@@ -486,6 +771,9 @@ namespace BRClient {
             }
             InventoryActiveSlot = inventory.ActiveSlot;
             InventoryTotalWeight = inventory.GetTotalWeight();
+            BandageCount = inventory.BandageCount;
+            AdrenalineCount = inventory.AdrenalineCount;
+            AdrenalineActive = adrenalineEndTime > 0 && GetGameTimer() < adrenalineEndTime;
         }
 
         // ===================== ZONE =====================
@@ -607,6 +895,48 @@ namespace BRClient {
             HubNUI.ShowRoundEnd( winnerName, "#ffd700", "Winner Winner Chicken Dinner!" );
         }
 
+        // ===================== WEAPON INDICATORS =====================
+
+        void DrawWeaponIndicators() {
+            Vector3 camPos = GetGameplayCamCoords();
+
+            foreach( var wep in Map.Weapons ) {
+                if( wep.Equipped ) continue;
+
+                float dist = GetDistanceBetweenCoords(
+                    camPos.X, camPos.Y, camPos.Z,
+                    wep.Position.X, wep.Position.Y, wep.Position.Z, true );
+
+                // Floating marker visible within 40 units
+                if( dist < 40f ) {
+                    float markerZ = wep.Position.Z + 0.8f;
+                    // Small downward chevron, bobbing, orange accent
+                    DrawMarker( 2, wep.Position.X, wep.Position.Y, markerZ,
+                        0f, 0f, 0f, 180f, 0f, 0f, 0.12f, 0.12f, 0.12f,
+                        230, 160, 30, 140, true, false, 2, false, null, null, false );
+                }
+
+                // Weapon name when within 10 units and on screen
+                if( dist < 10f ) {
+                    string weaponName = "";
+                    if( GTA_GameRooShared.Globals.Weapons.ContainsKey( wep.Hash ) ) {
+                        weaponName = GTA_GameRooShared.Globals.Weapons[wep.Hash]["Name"];
+                    }
+                    if( !string.IsNullOrEmpty( weaponName ) ) {
+                        float textZ = wep.Position.Z + 0.55f;
+                        brHUD.DrawText3D( new Vector3( wep.Position.X, wep.Position.Y, textZ ),
+                            weaponName, 0.30f, 255, 255, 255, 220, 10f );
+
+                        // Pickup hint when very close
+                        if( dist < 5f ) {
+                            brHUD.DrawText3D( new Vector3( wep.Position.X, wep.Position.Y, textZ - 0.18f ),
+                                "[E] Pick up", 0.24f, 230, 160, 30, 200, 6f );
+                        }
+                    }
+                }
+            }
+        }
+
         // ===================== UPDATE LOOP =====================
 
         public override void Update() {
@@ -619,6 +949,8 @@ namespace BRClient {
             foreach( var wep in Map.Weapons.ToList() ) {
                 wep.Update();
             }
+
+            DrawWeaponIndicators();
 
             // Win barrier checks
             foreach( var barrier in WinBarriers ) {

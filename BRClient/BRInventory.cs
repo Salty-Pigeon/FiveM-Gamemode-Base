@@ -13,6 +13,12 @@ namespace BRClient {
 
         public const float MAX_WEIGHT = 20f;
 
+        // Consumables
+        public int BandageCount = 0;
+        public int AdrenalineCount = 0;
+        public const int MAX_BANDAGES = 5;
+        public const int MAX_ADRENALINE = 5;
+
         // Weight by weapon group name
         static readonly Dictionary<string, float> GroupWeights = new Dictionary<string, float>() {
             { "GROUP_PISTOL", 2f },
@@ -182,6 +188,30 @@ namespace BRClient {
             return 0f;
         }
 
+        public bool AddBandage() {
+            if( BandageCount >= MAX_BANDAGES ) return false;
+            BandageCount++;
+            return true;
+        }
+
+        public bool AddAdrenaline() {
+            if( AdrenalineCount >= MAX_ADRENALINE ) return false;
+            AdrenalineCount++;
+            return true;
+        }
+
+        public bool UseBandage() {
+            if( BandageCount <= 0 ) return false;
+            BandageCount--;
+            return true;
+        }
+
+        public bool UseAdrenaline() {
+            if( AdrenalineCount <= 0 ) return false;
+            AdrenalineCount--;
+            return true;
+        }
+
         /// <summary>
         /// Reset inventory to empty state.
         /// </summary>
@@ -190,6 +220,8 @@ namespace BRClient {
             Slots[1] = 0;
             Slots[2] = 0;
             ActiveSlot = 0;
+            BandageCount = 0;
+            AdrenalineCount = 0;
         }
     }
 }

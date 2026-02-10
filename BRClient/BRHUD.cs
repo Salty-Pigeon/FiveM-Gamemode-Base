@@ -126,6 +126,25 @@ namespace BRClient {
                 }
             }
 
+            // Consumable counters after weapon slots
+            float consX = startX + totalW + 0.008f;
+            float consY = startY + 0.010f;
+
+            // Bandage counter
+            string bandageStr = "B:" + Main.BandageCount;
+            DrawText2D( consX, consY, bandageStr, 0.24f, 30, 200, 80, 220, false );
+
+            // Adrenaline counter
+            float adrenY = consY + 0.028f;
+            string adrenStr = "A:" + Main.AdrenalineCount;
+            if( Main.AdrenalineActive ) {
+                float pulse = (float)( Math.Sin( GetGameTimer() / 200.0 ) * 0.5 + 0.5 );
+                int aA = 160 + (int)( 95 * pulse );
+                DrawText2D( consX, adrenY, adrenStr, 0.24f, ACCENT_R, ACCENT_G, ACCENT_B, aA, false );
+            } else {
+                DrawText2D( consX, adrenY, adrenStr, 0.24f, 200, 200, 200, 180, false );
+            }
+
             // Weight indicator below slots
             float weightY = startY + slotH + 0.005f;
             float weight = Main.InventoryTotalWeight;

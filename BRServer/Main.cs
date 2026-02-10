@@ -55,10 +55,10 @@ namespace BRServer {
         HashSet<string> searchedContainers = new HashSet<string>();
 
         static readonly ZonePhase[] Phases = new ZonePhase[] {
-            new ZonePhase { WaitSeconds = 60, ShrinkSeconds = 45, RadiusPercent = 0.80f },
-            new ZonePhase { WaitSeconds = 45, ShrinkSeconds = 40, RadiusPercent = 0.55f },
-            new ZonePhase { WaitSeconds = 30, ShrinkSeconds = 35, RadiusPercent = 0.30f },
-            new ZonePhase { WaitSeconds = 20, ShrinkSeconds = 30, RadiusPercent = 0.15f },
+            new ZonePhase { WaitSeconds = 90, ShrinkSeconds = 50, RadiusPercent = 0.80f },
+            new ZonePhase { WaitSeconds = 75, ShrinkSeconds = 45, RadiusPercent = 0.55f },
+            new ZonePhase { WaitSeconds = 45, ShrinkSeconds = 40, RadiusPercent = 0.30f },
+            new ZonePhase { WaitSeconds = 25, ShrinkSeconds = 30, RadiusPercent = 0.15f },
             new ZonePhase { WaitSeconds = 10, ShrinkSeconds = 25, RadiusPercent = 0.02f },
         };
 
@@ -87,6 +87,7 @@ namespace BRServer {
             EventHandlers["br:playerJumped"] += new Action<Player>( OnPlayerJumped );
             EventHandlers["br:searchContainer"] += new Action<Player, float, float, float>( OnSearchContainer );
             EventHandlers["br:debugSpawnWeapon"] += new Action<Player, float, float, float>( OnDebugSpawnWeapon );
+            EventHandlers["br:dropWeapon"] += new Action<Player, string, float, float, float, int>( OnDropWeapon );
         }
 
         public override void Start() {
@@ -111,8 +112,8 @@ namespace BRServer {
             currentPhase = -1;
             isShrinking = false;
 
-            // Schedule first phase after plane ride
-            phaseWaitUntil = GetGameTimer() + 30000; // 30s for planes
+            // Schedule first phase after plane ride + loot time
+            phaseWaitUntil = GetGameTimer() + 60000; // 60s before first shrink
 
             // Launch planes
             LaunchPlanes( playerList );
@@ -250,6 +251,14 @@ namespace BRServer {
             }
         }
 
+        void OnDropWeapon( [FromSource] Player player, string hashStr, float x, float y, float z, int ammo ) {
+            var game = ServerGlobals.CurrentGame as Main;
+            if( game == null ) return;
+            if( !game.gameStarted ) return;
+            // Broadcast to all clients so everyone sees the dropped weapon
+            TriggerClientEvent( "br:weaponDropped", hashStr, x, y, z, ammo );
+        }
+
         // ===================== CONTAINER SEARCH =====================
 
         void OnSearchContainer( [FromSource] Player player, float x, float y, float z ) {
@@ -280,26 +289,62 @@ namespace BRServer {
             searchedContainers.Add( posKey );
             TriggerClientEvent( "br:containerSearched", x, y, z );
 
-            if( rand.NextDouble() <= 0.7 ) {
+            double roll = rand.NextDouble();
+            if( roll <= 0.50 ) {
+                // 50% weapon — give directly to player for auto-equip
                 uint weaponHash = PickRandomContainerWeapon();
-                // Offset weapon position away from container so it's visible on the ground
-                float angle = (float)( rand.NextDouble() * Math.PI * 2 );
-                float ox = x + 1.0f * (float)Math.Cos( angle );
-                float oy = y + 1.0f * (float)Math.Sin( angle );
-                SpawnWeapon( new Vector3( ox, oy, z + 0.3f ), weaponHash );
+                player.TriggerEvent( "br:giveWeapon", weaponHash.ToString() );
+            } else if( roll <= 0.75 ) {
+                // 25% consumable
+                string type = rand.NextDouble() < 0.6 ? "bandage" : "adrenaline";
+                player.TriggerEvent( "br:giveConsumable", type );
             } else {
+                // 25% empty
                 player.TriggerEvent( "br:containerEmpty" );
             }
         }
 
         uint PickRandomContainerWeapon() {
-            int roll = rand.Next( 100 );
-            if( roll < 30 ) return PistolWeapons[rand.Next( PistolWeapons.Length )];
-            if( roll < 55 ) return SMGWeapons[rand.Next( SMGWeapons.Length )];
-            if( roll < 75 ) return ShotgunWeapons[rand.Next( ShotgunWeapons.Length )];
-            if( roll < 90 ) return RifleWeapons[rand.Next( RifleWeapons.Length )];
-            if( roll < 97 ) return MeleeWeapons[rand.Next( MeleeWeapons.Length )];
-            return SniperWeapons[rand.Next( SniperWeapons.Length )];
+            // Progressive loot: early phases = pistols only, later phases unlock better weapons
+            // Phase -1,0,1: Pistols + Melee
+            // Phase 2: + SMGs
+            // Phase 3: + Shotguns, Rifles
+            // Phase 4: + Snipers (everything)
+            int phase = currentPhase;
+
+            if( phase <= 1 ) {
+                // Pistols only (with small melee chance)
+                int roll = rand.Next( 100 );
+                if( roll < 85 ) return PistolWeapons[rand.Next( PistolWeapons.Length )];
+                return MeleeWeapons[rand.Next( MeleeWeapons.Length )];
+            }
+
+            if( phase == 2 ) {
+                // Pistols + SMGs
+                int roll = rand.Next( 100 );
+                if( roll < 40 ) return PistolWeapons[rand.Next( PistolWeapons.Length )];
+                if( roll < 85 ) return SMGWeapons[rand.Next( SMGWeapons.Length )];
+                return MeleeWeapons[rand.Next( MeleeWeapons.Length )];
+            }
+
+            if( phase == 3 ) {
+                // Pistols + SMGs + Shotguns + Rifles
+                int roll = rand.Next( 100 );
+                if( roll < 15 ) return PistolWeapons[rand.Next( PistolWeapons.Length )];
+                if( roll < 40 ) return SMGWeapons[rand.Next( SMGWeapons.Length )];
+                if( roll < 60 ) return ShotgunWeapons[rand.Next( ShotgunWeapons.Length )];
+                if( roll < 90 ) return RifleWeapons[rand.Next( RifleWeapons.Length )];
+                return MeleeWeapons[rand.Next( MeleeWeapons.Length )];
+            }
+
+            // Phase 4+: Everything including snipers
+            int finalRoll = rand.Next( 100 );
+            if( finalRoll < 10 ) return PistolWeapons[rand.Next( PistolWeapons.Length )];
+            if( finalRoll < 25 ) return SMGWeapons[rand.Next( SMGWeapons.Length )];
+            if( finalRoll < 45 ) return ShotgunWeapons[rand.Next( ShotgunWeapons.Length )];
+            if( finalRoll < 75 ) return RifleWeapons[rand.Next( RifleWeapons.Length )];
+            if( finalRoll < 90 ) return SniperWeapons[rand.Next( SniperWeapons.Length )];
+            return MeleeWeapons[rand.Next( MeleeWeapons.Length )];
         }
 
         public override void Update() {

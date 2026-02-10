@@ -1,0 +1,135 @@
+.br-inventory {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.75);
+    z-index: 9000;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    color: #fff;
+}
+.br-inventory.active {
+    display: flex;
+}
+.br-inv-title {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    color: #e6a020;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+}
+.br-inv-slots {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+.br-inv-slot {
+    width: 160px;
+    background: rgba(20, 20, 20, 0.9);
+    border: 2px solid #333;
+    border-radius: 6px;
+    padding: 12px;
+    text-align: center;
+    position: relative;
+    cursor: grab;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.br-inv-slot.active {
+    border-color: #e6a020;
+    box-shadow: 0 0 12px rgba(230, 160, 32, 0.3);
+}
+.br-inv-slot.locked {
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+.br-inv-slot:not(.locked):hover {
+    border-color: #e6a020;
+}
+.br-inv-slot.dragging {
+    opacity: 0.4;
+}
+.br-inv-slot-label {
+    font-size: 11px;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+}
+.br-inv-slot-name {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: #eee;
+    min-height: 20px;
+}
+.br-inv-slot-ammo {
+    font-size: 13px;
+    color: #aaa;
+    min-height: 16px;
+}
+.br-inv-slot-empty {
+    color: #555;
+    font-style: italic;
+}
+.br-inv-slot .lock-icon {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 14px;
+    color: #666;
+}
+.br-inv-consumables {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+.br-inv-consumable {
+    width: 150px;
+    background: rgba(20, 20, 20, 0.9);
+    border: 2px solid #333;
+    border-radius: 6px;
+    padding: 12px;
+    text-align: center;
+}
+.br-inv-consumable-name {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+.br-inv-consumable-count {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+.br-inv-consumable.bandage .br-inv-consumable-count {
+    color: #1ec85a;
+}
+.br-inv-consumable.adrenaline .br-inv-consumable-count {
+    color: #e6a020;
+}
+.br-inv-use-btn {
+    background: rgba(230, 160, 32, 0.15);
+    border: 1px solid #e6a020;
+    color: #e6a020;
+    padding: 6px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: background 0.2s;
+}
+.br-inv-use-btn:hover {
+    background: rgba(230, 160, 32, 0.35);
+}
+.br-inv-use-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+.br-inv-hint {
+    font-size: 12px;
+    color: #666;
+    letter-spacing: 1px;
+}
