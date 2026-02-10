@@ -28,8 +28,13 @@ namespace GTA_GameRooClient {
             EventHandlers["salty:VoteEnd"] += new Action<string>( VoteEnd );
             EventHandlers["salty:UpdateTime"] += new Action<float>( UpdateTime );
             EventHandlers["salty:updatePlayerDetail"] += new Action<int, string, object>( UpdateDetail );
+            EventHandlers["salty:popup"] += new Action<string, int, int, int, float>( OnPopup );
 
             base.Tick += Tick;
+        }
+
+        private void OnPopup( string message, int r, int g, int b, float durationMs ) {
+            HUD.ShowPopup( message, r, g, b, durationMs );
         }
 
         private void UpdateDetail( int ply, string key, object data ) {
@@ -288,22 +293,7 @@ namespace GTA_GameRooClient {
                 }
 
                 // Apply selected character model before teleporting
-                string selectedModel = PlayerProgression.GetSelectedModel();
-                if( !string.IsNullOrEmpty( selectedModel ) ) {
-                    uint modelHash = (uint)GetHashKey( selectedModel );
-                    RequestModel( modelHash );
-                    int modelTimeout = 0;
-                    while( !HasModelLoaded( modelHash ) && modelTimeout < 50 ) {
-                        await Delay( 50 );
-                        modelTimeout++;
-                    }
-                    if( HasModelLoaded( modelHash ) ) {
-                        SetPlayerModel( PlayerId(), modelHash );
-                        SetModelAsNoLongerNeeded( modelHash );
-                        // Apply full appearance (clothing, face, hair, etc.)
-                        PlayerProgression.ApplyFullAppearance( PlayerPedId(), PlayerProgression.AppearanceJson );
-                    }
-                }
+                await BaseGamemode.ApplyShopModel();
 
                 // Teleport the player
                 SetEntityCoordsNoOffset( PlayerPedId(), spawn.X, spawn.Y, spawn.Z, false, false, false );
@@ -320,6 +310,9 @@ namespace GTA_GameRooClient {
                 if( ClientGlobals.CurrentGame == null || !ClientGlobals.CurrentGame.CountdownActive )
                     FreezeEntityPosition( PlayerPedId(), false );
 
+                // Tell server the spawn/model change is complete so it can stop ignoring deaths
+                TriggerServerEvent( "salty:spawnReady" );
+
                 PlayerSpawn( null );
             } else if( type == SpawnType.WIN_BARRIER ) {
                 if( ClientGlobals.CurrentGame != null )
@@ -330,13 +323,17 @@ namespace GTA_GameRooClient {
                         Rotation = heading
                     } );
             } else if( type == SpawnType.WEAPON ) {
+                Debug.WriteLine( "[Spawn] WEAPON hash=" + hash + " pos=" + spawn.X.ToString("F1") + "," + spawn.Y.ToString("F1") + "," + spawn.Z.ToString("F1") + " game=" + (ClientGlobals.CurrentGame != null) );
                 if( ClientGlobals.CurrentGame != null ) {
                     if( ClientGlobals.CurrentGame.Map == null ) {
-                        Debug.WriteLine( "[TTT] Map null when spawning weapon" );
+                        Debug.WriteLine( "[Spawn] FAIL: Map is null" );
                     } else {
                         // Pre-load the weapon model before creating the entity
-                        if( Globals.Weapons.ContainsKey( hash ) ) {
+                        bool hashFound = Globals.Weapons.ContainsKey( hash );
+                        Debug.WriteLine( "[Spawn] hashInGlobals=" + hashFound );
+                        if( hashFound ) {
                             string model = Globals.Weapons[hash]["ModelHashKey"];
+                            Debug.WriteLine( "[Spawn] model=" + model );
                             if( !string.IsNullOrEmpty( model ) ) {
                                 uint modelHash = (uint)GetHashKey( model );
                                 RequestModel( modelHash );
@@ -345,13 +342,15 @@ namespace GTA_GameRooClient {
                                     await Delay( 50 );
                                     wepTimeout++;
                                 }
+                                Debug.WriteLine( "[Spawn] modelLoaded=" + HasModelLoaded( modelHash ) + " waited=" + wepTimeout );
                             }
                         }
                         SaltyWeapon wep = new SaltyWeapon( SpawnType.WEAPON, hash, spawn );
                         ClientGlobals.CurrentGame.Map.Weapons.Add( wep );
+                        Debug.WriteLine( "[Spawn] Created SaltyWeapon, Map.Weapons count=" + ClientGlobals.CurrentGame.Map.Weapons.Count );
                     }
                 } else {
-                    Debug.WriteLine( "[TTT] Game null when spawning weapon" );
+                    Debug.WriteLine( "[Spawn] FAIL: Game is null" );
                 }
             }
         }

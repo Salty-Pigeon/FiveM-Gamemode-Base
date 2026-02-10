@@ -29,6 +29,23 @@ namespace GTA_GameRooClient {
         public float latestAmmo = 0f;
         private string lastTimerSent = "";
 
+        // Popup toast system
+        static string popupMessage = "";
+        static float popupEndTime = 0;
+        static float popupStartTime = 0;
+        static int popupR = 255, popupG = 200, popupB = 30;
+        const float POPUP_FADE_IN = 200f;
+        const float POPUP_FADE_OUT = 400f;
+
+        public static void ShowPopup( string message, int r, int g, int b, float durationMs = 2000f ) {
+            popupMessage = message;
+            popupR = r;
+            popupG = g;
+            popupB = b;
+            popupStartTime = GetGameTimer();
+            popupEndTime = popupStartTime + durationMs;
+        }
+
 
         public virtual void Start() {
             HealthText.Scale = 0.4f;
@@ -210,7 +227,40 @@ namespace GTA_GameRooClient {
             }
         }
 
+        public void DrawPopup() {
+            float now = GetGameTimer();
+            if( now >= popupEndTime || string.IsNullOrEmpty( popupMessage ) ) return;
+
+            float elapsed = now - popupStartTime;
+            float remaining = popupEndTime - now;
+
+            // Fade alpha: quick fade in, slow fade out
+            float alpha;
+            if( elapsed < POPUP_FADE_IN )
+                alpha = elapsed / POPUP_FADE_IN;
+            else if( remaining < POPUP_FADE_OUT )
+                alpha = remaining / POPUP_FADE_OUT;
+            else
+                alpha = 1f;
+
+            int a = (int)( alpha * 255 );
+            int bgA = (int)( alpha * 200 );
+
+            float barW = 0.24f;
+            float barH = 0.035f;
+            float barX = 0.5f - barW / 2f;
+            float barY = 0.78f;
+
+            // Dark background
+            DrawRectangle( barX, barY, barW, barH, 15, 15, 15, bgA );
+            // Left accent strip
+            DrawRectangle( barX, barY, 0.004f, barH, popupR, popupG, popupB, a );
+            // Text
+            DrawText2D( 0.5f, barY + 0.007f, popupMessage, 0.30f, 255, 255, 255, a, true );
+        }
+
         public void DrawGameTimer() {
+            DrawPopup();
 
             TimeSpan time = TimeSpan.FromMilliseconds( ClientGlobals.CurrentGame.GameTimerEnd - GetGameTimer() );
 

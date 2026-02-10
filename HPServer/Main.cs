@@ -56,6 +56,13 @@ namespace HPServer
         }
 
         private void OnPotatoPass( [FromSource] Player source, int targetServerId ) {
+            // Forward to active game instance (template handler fires, not the active game's)
+            var game = ServerGlobals.CurrentGame as Main;
+            if( game == null ) return;
+            game.HandlePotatoPass( source, targetServerId );
+        }
+
+        void HandlePotatoPass( Player source, int targetServerId ) {
             if( ItPlayer == null ) return;
             if( source.Handle != ItPlayer.Handle ) return;
 

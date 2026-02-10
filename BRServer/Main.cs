@@ -39,7 +39,7 @@ namespace BRServer {
         // Zone damage
         float zoneDamageTimer = 0;
         const float ZONE_DAMAGE_INTERVAL = 1000f;
-        const int ZONE_DAMAGE_AMOUNT = 5;
+        static readonly int[] ZONE_DAMAGE_PER_PHASE = { 5, 8, 12, 18, 25 };
 
         // Alive tracking
         List<Player> alivePlayers = new List<Player>();
@@ -52,6 +52,7 @@ namespace BRServer {
         float planeForceJumpTime = 0;
         bool forceJumpTriggered = false;
         HashSet<string> jumpedPlayers = new HashSet<string>();
+        HashSet<string> searchedContainers = new HashSet<string>();
 
         static readonly ZonePhase[] Phases = new ZonePhase[] {
             new ZonePhase { WaitSeconds = 60, ShrinkSeconds = 45, RadiusPercent = 0.80f },
@@ -84,6 +85,8 @@ namespace BRServer {
             Settings.Rounds = 1;
 
             EventHandlers["br:playerJumped"] += new Action<Player>( OnPlayerJumped );
+            EventHandlers["br:searchContainer"] += new Action<Player, float, float, float>( OnSearchContainer );
+            EventHandlers["br:debugSpawnWeapon"] += new Action<Player, float, float, float>( OnDebugSpawnWeapon );
         }
 
         public override void Start() {
@@ -92,6 +95,7 @@ namespace BRServer {
             PlayerList playerList = new PlayerList();
             alivePlayers.Clear();
             jumpedPlayers.Clear();
+            searchedContainers.Clear();
 
             foreach( var player in playerList ) {
                 alivePlayers.Add( player );
@@ -110,13 +114,11 @@ namespace BRServer {
             // Schedule first phase after plane ride
             phaseWaitUntil = GetGameTimer() + 30000; // 30s for planes
 
-            // Scatter weapons
-            ScatterWeapons();
-
             // Launch planes
             LaunchPlanes( playerList );
 
             gameStarted = true;
+            Debug.WriteLine( "[BR-Server] START complete. gameStarted=true instance=" + GetHashCode() + " alivePlayers=" + alivePlayers.Count );
 
             BroadcastZoneUpdate();
             BroadcastAliveCount();
@@ -218,6 +220,8 @@ namespace BRServer {
                 foreach( var playerHandle in plane.AssignedPlayers ) {
                     var ply = GetPlayer( playerHandle );
                     if( ply != null ) {
+                        // Protect players from false deaths during plane transition
+                        SpawnProtectedPlayers.Add( ply.Handle );
                         ply.TriggerEvent( "br:spawnPlane",
                             plane.StartX, plane.StartY, plane.StartZ,
                             plane.EndX, plane.EndY, plane.EndZ,
@@ -227,12 +231,75 @@ namespace BRServer {
             }
         }
 
+        void OnDebugSpawnWeapon( [FromSource] Player player, float x, float y, float z ) {
+            var game = ServerGlobals.CurrentGame as Main;
+            if( game == null ) return;
+            uint hash = PistolWeapons[game.rand.Next( PistolWeapons.Length )];
+            Debug.WriteLine( "[BR-Server] Debug SpawnWeapon hash=" + hash + " at " + x + "," + y + "," + z );
+            game.SpawnWeapon( new Vector3( x, y, z ), hash );
+        }
+
         void OnPlayerJumped( [FromSource] Player player ) {
-            if( !jumpedPlayers.Contains( player.Handle ) ) {
-                jumpedPlayers.Add( player.Handle );
+            var game = ServerGlobals.CurrentGame as Main;
+            if( game == null ) return;
+            if( !game.jumpedPlayers.Contains( player.Handle ) ) {
+                game.jumpedPlayers.Add( player.Handle );
+                game.SpawnProtectedPlayers.Remove( player.Handle );
                 // Give start weapons after a short delay for landing
                 player.TriggerEvent( "br:giveStartWeapons" );
             }
+        }
+
+        // ===================== CONTAINER SEARCH =====================
+
+        void OnSearchContainer( [FromSource] Player player, float x, float y, float z ) {
+            // Event handlers only fire on the template instance (registered at resource start).
+            // Forward to the active game instance.
+            var game = ServerGlobals.CurrentGame as Main;
+            if( game == null ) return;
+            game.HandleSearchContainer( player, x, y, z );
+        }
+
+        void HandleSearchContainer( Player player, float x, float y, float z ) {
+            Debug.WriteLine( "[BR-Server] HandleSearchContainer from " + player.Name + " gameStarted=" + gameStarted + " instance=" + GetHashCode() );
+
+            if( !gameStarted ) {
+                Debug.WriteLine( "[BR-Server] REJECTED: gameStarted is false!" );
+                return;
+            }
+
+            string posKey = ((int)Math.Round( x )) + "," + ((int)Math.Round( y )) + "," + ((int)Math.Round( z ));
+            Debug.WriteLine( "[BR-Server] posKey=" + posKey + " alreadySearched=" + searchedContainers.Contains( posKey ) );
+
+            if( searchedContainers.Contains( posKey ) ) {
+                Debug.WriteLine( "[BR-Server] Container already searched, sending empty" );
+                player.TriggerEvent( "br:containerEmpty" );
+                return;
+            }
+
+            searchedContainers.Add( posKey );
+            TriggerClientEvent( "br:containerSearched", x, y, z );
+
+            if( rand.NextDouble() <= 0.7 ) {
+                uint weaponHash = PickRandomContainerWeapon();
+                // Offset weapon position away from container so it's visible on the ground
+                float angle = (float)( rand.NextDouble() * Math.PI * 2 );
+                float ox = x + 1.0f * (float)Math.Cos( angle );
+                float oy = y + 1.0f * (float)Math.Sin( angle );
+                SpawnWeapon( new Vector3( ox, oy, z + 0.3f ), weaponHash );
+            } else {
+                player.TriggerEvent( "br:containerEmpty" );
+            }
+        }
+
+        uint PickRandomContainerWeapon() {
+            int roll = rand.Next( 100 );
+            if( roll < 30 ) return PistolWeapons[rand.Next( PistolWeapons.Length )];
+            if( roll < 55 ) return SMGWeapons[rand.Next( SMGWeapons.Length )];
+            if( roll < 75 ) return ShotgunWeapons[rand.Next( ShotgunWeapons.Length )];
+            if( roll < 90 ) return RifleWeapons[rand.Next( RifleWeapons.Length )];
+            if( roll < 97 ) return MeleeWeapons[rand.Next( MeleeWeapons.Length )];
+            return SniperWeapons[rand.Next( SniperWeapons.Length )];
         }
 
         public override void Update() {
@@ -248,6 +315,7 @@ namespace BRServer {
                 foreach( var player in alivePlayers ) {
                     if( !jumpedPlayers.Contains( player.Handle ) ) {
                         jumpedPlayers.Add( player.Handle );
+                        SpawnProtectedPlayers.Remove( player.Handle );
                         player.TriggerEvent( "br:forceJump" );
                         player.TriggerEvent( "br:giveStartWeapons" );
                     }
@@ -293,7 +361,7 @@ namespace BRServer {
                     isShrinking = true;
 
                     BroadcastZoneUpdate();
-                    WriteChat( "BR", "Zone shrinking! Phase " + ( currentPhase + 1 ), 255, 165, 0 );
+                    TriggerClientEvent( "salty:popup", "Zone shrinking - Phase " + ( currentPhase + 1 ), 200, 60, 40, phase.ShrinkSeconds * 1000f );
                 }
 
                 if( isShrinking ) {
@@ -309,7 +377,8 @@ namespace BRServer {
                         zoneCurrentRadius = zoneTargetRadius;
                         phaseWaitUntil = now + ( currentPhase + 1 < Phases.Length ?
                             Phases[currentPhase + 1].WaitSeconds * 1000f : 999999f );
-                        WriteChat( "BR", "Zone stable. Next shrink incoming...", 255, 200, 0 );
+                        float nextWait = currentPhase + 1 < Phases.Length ? Phases[currentPhase + 1].WaitSeconds * 1000f : 10000f;
+                        TriggerClientEvent( "salty:popup", "Zone stable - Next shrink incoming", 230, 160, 30, Math.Min( nextWait, 10000f ) );
                     }
                 }
             }
@@ -317,6 +386,8 @@ namespace BRServer {
             // Zone damage check (every 1s)
             if( now >= zoneDamageTimer + ZONE_DAMAGE_INTERVAL ) {
                 zoneDamageTimer = now;
+                int phaseIdx = Math.Max( 0, Math.Min( currentPhase, ZONE_DAMAGE_PER_PHASE.Length - 1 ) );
+                int damage = currentPhase >= 0 ? ZONE_DAMAGE_PER_PHASE[phaseIdx] : ZONE_DAMAGE_PER_PHASE[0];
                 foreach( var player in alivePlayers.ToList() ) {
                     try {
                         Vector3 playerPos = player.Character.Position;
@@ -324,7 +395,7 @@ namespace BRServer {
                         float dy = playerPos.Y - zoneCenterY;
                         float distSq = dx * dx + dy * dy;
                         if( distSq > zoneCurrentRadius * zoneCurrentRadius ) {
-                            player.TriggerEvent( "br:zoneDamage", ZONE_DAMAGE_AMOUNT );
+                            player.TriggerEvent( "br:zoneDamage", damage );
                         }
                     } catch {
                         // Player may have disconnected
@@ -368,7 +439,9 @@ namespace BRServer {
         }
 
         void CheckWinCondition() {
+            Debug.WriteLine( "[BR-Server] CheckWinCondition alivePlayers=" + alivePlayers.Count + " gameStarted=" + gameStarted + " instance=" + GetHashCode() );
             if( alivePlayers.Count <= 1 ) {
+                Debug.WriteLine( "[BR-Server] GAME ENDING via CheckWinCondition! alivePlayers=" + alivePlayers.Count );
                 if( alivePlayers.Count == 1 ) {
                     Player winner = alivePlayers[0];
                     WinningPlayers.Add( winner );
@@ -383,6 +456,7 @@ namespace BRServer {
         }
 
         public override void OnTimerEnd() {
+            Debug.WriteLine( "[BR-Server] OnTimerEnd called. gameStarted=" + gameStarted );
             if( !gameStarted ) return;
 
             // Player closest to zone center wins

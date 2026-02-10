@@ -149,6 +149,29 @@ namespace GTA_GameRooClient {
         }
 
         /// <summary>
+        /// Applies the player's selected shop model and appearance.
+        /// Call during any spawn/game start flow. Returns true if model was applied.
+        /// </summary>
+        public static async Task<bool> ApplyShopModel() {
+            string selectedModel = PlayerProgression.GetSelectedModel();
+            if( string.IsNullOrEmpty( selectedModel ) ) return false;
+
+            uint modelHash = (uint)GetHashKey( selectedModel );
+            RequestModel( modelHash );
+            int timeout = 0;
+            while( !HasModelLoaded( modelHash ) && timeout < 50 ) {
+                await Delay( 50 );
+                timeout++;
+            }
+            if( !HasModelLoaded( modelHash ) ) return false;
+
+            SetPlayerModel( PlayerId(), modelHash );
+            SetModelAsNoLongerNeeded( modelHash );
+            PlayerProgression.ApplyFullAppearance( PlayerPedId(), PlayerProgression.AppearanceJson );
+            return true;
+        }
+
+        /// <summary>
         /// Fully resets the local player ped to a clean state.
         /// Call after model changes or at game start to ensure nothing persists.
         /// </summary>

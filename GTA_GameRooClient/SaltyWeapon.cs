@@ -37,7 +37,7 @@ namespace GTA_GameRooClient {
                         if( ClientGlobals.CurrentGame.CanPickupWeapon( Hash ) ) {
                             Equip();
                         } else {
-                            BaseGamemode.WriteChat( "TTT", "You already have a weapon of this type. Drop it first.", 200, 200, 30 );
+                            HUD.ShowPopup( "Already carrying this weapon type", 200, 160, 30 );
                         }
                     }
                 } 

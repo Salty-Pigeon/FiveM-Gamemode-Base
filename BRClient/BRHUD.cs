@@ -23,6 +23,45 @@ namespace BRClient {
         public override void Draw() {
             DrawGameTimer();
             DrawBRPanel();
+            ShowContainerPrompt();
+        }
+
+        void ShowContainerPrompt() {
+            // Debug overlay
+            if( Main.ContainerDebugActive && Main.ContainerDebugText.Length > 0 ) {
+                string[] lines = Main.ContainerDebugText.Split( '\n' );
+                for( int i = 0; i < lines.Length; i++ ) {
+                    DrawText2D( 0.01f, 0.45f + i * 0.022f, lines[i], 0.28f, 30, 200, 30, 220, false );
+                }
+            }
+
+            if( !Main.NearContainerFound ) return;
+
+            // 3D floating prompt above the container
+            Vector3 promptPos = Main.NearContainerPos + new Vector3( 0, 0, 1.0f );
+            string label = Main.NearContainerIsVehicle ? "Search boot [E]" : "Search [E]";
+
+            if( Main.IsSearchingContainer ) {
+                DrawText3D( promptPos, "Searching...", 0.35f, ACCENT_R, ACCENT_G, ACCENT_B, 255, 8f );
+
+                // Progress bar (2D, center screen)
+                float barW = 0.14f;
+                float barH = 0.016f;
+                float barX = 0.5f - barW / 2f;
+                float barY = 0.82f;
+
+                // Background
+                DrawRectangle( barX, barY, barW, barH, 15, 15, 15, 200 );
+                // Fill
+                DrawRectangle( barX, barY, barW * Main.SearchProgress, barH, ACCENT_R, ACCENT_G, ACCENT_B, 230 );
+                // Border accent
+                DrawRectangle( barX, barY, 0.003f, barH, 255, 255, 255, 180 );
+
+                string pct = ((int)( Main.SearchProgress * 100 )) + "%";
+                DrawText2D( 0.5f, barY - 0.001f, pct, 0.26f, 255, 255, 255, 255, true );
+            } else {
+                DrawText3D( promptPos, label, 0.35f, 255, 255, 255, 255, 8f );
+            }
         }
 
         void DrawBRPanel() {

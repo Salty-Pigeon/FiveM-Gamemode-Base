@@ -41,6 +41,7 @@ namespace GTA_GameRooServer {
 
             EventHandlers["baseevents:onPlayerKilled"] += new Action<Player, int, object>( PlayerKilled );
             EventHandlers["baseevents:onPlayerDied"] += new Action<Player, int, IList<object>>( PlayerDied );
+            EventHandlers["salty:spawnReady"] += new Action<Player>( OnSpawnReady );
 
             base.Tick += Tick;
         }
@@ -113,8 +114,20 @@ namespace GTA_GameRooServer {
             CurrentVote = null;
         }
 
+        private void OnSpawnReady( [FromSource] Player player ) {
+            if( ServerGlobals.CurrentGame != null ) {
+                ServerGlobals.CurrentGame.SpawnProtectedPlayers.Remove( player.Handle );
+            }
+        }
+
         private void PlayerKilled( [FromSource] Player ply, int killerID, object deathData ) {
             try {
+                // Ignore deaths from players mid-spawn (model change kills old ped)
+                if( ServerGlobals.CurrentGame != null && ServerGlobals.CurrentGame.SpawnProtectedPlayers.Contains( ply.Handle ) ) {
+                    Debug.WriteLine( "[GameRoo] Ignored PlayerKilled for " + ply.Name + " (spawn protected)" );
+                    return;
+                }
+
                 int killerType = 0;
                 IList<object> deathCoords = null;
                 uint weaponHash = 0;
@@ -148,6 +161,12 @@ namespace GTA_GameRooServer {
 
         private void PlayerDied( [FromSource] Player ply, int killerType, IList<object> deathcords ) {
             try {
+                // Ignore deaths from players mid-spawn (model change kills old ped)
+                if( ServerGlobals.CurrentGame != null && ServerGlobals.CurrentGame.SpawnProtectedPlayers.Contains( ply.Handle ) ) {
+                    Debug.WriteLine( "[GameRoo] Ignored PlayerDied for " + ply.Name + " (spawn protected)" );
+                    return;
+                }
+
                 Vector3 coords = new Vector3( Convert.ToSingle( deathcords[0] ), Convert.ToSingle( deathcords[1] ), Convert.ToSingle( deathcords[2] ) );
                 if( ServerGlobals.CurrentGame != null )
                     ServerGlobals.CurrentGame.OnPlayerDied( ply, killerType, coords );

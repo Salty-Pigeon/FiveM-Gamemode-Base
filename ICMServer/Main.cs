@@ -42,7 +42,6 @@ namespace ICMServer
         }
 
         private void StartSoloMode() {
-            SoloTestMode = true;
             WriteChat( "ICM", "Solo test mode enabled - starting as Ice Cream Man", 200, 200, 0 );
 
             if( ServerGlobals.CurrentGame != null ) {
@@ -52,6 +51,7 @@ namespace ICMServer
             var existingMap = GTA_GameRooServer.Main.MapManager.FindMap( "icm" );
             if( existingMap != null ) {
                 ServerGlobals.CurrentGame = (BaseGamemode)Activator.CreateInstance( ServerGlobals.Gamemodes["icm"].GetType() );
+                ((Main)ServerGlobals.CurrentGame).SoloTestMode = true;
                 ServerGlobals.CurrentGame.GameTime = GetGameTimer() + ServerGlobals.CurrentGame.Settings.GameLength;
                 ServerGlobals.CurrentGame.Map = existingMap;
                 ServerGlobals.CurrentGame.Start();
@@ -85,6 +85,13 @@ namespace ICMServer
         }
 
         private void OnKidWin() {
+            // Forward to active game instance (template handler fires, not the active game's)
+            var game = ServerGlobals.CurrentGame as Main;
+            if( game == null ) return;
+            game.HandleKidWin();
+        }
+
+        void HandleKidWin() {
             WriteChat( "Ice Cream Man", "A kid reached the finish line!", 6, 182, 212 );
             TriggerClientEvent( "salty::ICMRoundResult", "Kids", "#06b6d4", "A kid reached the finish line!" );
             WinningPlayers.AddRange( GetTeamPlayers( (int)Teams.Kiddie ) );

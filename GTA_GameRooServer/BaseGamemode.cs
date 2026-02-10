@@ -27,6 +27,12 @@ namespace GTA_GameRooServer {
         public List<Player> Spectators = new List<Player>();
 
         /// <summary>
+        /// Players currently in the spawn flow (model change in progress).
+        /// Deaths are ignored for these players to prevent false kills from SetPlayerModel.
+        /// </summary>
+        public HashSet<string> SpawnProtectedPlayers = new HashSet<string>();
+
+        /// <summary>
         /// Set this before calling End() to award win XP to these players.
         /// Players not in this list get participation XP only.
         /// </summary>
@@ -157,6 +163,7 @@ namespace GTA_GameRooServer {
         }
 
         public void SpawnPlayer( Player player, int team ) {
+            SpawnProtectedPlayers.Add( player.Handle );
             var spawn = Map.GetSpawn( SpawnType.PLAYER, team );
             player.TriggerEvent( "salty:Spawn", (int)SpawnType.PLAYER, spawn.Position, (uint)0, spawn.Heading );
         }
@@ -176,6 +183,7 @@ namespace GTA_GameRooServer {
         public void SpawnPlayer( Player player ) {
             object team = GetPlayerDetail( player, "team" );
             if( team != null ) {
+                SpawnProtectedPlayers.Add( player.Handle );
                 var spawn = Map.GetSpawn( SpawnType.PLAYER, Convert.ToInt32( team ) );
                 player.TriggerEvent( "salty:Spawn", (int)SpawnType.PLAYER, spawn.Position, (uint)0, spawn.Heading );
             } else {

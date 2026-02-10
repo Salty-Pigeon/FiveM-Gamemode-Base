@@ -51,7 +51,6 @@ namespace TTTServer
         }
 
         private void StartSoloMode() {
-            SoloTestMode = true;
             WriteChat( "TTT", "Solo test mode enabled - starting as Traitor", 200, 200, 0 );
 
             // End any current game first
@@ -63,6 +62,7 @@ namespace TTTServer
             if( existingMap != null ) {
                 // Start directly, bypassing normal StartGame to avoid any issues
                 ServerGlobals.CurrentGame = (BaseGamemode)Activator.CreateInstance( ServerGlobals.Gamemodes["ttt"].GetType() );
+                SoloTestMode = true;
                 ServerGlobals.CurrentGame.GameTime = GetGameTimer() + ServerGlobals.CurrentGame.Settings.GameLength;
                 ServerGlobals.CurrentGame.Map = existingMap;
                 ServerGlobals.CurrentGame.Start();
@@ -218,7 +218,10 @@ namespace TTTServer
         }
 
         public void BodyDiscovered( [FromSource] Player ply, int body ) {
-            DeadBodies[body] = true;
+            // Forward to active game instance (template handler fires, not the active game's)
+            var game = ServerGlobals.CurrentGame as Main;
+            if( game == null ) return;
+            game.DeadBodies[body] = true;
             TriggerClientEvent( "salty::UpdateDeadBody", body );
         }
 

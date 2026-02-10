@@ -32,14 +32,16 @@ namespace GTA_GameRooClient {
         }
 
         public void CreateEntity() {
-            ID = CreateObject( GetHashKey( Model ), Position.X, Position.Y, Position.Z, true, true, false);
-            //SetObjectPhysicsParams( ID, 100, 10, 10, 3, 3, 10, 10, 10, 10, 10, 10 );
-            //PlaceObjectOnGroundProperly( ID );
-            //SetObjectSomething( ID, true );
-            //Drop();
-            //ActivatePhysics( ID );
+            int modelHash = GetHashKey( Model );
+            ID = CreateObject( modelHash, Position.X, Position.Y, Position.Z, true, true, false);
+            Debug.WriteLine( "[SaltyEntity] CreateEntity model=" + Model + " modelHash=" + modelHash + " ID=" + ID + " inputPos=" + Position.X.ToString("F1") + "," + Position.Y.ToString("F1") + "," + Position.Z.ToString("F1") );
+            if( ID == 0 ) {
+                Debug.WriteLine( "[SaltyEntity] FAIL: CreateObject returned 0! Model may not be loaded." );
+                return;
+            }
             Drop();
             Position = GetEntityCoords( ID, true );
+            Debug.WriteLine( "[SaltyEntity] finalPos=" + Position.X.ToString("F1") + "," + Position.Y.ToString("F1") + "," + Position.Z.ToString("F1") + " exists=" + DoesEntityExist( ID ) );
         }
 
         public void Drop() {
