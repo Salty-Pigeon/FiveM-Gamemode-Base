@@ -18,6 +18,7 @@ namespace BRClient {
         // NUI panel change tracking
         int lastSentAlive = -1;
         string lastSentPhase = null;
+        string lastSentZoneTimer = null;
 
         public override void Start() {
             base.Start();
@@ -173,10 +174,25 @@ namespace BRClient {
 
         void DrawBRPanel() {
             string phaseStr = ZonePhase >= 0 ? "Phase " + ( ZonePhase + 1 ) : "--";
-            if( AliveCount != lastSentAlive || phaseStr != lastSentPhase ) {
+
+            // Zone countdown timer
+            float now = GetGameTimer();
+            string zoneTimer = "--";
+            bool timerOrange = false;
+            if( Main.ZoneShrinkEnd > now && Main.ZoneShrinkEnd > 0 ) {
+                int sec = Math.Max( 0, (int)Math.Ceiling( ( Main.ZoneShrinkEnd - now ) / 1000f ) );
+                zoneTimer = "Shrinking: " + sec + "s";
+                timerOrange = true;
+            } else if( Main.ZoneWaitUntil > now && Main.ZoneWaitUntil > 0 ) {
+                int sec = Math.Max( 0, (int)Math.Ceiling( ( Main.ZoneWaitUntil - now ) / 1000f ) );
+                zoneTimer = "Next zone: " + sec + "s";
+            }
+
+            if( AliveCount != lastSentAlive || phaseStr != lastSentPhase || zoneTimer != lastSentZoneTimer ) {
                 lastSentAlive = AliveCount;
                 lastSentPhase = phaseStr;
-                SendNuiMessage( "{\"type\":\"brUpdatePanel\",\"alive\":" + AliveCount + ",\"phase\":\"" + phaseStr + "\"}" );
+                lastSentZoneTimer = zoneTimer;
+                SendNuiMessage( "{\"type\":\"brUpdatePanel\",\"alive\":" + AliveCount + ",\"phase\":\"" + phaseStr + "\",\"zoneTimer\":\"" + zoneTimer + "\",\"zoneTimerOrange\":" + ( timerOrange ? "true" : "false" ) + "}" );
             }
         }
 

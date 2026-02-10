@@ -31,6 +31,11 @@ namespace BRClient {
         float zoneShrinkStart, zoneShrinkEnd;
         int zonePhase = -1;
         int zoneBlip = -1;
+        float zoneWaitUntil = 0;
+
+        // Next zone preview
+        float nextZoneCX, nextZoneCY, nextZoneRadius;
+        int nextZoneBlip = -1;
 
         // Zone damage tracking
         float zoneDeathTimer = 0;
@@ -94,6 +99,10 @@ namespace BRClient {
 
         // Weapon bar auto-hide
         public static float LastWeaponChangeTime = 0;
+
+        // Static zone timing state for BRHUD
+        public static float ZoneWaitUntil = 0;
+        public static float ZoneShrinkEnd = 0;
 
         // Static state for BRHUD consumable progress bar
         public static bool IsUsingConsumable = false;
@@ -181,10 +190,11 @@ namespace BRClient {
             EventHandlers["br:spawnPlane"] += new Action<float, float, float, float, float, float, float>( OnSpawnPlane );
             EventHandlers["br:forceJump"] += new Action( OnForceJump );
             EventHandlers["br:giveStartWeapons"] += new Action( OnGiveStartWeapons );
-            EventHandlers["br:zoneUpdate"] += new Action<float, float, float, float, float, float, int>( OnZoneUpdate );
+            EventHandlers["br:zoneUpdate"] += new Action<float, float, float, float, float, float, int, float, float, float, float>( OnZoneUpdate );
             EventHandlers["br:zoneDamage"] += new Action<int>( OnZoneDamage );
             EventHandlers["br:playerEliminated"] += new Action<int, string, string>( OnPlayerEliminated );
             EventHandlers["br:winner"] += new Action<string>( OnWinner );
+            EventHandlers["br:yourPlacement"] += new Action<int, int>( OnYourPlacement );
             EventHandlers["br:containerSearched"] += new Action<float, float, float>( OnContainerSearched );
             EventHandlers["br:containerEmpty"] += new Action( OnContainerEmpty );
             EventHandlers["br:giveConsumable"] += new Action<string>( OnGiveConsumable );
@@ -298,6 +308,7 @@ namespace BRClient {
         public override void End() {
             CleanupPlane();
             RemoveZoneBlip();
+            RemoveNextZoneBlip();
             isSearching = false;
             CloseInventory();
             SetPedMoveRateOverride( PlayerPedId(), 1.0f );
@@ -968,11 +979,13 @@ namespace BRClient {
             BandageCount = inventory.BandageCount;
             AdrenalineCount = inventory.AdrenalineCount;
             AdrenalineActive = adrenalineEndTime > 0 && GetGameTimer() < adrenalineEndTime;
+            ZoneWaitUntil = zoneWaitUntil;
+            ZoneShrinkEnd = zoneShrinkEnd;
         }
 
         // ===================== ZONE =====================
 
-        void OnZoneUpdate( float cx, float cy, float currentR, float targetR, float shrinkStart, float shrinkEnd, int phase ) {
+        void OnZoneUpdate( float cx, float cy, float currentR, float targetR, float shrinkStart, float shrinkEnd, int phase, float waitRemaining, float nCX, float nCY, float nR ) {
             var game = ClientGlobals.CurrentGame as Main;
             if( game == null ) return;
             game.zoneCenterX = cx;
@@ -992,9 +1005,18 @@ namespace BRClient {
                 game.zoneShrinkEnd = 0;
             }
 
+            // Zone wait countdown
+            game.zoneWaitUntil = waitRemaining > 0 ? GetGameTimer() + waitRemaining : 0;
+
+            // Next zone preview
+            game.nextZoneCX = nCX;
+            game.nextZoneCY = nCY;
+            game.nextZoneRadius = nR;
+
             game.zonePhase = phase;
             game.brHUD.ZonePhase = phase;
             game.UpdateZoneBlip();
+            game.UpdateNextZoneBlip();
         }
 
         void OnZoneDamage( int damage ) {
@@ -1025,6 +1047,25 @@ namespace BRClient {
             if( zoneBlip != -1 ) {
                 RemoveBlip( ref zoneBlip );
                 zoneBlip = -1;
+            }
+        }
+
+        void UpdateNextZoneBlip() {
+            bool isShrinkingNow = zoneShrinkEnd > zoneShrinkStart && GetGameTimer() < zoneShrinkEnd;
+            if( nextZoneRadius > 0 && !isShrinkingNow ) {
+                RemoveNextZoneBlip();
+                nextZoneBlip = AddBlipForRadius( nextZoneCX, nextZoneCY, 0f, nextZoneRadius );
+                SetBlipColour( nextZoneBlip, 0 ); // White
+                SetBlipAlpha( nextZoneBlip, 80 );
+            } else {
+                RemoveNextZoneBlip();
+            }
+        }
+
+        void RemoveNextZoneBlip() {
+            if( nextZoneBlip != -1 ) {
+                RemoveBlip( ref nextZoneBlip );
+                nextZoneBlip = -1;
             }
         }
 
@@ -1071,6 +1112,22 @@ namespace BRClient {
                 float py = zoneCenterY + radius * (float)Math.Sin( a );
                 DrawLine( px, py, z, px, py, z + 100f, 50, 130, 255, 80 );
             }
+
+            // Next zone preview circle (white, during wait phase only)
+            bool isShrinkingNow = zoneShrinkEnd > zoneShrinkStart && GetGameTimer() < zoneShrinkEnd;
+            if( nextZoneRadius > 0 && !isShrinkingNow ) {
+                int nextSegments = 32;
+                float nextStep = (float)( 2 * Math.PI / nextSegments );
+                for( int i = 0; i < nextSegments; i++ ) {
+                    float a1 = nextStep * i;
+                    float a2 = nextStep * ( i + 1 );
+                    float x1 = nextZoneCX + nextZoneRadius * (float)Math.Cos( a1 );
+                    float y1 = nextZoneCY + nextZoneRadius * (float)Math.Sin( a1 );
+                    float x2 = nextZoneCX + nextZoneRadius * (float)Math.Cos( a2 );
+                    float y2 = nextZoneCY + nextZoneRadius * (float)Math.Sin( a2 );
+                    DrawLine( x1, y1, z, x2, y2, z, 255, 255, 255, 100 );
+                }
+            }
         }
 
         bool IsInsideZone( Vector3 pos ) {
@@ -1088,7 +1145,8 @@ namespace BRClient {
             game.aliveCount = alive;
             game.brHUD.AliveCount = alive;
 
-            if( !string.IsNullOrEmpty( victimName ) ) {
+            // Show killfeed notification for other players (not the victim — they get the placement splash)
+            if( !string.IsNullOrEmpty( victimName ) && victimName != Game.Player.Name ) {
                 if( !string.IsNullOrEmpty( killerName ) && killerName != "The Zone" ) {
                     HubNUI.ShowRoundEnd( killerName, "#e6a020", victimName + " eliminated" );
                 }
@@ -1096,7 +1154,19 @@ namespace BRClient {
         }
 
         void OnWinner( string winnerName ) {
-            HubNUI.ShowRoundEnd( winnerName, "#ffd700", "Winner Winner Chicken Dinner!" );
+            // Only show the generic round-end overlay for non-winners; winner gets placement splash
+            if( winnerName != Game.Player.Name ) {
+                HubNUI.ShowRoundEnd( winnerName, "#ffd700", "Winner Winner Chicken Dinner!" );
+            }
+        }
+
+        void OnYourPlacement( int placement, int total ) {
+            var game = ClientGlobals.CurrentGame as Main;
+            if( game == null ) return;
+            if( this != game ) { game.OnYourPlacement( placement, total ); return; }
+
+            bool isWinner = placement == 1;
+            HubNUI.ShowBRFinish( placement, total, isWinner );
         }
 
         // ===================== WEAPON INDICATORS =====================

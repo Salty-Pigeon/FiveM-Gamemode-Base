@@ -312,11 +312,44 @@ window.addEventListener('message', function(event) {
         var brPanel = document.getElementById('br-panel');
         document.getElementById('brPanelAlive').textContent = data.alive + ' Alive';
         document.getElementById('brPanelPhase').textContent = data.phase;
+        var ztEl = document.getElementById('brPanelZoneTimer');
+        if (ztEl && data.zoneTimer) {
+            ztEl.textContent = data.zoneTimer;
+            if (data.zoneTimerOrange) {
+                ztEl.classList.add('orange');
+            } else {
+                ztEl.classList.remove('orange');
+            }
+        }
         brPanel.classList.add('active');
     }
     else if (data.type === 'brHidePanel') {
         var brPanel = document.getElementById('br-panel');
         brPanel.classList.remove('active');
+    }
+    else if (data.type === 'brFinish') {
+        var overlay = document.getElementById('br-finish');
+        var label = document.getElementById('brFinishLabel');
+        var line = document.getElementById('brFinishLine');
+        var place = document.getElementById('brFinishPlacement');
+        var total = document.getElementById('brFinishTotal');
+
+        overlay.classList.remove('winner');
+        if (data.isWinner) {
+            label.textContent = 'VICTORY ROYALE';
+            label.style.color = '#ffd700';
+            label.style.textShadow = '0 0 40px #ffd700, 0 0 80px #ffd700';
+            line.style.background = '#ffd700';
+            overlay.classList.add('winner');
+        } else {
+            label.textContent = 'ELIMINATED';
+            label.style.color = '#e05050';
+            label.style.textShadow = '0 0 40px #e05050, 0 0 80px #e05050';
+            line.style.background = '#e05050';
+        }
+        place.textContent = '#' + data.placement;
+        total.textContent = 'out of ' + data.total + ' players';
+        showTTTOverlay('br-finish', data.isWinner ? 8000 : 5000);
     }
     // TTT Overlays
     else if (data.type === 'tttRoleReveal') {

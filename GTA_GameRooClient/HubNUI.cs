@@ -634,6 +634,11 @@ namespace GTA_GameRooClient {
             SendNuiMessage( payload );
         }
 
+        public static void ShowBRFinish( int placement, int total, bool isWinner ) {
+            string payload = "{\"type\":\"brFinish\",\"placement\":" + placement + ",\"total\":" + total + ",\"isWinner\":" + ( isWinner ? "true" : "false" ) + "}";
+            SendNuiMessage( payload );
+        }
+
         public static void ShowBodyInspect( string name, string team, string teamColor, string weapon, string deathTime ) {
             string payload = "{\"type\":\"tttBodyInspect\",\"name\":\"" + EscapeJson( name ) + "\",\"team\":\"" + EscapeJson( team ) + "\",\"teamColor\":\"" + EscapeJson( teamColor ) + "\",\"weapon\":\"" + EscapeJson( weapon ) + "\",\"deathTime\":\"" + EscapeJson( deathTime ) + "\"}";
             SendNuiMessage( payload );

@@ -36,6 +36,10 @@ namespace BRServer {
         bool isShrinking = false;
         float initialRadius;
 
+        // Next zone preview
+        float nextZoneCX, nextZoneCY, nextZoneRadius;
+        bool hasNextZone = false;
+
         // Zone damage
         float zoneDamageTimer = 0;
         const float ZONE_DAMAGE_INTERVAL = 1000f;
@@ -48,6 +52,7 @@ namespace BRServer {
         // Alive tracking
         List<Player> alivePlayers = new List<Player>();
         bool gameStarted = false;
+        int totalStartPlayers = 0;
 
         // Plane tracking
         bool planesLaunched = false;
@@ -124,6 +129,7 @@ namespace BRServer {
             // Launch planes
             LaunchPlanes( playerList );
 
+            totalStartPlayers = alivePlayers.Count;
             gameStarted = true;
             Debug.WriteLine( "[BR-Server] START complete. gameStarted=true instance=" + GetHashCode() + " alivePlayers=" + alivePlayers.Count );
 
@@ -385,26 +391,34 @@ namespace BRServer {
                     currentPhase++;
                     var phase = Phases[currentPhase];
 
-                    zoneTargetRadius = initialRadius * phase.RadiusPercent;
+                    if( hasNextZone ) {
+                        // Use pre-calculated next zone values
+                        zoneCenterX = nextZoneCX;
+                        zoneCenterY = nextZoneCY;
+                        zoneTargetRadius = nextZoneRadius;
+                        hasNextZone = false;
+                    } else {
+                        zoneTargetRadius = initialRadius * phase.RadiusPercent;
 
-                    // Shift center randomly within current circle
-                    float maxShift = zoneCurrentRadius - zoneTargetRadius;
-                    if( maxShift > 0 ) {
-                        float angle = (float)( rand.NextDouble() * Math.PI * 2 );
-                        float shift = (float)( rand.NextDouble() * maxShift * 0.5f );
-                        float newCX = zoneCenterX + shift * (float)Math.Cos( angle );
-                        float newCY = zoneCenterY + shift * (float)Math.Sin( angle );
+                        // Shift center randomly within current circle
+                        float maxShift = zoneCurrentRadius - zoneTargetRadius;
+                        if( maxShift > 0 ) {
+                            float angle = (float)( rand.NextDouble() * Math.PI * 2 );
+                            float shift = (float)( rand.NextDouble() * maxShift * 0.5f );
+                            float newCX = zoneCenterX + shift * (float)Math.Cos( angle );
+                            float newCY = zoneCenterY + shift * (float)Math.Sin( angle );
 
-                        // Clamp to map bounds
-                        float halfX = Map.Size.X / 2f;
-                        float halfY = Map.Size.Y / 2f;
-                        newCX = Math.Max( Map.Position.X - halfX + zoneTargetRadius,
-                                 Math.Min( Map.Position.X + halfX - zoneTargetRadius, newCX ) );
-                        newCY = Math.Max( Map.Position.Y - halfY + zoneTargetRadius,
-                                 Math.Min( Map.Position.Y + halfY - zoneTargetRadius, newCY ) );
+                            // Clamp to map bounds
+                            float halfX = Map.Size.X / 2f;
+                            float halfY = Map.Size.Y / 2f;
+                            newCX = Math.Max( Map.Position.X - halfX + zoneTargetRadius,
+                                     Math.Min( Map.Position.X + halfX - zoneTargetRadius, newCX ) );
+                            newCY = Math.Max( Map.Position.Y - halfY + zoneTargetRadius,
+                                     Math.Min( Map.Position.Y + halfY - zoneTargetRadius, newCY ) );
 
-                        zoneCenterX = newCX;
-                        zoneCenterY = newCY;
+                            zoneCenterX = newCX;
+                            zoneCenterY = newCY;
+                        }
                     }
 
                     zoneShrinkStart = now;
@@ -413,6 +427,12 @@ namespace BRServer {
 
                     BroadcastZoneUpdate();
                     TriggerClientEvent( "salty:popup", "Zone shrinking - Phase " + ( currentPhase + 1 ), 200, 60, 40, phase.ShrinkSeconds * 1000f );
+                }
+
+                // Periodic broadcast during wait phase so countdown stays synced
+                if( !isShrinking && now >= lastZoneBroadcast + ZONE_BROADCAST_INTERVAL ) {
+                    lastZoneBroadcast = now;
+                    BroadcastZoneUpdate();
                 }
 
                 if( isShrinking ) {
@@ -436,6 +456,33 @@ namespace BRServer {
                             Phases[currentPhase + 1].WaitSeconds * 1000f : 999999f );
                         float nextWait = currentPhase + 1 < Phases.Length ? Phases[currentPhase + 1].WaitSeconds * 1000f : 10000f;
                         TriggerClientEvent( "salty:popup", "Zone stable - Next shrink incoming", 230, 160, 30, Math.Min( nextWait, 10000f ) );
+
+                        // Pre-calculate next zone position
+                        int nextIdx = currentPhase + 1;
+                        if( nextIdx < Phases.Length ) {
+                            nextZoneRadius = initialRadius * Phases[nextIdx].RadiusPercent;
+                            float nMaxShift = zoneCurrentRadius - nextZoneRadius;
+                            if( nMaxShift > 0 ) {
+                                float nAngle = (float)( rand.NextDouble() * Math.PI * 2 );
+                                float nShift = (float)( rand.NextDouble() * nMaxShift * 0.5f );
+                                nextZoneCX = zoneCenterX + nShift * (float)Math.Cos( nAngle );
+                                nextZoneCY = zoneCenterY + nShift * (float)Math.Sin( nAngle );
+
+                                float halfX = Map.Size.X / 2f;
+                                float halfY = Map.Size.Y / 2f;
+                                nextZoneCX = Math.Max( Map.Position.X - halfX + nextZoneRadius,
+                                             Math.Min( Map.Position.X + halfX - nextZoneRadius, nextZoneCX ) );
+                                nextZoneCY = Math.Max( Map.Position.Y - halfY + nextZoneRadius,
+                                             Math.Min( Map.Position.Y + halfY - nextZoneRadius, nextZoneCY ) );
+                            } else {
+                                nextZoneCX = zoneCenterX;
+                                nextZoneCY = zoneCenterY;
+                            }
+                            hasNextZone = true;
+                        } else {
+                            hasNextZone = false;
+                        }
+
                         BroadcastZoneUpdate();
                     }
                 }
@@ -481,6 +528,9 @@ namespace BRServer {
 
             TriggerClientEvent( "br:playerEliminated", alivePlayers.Count, victimName, killerName );
 
+            int placement = alivePlayers.Count + 1;
+            victim.TriggerEvent( "br:yourPlacement", placement, totalStartPlayers );
+
             CheckWinCondition();
         }
 
@@ -492,6 +542,9 @@ namespace BRServer {
 
             WriteChat( "BR", victim.Name + " was eliminated!", 255, 80, 80 );
             TriggerClientEvent( "br:playerEliminated", alivePlayers.Count, victim.Name, "The Zone" );
+
+            int placement = alivePlayers.Count + 1;
+            victim.TriggerEvent( "br:yourPlacement", placement, totalStartPlayers );
 
             CheckWinCondition();
         }
@@ -505,6 +558,7 @@ namespace BRServer {
                     WinningPlayers.Add( winner );
                     WriteChat( "BR", winner.Name + " wins the Battle Royale!", 255, 215, 0 );
                     TriggerClientEvent( "br:winner", winner.Name );
+                    winner.TriggerEvent( "br:yourPlacement", 1, totalStartPlayers );
                 } else {
                     WriteChat( "BR", "No survivors!", 255, 80, 80 );
                 }
@@ -553,11 +607,19 @@ namespace BRServer {
                 remainingStart = 0;
                 remainingEnd = zoneShrinkEnd - now;
             }
+            float waitRemaining = 0;
+            if( !isShrinking && phaseWaitUntil > now ) {
+                waitRemaining = phaseWaitUntil - now;
+            }
+            float nCX = hasNextZone ? nextZoneCX : 0;
+            float nCY = hasNextZone ? nextZoneCY : 0;
+            float nR = hasNextZone ? nextZoneRadius : 0;
             TriggerClientEvent( "br:zoneUpdate",
                 zoneCenterX, zoneCenterY,
                 zoneCurrentRadius, zoneTargetRadius,
                 remainingStart, remainingEnd,
-                currentPhase );
+                currentPhase, waitRemaining,
+                nCX, nCY, nR );
         }
 
         void BroadcastAliveCount() {
